@@ -58,6 +58,7 @@ $genderList      = $this->customlib->getGender_Patient();
                                         }
                                     ?> 
                                     <th class="text-end"><?php echo $this->lang->line('status'); ?></th>
+                                    <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>

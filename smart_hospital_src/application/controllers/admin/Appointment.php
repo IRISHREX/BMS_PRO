@@ -660,6 +660,11 @@ class Appointment extends Admin_Controller
     /*
     This Function is Used to get appointment records for datatable
      */
+    public function getappointmentdatatable()
+    {
+        return $this->getappointmentdatatabletoday();
+    }
+
     public function getappointmentdatatabletoday()
     {
         $dt_response = $this->appointment_model->getAllappointmentRecord(1);
@@ -684,26 +689,23 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 }
 		
-				$action = '';
-			 
-				// if($value->source != 'Online'){
-					$action = "<div class='rowoptionview rowview-btn-top'>";
-					$action .= "<a href='#' data-bs-toggle='tooltip' title='" . $this->lang->line('show') . "' class='btn btn-secondary btn-sm'   data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'>  <i class='fa fa-reorder'></i></a>";
-					$action .= "<a href='#'  class='btn btn-secondary btn-sm' data-bs-toggle='tooltip'  onclick='printAppointment(" . $value->id . ")' title='" . $this->lang->line('print') . "'><i class='fa fa-print'></i></a>";
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= " <a href='#' data-bs-toggle='tooltip' title='" . $this->lang->line('reschedule') . "' class='btn btn-secondary btn-sm'   data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'>  <i class='fa fa-calendar'></i> </a>";
+				$action = "<div class='sh-action-dropdown dropdown text-end'>";
+				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
+				$action .= "<i class='fa fa-ellipsis-v'></i>";
+				$action .= "</button>";
+				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
+				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
+				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
+				if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+					$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+				}
+				if ($value->appointment_status == 'pending') {
+					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
 					}
-				
-					if ($value->appointment_status == 'pending') {
-                     
-                        if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-                            $action .= "<span class='large-tooltip'><a href='#' class='btn btn-secondary btn-sm'  data-bs-toggle='tooltip' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)' title='" . $this->lang->line('approve_appointment') . "'><i class='fa fa-check' aria-hidden='true'></i></a></span>";
-                        }
-                     
-					}
-
-					$action .= "</div>";
-				// }	
+				}
+				$action .= "</ul>";
+				$action .= "</div>";
 				
                 $first_action = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>";
                 $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $status . "</a>";
@@ -750,7 +752,8 @@ class Appointment extends Admin_Controller
                 $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
                 $row[]     = amountFormat($value->standard_amount);
                 $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $row[]     = amountFormat($value->paid_amount) . $action;
+                $row[]     = amountFormat($value->paid_amount);
+                $row[]     = $action;
                 $dt_data[] = $row;
             }
         }
@@ -787,30 +790,24 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 }
 				
-				$action = '';
-				
-				// if($value->source != 'Online'){
-					
-					$action = "<div class='rowoptionview rowview-btn-top'>";
-					$action .= "<a href='#' data-bs-toggle='tooltip' title='" . $this->lang->line('show') . "' class='btn btn-secondary btn-sm'   data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'>  <i class='fa fa-reorder'></i> </a>";
-					$action .= "<a href='#'  class='btn btn-secondary btn-sm' data-bs-toggle='tooltip'  onclick='printAppointment(" . $value->id . ")' title='" . $this->lang->line('print') . "'><i class='fa fa-print'></i></a>";
-					
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= " <a href='#' data-bs-toggle='tooltip' title='" . $this->lang->line('reschedule') . "' class='btn btn-secondary btn-sm'   data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'>  <i class='fa fa-calendar'></i> </a>";
+				$action = "<div class='sh-action-dropdown dropdown text-end'>";
+				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
+				$action .= "<i class='fa fa-ellipsis-v'></i>";
+				$action .= "</button>";
+				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
+				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
+				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
+				if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+					$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+				}
+				if ($value->appointment_status == 'pending') {
+					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
 					}
-					
-					if ($value->appointment_status == 'pending') {
-						 
-						if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-							$action .= "<span class='large-tooltip'><a href='#' class='btn btn-secondary btn-sm'  data-bs-toggle='tooltip' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)' title='" . $this->lang->line('approve_appointment') . "'><i class='fa fa-check' aria-hidden='true'></i></a></span>";
-						}
-						 
-					}
-	
-					$action .= "</div>";
+				}
+				$action .= "</ul>";
+				$action .= "</div>";
 				
-				// }
-			
                 $first_action = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>";
                 $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $status . "</a>";
 				
@@ -857,7 +854,8 @@ class Appointment extends Admin_Controller
                 $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
                 $row[]     = amountFormat($value->standard_amount);
                 $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $row[]     = amountFormat($value->paid_amount) . $action;
+                $row[]     = amountFormat($value->paid_amount);
+                $row[]     = $action;
                 $dt_data[] = $row;
             }
         }
@@ -895,27 +893,24 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 }
 
-				$action = "";
-				// if($value->source != 'Online'){
-				
-					$action = "<div class='rowoptionview rowview-btn-top'>";
-					$action .= "<a href='#' data-bs-toggle='tooltip' title='" . $this->lang->line('show') . "' class='btn btn-secondary btn-sm'   data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'>  <i class='fa fa-reorder'></i> </a>";
-					$action .= "<a href='#'  class='btn btn-secondary btn-sm' data-bs-toggle='tooltip'  onclick='printAppointment(" . $value->id . ")' title='" . $this->lang->line('print') . "'><i class='fa fa-print'></i></a>";
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= " <a href='#' data-bs-toggle='tooltip' title='" . $this->lang->line('reschedule') . "' class='btn btn-secondary btn-sm'   data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'>  <i class='fa fa-calendar'></i> </a>";
+				$action = "<div class='sh-action-dropdown dropdown text-end'>";
+				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
+				$action .= "<i class='fa fa-ellipsis-v'></i>";
+				$action .= "</button>";
+				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
+				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
+				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
+				if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+					$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+				}
+				if ($value->appointment_status == 'pending') {
+					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
 					}
-					if ($value->appointment_status == 'pending') {
-                     
-                        if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-                            $action .= "<span class='large-tooltip'><a href='#' class='btn btn-secondary btn-sm'  data-bs-toggle='tooltip' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)' title='" . $this->lang->line('approve_appointment') . "'><i class='fa fa-check' aria-hidden='true'></i></a></span>";
-                        }
-                     
-					}
-
-					$action .= "</div>";
+				}
+				$action .= "</ul>";
+				$action .= "</div>";
 				
-				// }
-			
                 $first_action = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>";
                 $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $status . "</a>";
 				
@@ -962,7 +957,8 @@ class Appointment extends Admin_Controller
                 $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
                 $row[]     = amountFormat($value->standard_amount);
                 $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $row[]     = amountFormat($value->paid_amount) . $action;
+                $row[]     = amountFormat($value->paid_amount);
+                $row[]     = $action;
                 $dt_data[] = $row;
             }
         }
