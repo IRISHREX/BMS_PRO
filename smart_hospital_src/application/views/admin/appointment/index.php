@@ -61,7 +61,8 @@ $genderList      = $this->customlib->getGender_Patient();
                       <th><?php echo $this->lang->line('status'); ?></th>
                       <th><?php echo $this->lang->line('fees')." (".$currency_symbol.")"; ?></th>
                     <th><?php echo $this->lang->line('discount')." (%)"; ?></th>
-                    <th><?php echo $this->lang->line('paid')." (".$currency_symbol.")"; ?></th>
+                    <th><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>
+                      <th><?php echo $this->lang->line('paid')." (".$currency_symbol.")"; ?></th>
                     <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                     </tr>
                   </thead>
@@ -102,6 +103,7 @@ $genderList      = $this->customlib->getGender_Patient();
                       <th><?php echo $this->lang->line('status'); ?></th>
                       <th><?php echo $this->lang->line('fees')." (".$currency_symbol.")"; ?></th>
                       <th><?php echo $this->lang->line('discount')." (%)"; ?></th>
+                      <th><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>
                       <th><?php echo $this->lang->line('paid')." (".$currency_symbol.")"; ?></th>
                       <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                     </tr>
@@ -143,6 +145,7 @@ $genderList      = $this->customlib->getGender_Patient();
                       <th><?php echo $this->lang->line('status'); ?></th>
                       <th><?php echo $this->lang->line('fees')." (".$currency_symbol.")"; ?></th>
                       <th><?php echo $this->lang->line('discount')." (%)"; ?></th>
+                      <th><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>
                       <th><?php echo $this->lang->line('paid')." (".$currency_symbol.")"; ?></th>
                       <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                     </tr>
@@ -242,7 +245,7 @@ $genderList      = $this->customlib->getGender_Patient();
                 </div>
                 <div class="col-sm-3">
                   <label class="form-label"><?php echo $this->lang->line("doctor_fees"); ?> (<?php echo $currency_symbol; ?>)</label><small class="req"> *</small>
-                  <input type="text" name="amount" id="doctor_fees" class="form-control form-control-sm" readonly="readonly">
+                  <input type="text" name="amount" id="doctor_fees" class="form-control form-control-sm">
                   <span class="text-danger"><?php echo form_error('doctor_fees'); ?></span>
                 </div>
                 <div class="col-sm-3">
@@ -373,7 +376,7 @@ $genderList      = $this->customlib->getGender_Patient();
                 </div>
                 <div class="col-sm-3">
                   <label class="form-label"><?php echo $this->lang->line("doctor_fees") . ' (' . $currency_symbol . ')'; ?></label><small class="req"> *</small>
-                  <input type="text" name="doctor_fees" id="rdoctor_fees_edit" class="form-control form-control-sm" readonly="readonly">
+                  <input type="text" name="doctor_fees" id="rdoctor_fees_edit" class="form-control form-control-sm">
                   <span class="text-danger"><?php echo form_error('doctor_fees'); ?></span>
                 </div>
                 <div class="col-sm-3">
@@ -1390,11 +1393,18 @@ $("#appointment_status").change(function(){
 <script>
 $(document).ready(function () {
   /* initialize all tooltips after Bootstrap JS is loaded */
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if(window.SHPicker) {
+        SHPicker.setRestriction('#datetimepicker', { minDate: today });
+        SHPicker.setRestriction('#rdates', { minDate: today });
+    }
   });
-});
 </script>
 <!-- //========datatable end===== -->
 <?php $this->load->view('admin/patient/patientaddmodal') ?>

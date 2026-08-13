@@ -432,7 +432,12 @@ class Welcome extends Front_Controller
         list($doctor_id, $shift, $date, $global_shift) = explode(',', $params);
         $appointments                                  = $this->onlineappointment_model->getAppointments($doctor_id, $shift, $date);
         $time                                          = $this->customlib->getSlotByDoctorShift($doctor_id, $shift);
-        $array                                         = array_column($appointments, 'time');
+        $array = array();
+        if(!empty($appointments)){
+            foreach($appointments as $appointment){
+                $array[] = date("H:i:s", strtotime($appointment->date));
+            }
+        }
         if ($slot != '' && $doctor_id != '' && $shift != '' && $date != '') {
             if (count($time) > $slot) {
                 $shift_time = date("H:i:s", strtotime($time[$slot]));
@@ -999,13 +1004,25 @@ class Welcome extends Front_Controller
                             } else {
                                 $check_time_format = true;
                             }
-                            $jsons = array(
-                                'incorrect_credentials' => "",
-                             );
-
-                            $json_array = array('status' => '2', 'error' => $jsons);
-                            echo json_encode($json_array);
-                            die;                     
+                            $session_data = array(
+                                'id'                  => $result[0]->id,
+                                'patient_id'          => $result[0]->patient_id,
+                                'role'                => $result[0]->role,
+                                'username'            => $result[0]->username,
+                                'date_format'         => $setting_result[0]['date_format'],
+                                'language'            => $lang_array,
+                                'timezone'            => $setting_result[0]['timezone'],
+                                'sch_name'            => $setting_result[0]['name'],
+                                'is_rtl'              => $lang_data['is_rtl'],
+                                'theme'               => $setting_result[0]['theme'],
+                                'image'               => $result[0]->image,
+                                'time_format'         => $time_format,
+                                'currency_symbol'     => $setting_result[0]['currency_symbol'],
+                                'custom_field_prefix' => $prefix_array,
+                                'short_name'          => $lang_data['short_code'],
+                            );
+                            $this->session->set_userdata('patient', $session_data);
+                            return true;
                         }
                     } else {
                         $jsons = array(

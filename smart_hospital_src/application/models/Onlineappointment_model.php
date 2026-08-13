@@ -127,7 +127,7 @@ class Onlineappointment_model extends MY_Model
 
     public function checkAppointmentsSlotBooked($doctor, $doctor_shift_time_id, $appointment_date, $current_time,$id = 0)
     {
-        $sql = "SELECT `appointment`.* FROM `appointment` WHERE (`doctor` = ".$doctor." AND `doctor_shift_time_id` = ".$doctor_shift_time_id."   AND `date` = ".$this->db->escape($appointment_date)."  AND `appointment_status` = 'approved') or ( `doctor` = ".$doctor." AND `doctor_shift_time_id` = ".$doctor_shift_time_id."   AND `date` = ".$this->db->escape($appointment_date)."  AND `appointment_status` = 'pending' and  DATE_FORMAT(rejected_time, '%Y-%m-%d %H:%i') <= ".$this->db->escape($current_time)." and appointment.id != ".$id.")";   
+        $sql = "SELECT `appointment`.* FROM `appointment` WHERE (`doctor` = ".$doctor." AND `doctor_shift_time_id` = ".$doctor_shift_time_id."   AND `date` = ".$this->db->escape($appointment_date)."  AND `appointment_status` = 'approved') or ( `doctor` = ".$doctor." AND `doctor_shift_time_id` = ".$doctor_shift_time_id."   AND `date` = ".$this->db->escape($appointment_date)."  AND `appointment_status` = 'pending' and  DATE_FORMAT(rejected_time, '%Y-%m-%d %H:%i') >= ".$this->db->escape($current_time)." and appointment.id != ".$id.")";   
         $query = $this->db->query($sql);
         return $query->result();
     }

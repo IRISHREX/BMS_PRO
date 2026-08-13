@@ -3286,12 +3286,17 @@ class dashboard extends Patient_Controller
             $id,
             $is_patient,
         );
-        if ($result["appointment_status"] == "approved") {
+        $status = isset($result['appointment_status']) ? $result['appointment_status'] : (isset($result['status']) ? $result['status'] : '');
+        if (strtolower($status) == "approved") {
             $result["appointment_no"] =
                 $this->customlib->getPatientSessionPrefixByType("appointment") .
                 $id;
         } else {
             $result["appointment_no"] = "";
+        }
+        
+        if (empty($result['appointment_serial_no']) && isset($result['serialno'])) {
+            $result['appointment_serial_no'] = $result['serialno'];
         }
 
         if ($result["start_time"]) {
@@ -4079,7 +4084,12 @@ class dashboard extends Patient_Controller
             $date,
         );
         $time = $this->customlib->getSlotByDoctorShift($doctor_id, $shift);
-        $array = array_column($appointments, "time");
+        $array = array();
+        if(!empty($appointments)){
+            foreach($appointments as $appointment){
+                $array[] = date("H:i:s", strtotime($appointment->date));
+            }
+        }
         if ($slot != "" && $doctor_id != "" && $shift != "" && $date != "") {
             if (count($time) > $slot) {
                 $shift_time = date("H:i:s", strtotime($time[$slot]));
