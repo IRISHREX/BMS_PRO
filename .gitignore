@@ -1,0 +1,37 @@
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE & Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.tmp
+*.bak
+
+# CodeIgniter Logs and Cache
+smart_hospital_src/application/logs/log-*.php
+!smart_hospital_src/application/logs/index.html
+smart_hospital_src/application/cache/*
+!smart_hospital_src/application/cache/index.html
+smart_hospital_src/temp/*
+!smart_hospital_src/temp/index.html
+smart_hospital_src/backup/_tmp/*
+!smart_hospital_src/backup/_tmp/index.html
+
+# Database Backups & Temp Uploads (Keep schema dump if required)
+smart_hospital_src/backup/temp_uploaded/*
+!smart_hospital_src/backup/temp_uploaded/index.html
+
+# Node / Composer dependencies
+node_modules/
+npm-debug.log
+.env
