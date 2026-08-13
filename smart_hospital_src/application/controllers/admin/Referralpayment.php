@@ -53,6 +53,7 @@ class Referralpayment extends Admin_Controller
                 "bill_amount"        => $this->input->post("bill_amount", TRUE),
                 "percentage"         => $this->input->post("percentage", TRUE),
                 "amount"             => $this->input->post("commission_amount", TRUE),
+                "status"             => $this->input->post("status", TRUE) ? $this->input->post("status", TRUE) : 'Paid',
                 "date"               => date("Y-m-d H:i:s"),
             );
 
@@ -122,6 +123,7 @@ class Referralpayment extends Admin_Controller
                 "id"         => $this->input->post('paymentid', TRUE),
                 "percentage" => $this->input->post('commission_percentage', TRUE),
                 "amount"     => $this->input->post('commission_amount', TRUE),
+                "status"     => $this->input->post('edit_status', TRUE) ? $this->input->post('edit_status', TRUE) : 'Paid',
             );
 
             $this->referral_payment_model->update($payment);

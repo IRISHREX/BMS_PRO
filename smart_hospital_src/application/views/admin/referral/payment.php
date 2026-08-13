@@ -25,10 +25,12 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                     <tr>
                                         <th><?php echo $this->lang->line('payee'); ?></th>
                                         <th><?php echo $this->lang->line('patient_name'); ?></th>
+                                        <th><?php echo $this->lang->line('date'); ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('bill_no'); ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('bill_amount').' ('. $currency_symbol .')'; ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
                                         <th class="text-end"><?php echo $this->lang->line('commission_amount').' ('. $currency_symbol .')'; ?></th>
+                                        <th class="text-end"><?php echo $this->lang->line('status'); ?></th>
                                         <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
                                         <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
 										<?php } ?>                                        
@@ -45,10 +47,17 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                             <tr>
                                                 <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
                                                 <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
+                                                <td><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->time_format); ?></td>
                                                 <td class="text-end"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
                                                 <td class="text-end"><?php echo amountFormat($value["bill_amount"]); ?></td>
                                                 <td class="text-end"><?php echo html_escape($value["percentage"]); ?></td>
                                                 <td class="text-end"><?php echo html_escape($value["amount"]); ?></td>
+                                                <td class="text-end">
+                                                    <?php
+                                                    $status = isset($value["status"]) ? $value["status"] : 'Paid';
+                                                    echo $this->lang->line(strtolower($status)) ? $this->lang->line(strtolower($status)) : ucfirst($status);
+                                                    ?>
+                                                </td>
                                                 <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
                                                 <td class="text-end noExport">
                                                     <div class="d-inline-flex gap-1">
@@ -218,6 +227,13 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                                 <label class="form-label form-label-sm"><?php echo $this->lang->line('commission_amount') . ' (' . $currency_symbol . ')'; ?> <small class="req">*</small></label>
                                                 <input class="form-control form-control-sm" id="commission_amount" name="commission_amount" type="text">
                                             </div>
+                                            <div class="col-12">
+                                                <label class="form-label form-label-sm"><?php echo $this->lang->line('status'); ?> <small class="req">*</small></label>
+                                                <select class="form-select form-select-sm" name="status" id="status">
+                                                    <option value="Paid"><?php echo $this->lang->line('paid'); ?></option>
+                                                    <option value="Unpaid"><?php echo $this->lang->line('unpaid'); ?></option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -258,6 +274,13 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                     <div class="col-12">
                                         <label class="form-label form-label-sm"><?php echo $this->lang->line('commission_amount') . ' (' . $currency_symbol . ')'; ?> <small class="req">*</small></label>
                                         <input id="editcommission_amount" name="commission_amount" type="text" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label form-label-sm"><?php echo $this->lang->line('status'); ?> <small class="req">*</small></label>
+                                        <select class="form-select form-select-sm" name="edit_status" id="edit_status">
+                                            <option value="Paid"><?php echo $this->lang->line('paid'); ?></option>
+                                            <option value="Unpaid"><?php echo $this->lang->line('unpaid'); ?></option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -320,6 +343,11 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             success: function (data) {
                 $("#commission_percentage").val(data.percentage);
                 $("#editcommission_amount").val(data.amount);
+                if (data.status) {
+                    $("#edit_status").val(data.status);
+                } else {
+                    $("#edit_status").val('Paid');
+                }
                 $("#paymentid").val(id);
             },
             error: function () {

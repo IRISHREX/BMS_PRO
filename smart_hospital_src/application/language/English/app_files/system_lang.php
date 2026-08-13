@@ -3270,3 +3270,5 @@ $lang['your_booking'] = 'Your booking';
 $lang['your_selection'] = 'Your Selection';
 $lang['zoom_credential'] = 'Zoom Credential';
 $lang["zoom_oauth_setup"] = "Zoom OAuth Setup";
+$lang["partially_refunded"] = "Partially Refunded";
+$lang["full_refunded"] = "Full Refunded";

@@ -102,6 +102,7 @@ class Income extends Admin_Controller
                 }
                 //====================
                 $row[] = $value->amount;
+                $row[] = isset($value->refund) ? $value->refund : '0';
                 $row[] = "<div class='white-space-nowrap'>" . $action . "</div>";
 
                 $dt_data[] = $row;

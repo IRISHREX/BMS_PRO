@@ -429,10 +429,15 @@ class Appointment extends Admin_Controller
         $id     = $this->input->post("appointment_id", TRUE);
         $result = $this->appointment_model->getDetailsAppointment($id);
 	
-		if ($result['appointment_status'] == 'approved') {
+		$status = isset($result['appointment_status']) ? $result['appointment_status'] : (isset($result['status']) ? $result['status'] : '');
+		if (strtolower($status) == 'approved') {
 			$result['appointment_no'] = $this->customlib->getSessionPrefixByType('appointment') . $id;
 		}else{
 			$result['appointment_no'] ="";
+		}
+		
+		if (empty($result['appointment_serial_no']) && isset($result['serialno'])) {
+			$result['appointment_serial_no'] = $result['serialno'];
 		}
 
         if ($result['start_time']) {
@@ -687,6 +692,12 @@ class Appointment extends Admin_Controller
                 } else if ($value->appointment_status == "cancel") {
                     $label  = "class='badge bg-danger text-white'";
                     $status = $this->lang->line($value->appointment_status);
+                } else if ($value->appointment_status == "partially_refunded") {
+                    $label  = "class='badge bg-info text-white'";
+                    $status = $this->lang->line($value->appointment_status);
+                } else if ($value->appointment_status == "full_refunded") {
+                    $label  = "class='badge bg-secondary text-white'";
+                    $status = $this->lang->line($value->appointment_status);
                 }
 		
 				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
@@ -806,6 +817,12 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 } else if ($value->appointment_status == "cancel") {
                     $label  = "class='badge bg-danger text-white'";
+                    $status = $this->lang->line($value->appointment_status);
+                } else if ($value->appointment_status == "partially_refunded") {
+                    $label  = "class='badge bg-info text-white'";
+                    $status = $this->lang->line($value->appointment_status);
+                } else if ($value->appointment_status == "full_refunded") {
+                    $label  = "class='badge bg-secondary text-white'";
                     $status = $this->lang->line($value->appointment_status);
                 }
 				
@@ -928,6 +945,12 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 } else if ($value->appointment_status == "cancel") {
                     $label  = "class='badge bg-danger text-white'";
+                    $status = $this->lang->line($value->appointment_status);
+                } else if ($value->appointment_status == "partially_refunded") {
+                    $label  = "class='badge bg-info text-white'";
+                    $status = $this->lang->line($value->appointment_status);
+                } else if ($value->appointment_status == "full_refunded") {
+                    $label  = "class='badge bg-secondary text-white'";
                     $status = $this->lang->line($value->appointment_status);
                 }
 
@@ -1193,10 +1216,15 @@ class Appointment extends Admin_Controller
         $id     = $this->input->get("appointment_id");
         $result = $this->appointment_model->getDetailsAppointment($id);
 
-		if ($result['appointment_status'] == 'approved') {
+		$status = isset($result['appointment_status']) ? $result['appointment_status'] : (isset($result['status']) ? $result['status'] : '');
+		if (strtolower($status) == 'approved') {
 			$result['appointment_no'] = $this->customlib->getSessionPrefixByType('appointment') . $id;
 		}else{
 			$result['appointment_no'] ="";
+		}
+		
+		if (empty($result['appointment_serial_no']) && isset($result['serialno'])) {
+			$result['appointment_serial_no'] = $result['serialno'];
 		}
 
         if ($result['start_time']) {
@@ -1622,6 +1650,10 @@ class Appointment extends Admin_Controller
                     $label = "class='label label-warning'";
                 } else if ($value->appointment_status == "cancel") {
                     $label = "class='label label-danger'";
+                } else if ($value->appointment_status == "partially_refunded") {
+                    $label = "class='label label-info'";
+                } else if ($value->appointment_status == "full_refunded") {
+                    $label = "class='label label-default'";
                 } else {
                     $label = "class=' '";
                 }
@@ -1645,6 +1677,10 @@ class Appointment extends Admin_Controller
                 }
                 //====================
                 $row[]     = $value->discount_percentage;
+                
+                $net_amount = (float)$value->standard_amount - ((float)$value->standard_amount * (float)$value->discount_percentage / 100);
+                $row[]     = number_format($net_amount, 2, '.', '');
+                
                 if ($value->paid_amount) {
                     $row[]     = $value->paid_amount;
                 } else {

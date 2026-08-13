@@ -481,6 +481,11 @@ class Radio extends Admin_Controller
                 $organisation_id = null;
             }            
 
+            $status = $this->input->post('status', TRUE);
+            if (empty($status)) {
+                $status = NULL;
+            }
+
             $data = array(
                 'date'                      => ($bill_date),
                 'patient_id'                => $patient_id,
@@ -498,6 +503,7 @@ class Radio extends Admin_Controller
                 'organisation_id'           => $organisation_id,
                 'insurance_validity'        => $insurance_validity,
                 'insurance_id'              => $insurance_id,
+                'status'                    => $status,
             );
 			
             $custom_field_post  = $this->input->post("custom_fields[radiology]", TRUE);
@@ -636,6 +642,9 @@ class Radio extends Admin_Controller
 
                 $referral_person_id = $this->input->post('referral_person_id', TRUE);
                 if (!empty($referral_person_id)) {
+                    if ($radiology_billing_id > 0) {
+                        $this->referral_payment_model->deleteByBillId($inserted, 5);
+                    }
                     $percentage = $this->referral_payment_model->get_commission($referral_person_id, 5); // 5 = radiology
                     if ($percentage) {
                         $commission_amount = ($this->input->post('net_amount', TRUE) * $percentage) / 100;
@@ -1572,6 +1581,7 @@ class Radio extends Admin_Controller
                 $row[] = $value->patient_name . " (" . $value->pid . ")";
                 $row[] = composeStaffNameByString($value->generated_byname, $value->generated_bysurname, $value->generated_byemployee_id);
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
+                $row[] = $value->status ? $value->status : "";
                 //====================
                 if (!empty($fields)) {
                     foreach ($fields as $fields_key => $fields_value) {

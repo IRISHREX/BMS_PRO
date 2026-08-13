@@ -33,6 +33,7 @@
                                             }
                                          ?>
                                         <th class="text-end"><?php echo $this->lang->line('amount') . " (" . $currency_symbol . ")"; ?></th>
+                                        <th class="text-end"><?php echo $this->lang->line('refund') . " (" . $currency_symbol . ")"; ?></th>
                                         <th class="noExport text-end"><?php echo $this->lang->line('action'); ?></th>
                                     </tr>
                                 </thead>

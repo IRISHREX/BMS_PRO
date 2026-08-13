@@ -119,6 +119,20 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                     </div>
                     <div class="col-sm-12">
                         <div class="mb-3">
+                            <label>Status</label>
+                            <select name="status" id="status" class="form-control">
+                                <?php
+                                $statuses = ['Paid', 'Cancelled', 'Refund'];
+                                foreach ($statuses as $status) {
+                                    $selected = ($pathology_data->status == $status) ? 'selected' : '';
+                                    echo "<option value='$status' $selected>$status</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-12">
+                        <div class="mb-3">
                             <label><?php echo $this->lang->line('note'); ?></label>
                             <textarea name="note" rows="3" id="note" class="form-control"><?php echo $pathology_data->note; ?></textarea>
                         </div>

@@ -28,6 +28,7 @@ $genderList = $this->customlib->getGender();
                                 <th><?php echo $this->lang->line('patient_name'); ?></th>
                                 <th><?php echo $this->lang->line('generated_by'); ?></th>
                                 <th><?php echo $this->lang->line('reference_doctor'); ?></th>
+                                <th>Status</th>
                                 <?php
                                     if (!empty($fields)) {
                                         foreach ($fields as $fields_key => $fields_value) {

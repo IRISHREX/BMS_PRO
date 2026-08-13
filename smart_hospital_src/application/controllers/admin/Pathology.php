@@ -447,6 +447,11 @@ class Pathology extends Admin_Controller
                 $organisation_id = null;
             }
 
+            $status = $this->input->post('status', TRUE);
+            if (empty($status)) {
+                $status = NULL;
+            }
+
             $data = array(
                 'date'                      => $bill_date,
                 'patient_id'                => $patient_id,
@@ -464,6 +469,7 @@ class Pathology extends Admin_Controller
                 'organisation_id'           => $organisation_id,
                 'insurance_validity'        => $insurance_validity,
                 'insurance_id'              => $insurance_id,
+                'status'                    => $status,
             );
 
             $custom_field_post  = $this->input->post("custom_fields[pathology]", TRUE);
@@ -597,6 +603,9 @@ class Pathology extends Admin_Controller
             if ($inserted) {
                 $referral_person_id = $this->input->post('referral_person_id', TRUE);
                 if (!empty($referral_person_id)) {
+                    if ($pathology_billing_id > 0) {
+                        $this->referral_payment_model->deleteByBillId($inserted, 4);
+                    }
                     $percentage = $this->referral_payment_model->get_commission($referral_person_id, 4); // 4 = pathology
                     if ($percentage) {
                         $commission_amount = ($this->input->post('net_amount', TRUE) * $percentage) / 100;
@@ -1461,6 +1470,7 @@ class Pathology extends Admin_Controller
                 $row[] = $value->patient_name . " (" . $value->pid . ")";
                 $row[] = composeStaffNameByString($value->generated_byname, $value->generated_bysurname, $value->generated_byemployee_id);
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
+                $row[] = $value->status ? $value->status : "";
 
                 //====================
                 if (!empty($fields)) {

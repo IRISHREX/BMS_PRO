@@ -7,6 +7,14 @@ if (!defined('BASEPATH')) {
 class Referral_payment_model extends MY_Model
 {
 
+    public function __construct()
+    {
+        parent::__construct();
+        if (!$this->db->field_exists('status', 'referral_payment')) {
+            $this->db->query("ALTER TABLE `referral_payment` ADD `status` varchar(20) DEFAULT 'Paid'");
+        }
+    }
+
     public function get_payment()
     {
         $this->db->select("payment.billing_id,payment.id, person.name, patients.patient_name,patients.id as patient_id, type.name as type, payment.bill_amount, payment.percentage, payment.amount,prefixes.prefix");
@@ -44,6 +52,11 @@ class Referral_payment_model extends MY_Model
         } else {            
             return $record_id;
         }        
+    }
+
+    public    function deleteByBillId($billing_id, $referral_type)
+    {
+        $this->db->where('billing_id', $billing_id)->where('referral_type', $referral_type)->delete('referral_payment');
     }
 
     public function delete($id)

@@ -102,6 +102,8 @@ $config['appointment_status'] = array(
     'pending'  => lang('pending'),
     'approved' => lang('approved'),
     'cancel'   => lang('cancel'),
+    'partially_refunded' => lang('partially_refunded'),
+    'full_refunded' => lang('full_refunded'),
 );
 
 $config['appointment_type'] = array(
