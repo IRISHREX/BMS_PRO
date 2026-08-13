@@ -351,6 +351,20 @@ $genderList      = $this->customlib->getGender_Patient();
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="mb-3">
+                                                    <label>Referral Person</label>
+                                                    <div>
+                                                        <select name='referral_person_id' id="referral_person_id" class="form-control select2">
+                                                            <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                                            <?php foreach ($referral_person_list as $dkey => $dvalue) { ?>
+                                                                <option value="<?php echo $dvalue->person_id; ?>"><?php echo $dvalue->name . " (" . $dvalue->category_name . ")"; ?></option>
+                                                            <?php } ?>
+                                                        </select>
+                                                    </div>
+                                                    <span class="text-danger"><?php echo form_error('referral_person_id'); ?></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <div class="mb-3">
                                                     <label class="d-block">&nbsp;</label>
                                                     <div class="form-check mt-1">
                                                         <input class="form-check-input apply_tpa" id="is_tpa" name="is_tpa" type="checkbox" value="1" autocomplete="off">

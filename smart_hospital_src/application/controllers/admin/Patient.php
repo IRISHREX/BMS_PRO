@@ -44,7 +44,7 @@ class patient extends Admin_Controller
         $this->yesno_condition = $this->config->item('yesno_condition');
         $this->search_type     = $this->config->item('search_type');
         $this->blood_group     = $this->config->item('bloodgroup');
-        $this->load->model(array('conference_model', 'transaction_model', 'casereference_model', 'patient_model', 'notificationsetting_model','antenatal_model','vital_model'));
+        $this->load->model(array('conference_model', 'transaction_model', 'casereference_model', 'patient_model', 'notificationsetting_model','antenatal_model','vital_model', 'referral_person_model', 'referral_payment_model'));
         $this->load->model('finding_model');
         $this->charge_type          = $this->customlib->getChargeMaster();
         $data["charge_type"]        = $this->charge_type;
@@ -295,6 +295,26 @@ class patient extends Admin_Controller
             // revisit create path (add_revisit) increments too. The OPD->IPD move (moveopd)
             // now increments no_of_ipd on its side.
             if ($opdn_id) {
+                
+                $referral_person_id = $this->input->post('referral_person_id', TRUE);
+                if (!empty($referral_person_id)) {
+                    $percentage = $this->referral_payment_model->get_commission($referral_person_id, 1); // 1 = opd
+                    if ($percentage) {
+                        $commission_amount = ($this->input->post('amount', TRUE) * $percentage) / 100;
+                        $payment = array(
+                            "referral_person_id" => $referral_person_id,
+                            "patient_id"         => $patient_id,
+                            "referral_type"      => 1,
+                            "billing_id"         => $opdn_id,
+                            "bill_amount"        => $this->input->post('amount', TRUE),
+                            "percentage"         => $percentage,
+                            "amount"             => $commission_amount,
+                            "date"               => date("Y-m-d H:i:s"),
+                        );
+                        $this->referral_payment_model->add($payment);
+                    }
+                }
+
                 try {
                     $this->saasvalidation->updateResouceQuota('no_of_opd', 1);
                 } catch (Exception $e) {
@@ -847,6 +867,26 @@ class patient extends Admin_Controller
             // like any new OPD. Own try/catch so a quota-API hiccup does not abort the
             // already-created OPD's flow (updateResouceQuota throws on failure).
             if ($opdn_id) {
+                
+                $referral_person_id = $this->input->post('referral_person_id', TRUE);
+                if (!empty($referral_person_id)) {
+                    $percentage = $this->referral_payment_model->get_commission($referral_person_id, 1); // 1 = opd
+                    if ($percentage) {
+                        $commission_amount = ($this->input->post('amount', TRUE) * $percentage) / 100;
+                        $payment = array(
+                            "referral_person_id" => $referral_person_id,
+                            "patient_id"         => $patient_id,
+                            "referral_type"      => 1,
+                            "billing_id"         => $opdn_id,
+                            "bill_amount"        => $this->input->post('amount', TRUE),
+                            "percentage"         => $percentage,
+                            "amount"             => $commission_amount,
+                            "date"               => date("Y-m-d H:i:s"),
+                        );
+                        $this->referral_payment_model->add($payment);
+                    }
+                }
+
                 try {
                     $this->saasvalidation->updateResouceQuota('no_of_opd', 1);
                 } catch (Exception $e) {
@@ -1541,6 +1581,7 @@ This Function is used to Import Multiple Patient Records
         $this->load->model('icd10_model');
         $data['icd10_groups']   = $this->icd10_model->getgroup();
         $data['icd10_codes']    = $this->icd10_model->get();
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
         $data['module'] = 'opd';
         $this->load->view('layout/header', $data);
         $this->load->view('admin/patient/search', $data);
@@ -2247,6 +2288,7 @@ This Function is used to Import Multiple Patient Records
         $setting                = $this->setting_model->get();
         $data['setting']        = $setting;
         $data['organisation']   = $this->organisation_model->get();
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
 
         $data['module'] = 'ipd';
         $this->load->view('layout/header', $data);
@@ -2608,6 +2650,7 @@ This Function is used to Import Multiple Patient Records
             $data['pathology']          = $pathology;
             $radiology                  = $this->radio_model->getradiologytest();
             $data['radiology']          = $radiology;            
+            $data['referral_person_list'] = $this->referral_person_model->get_person();
             $medicationreport           = $this->patient_model->getmedicationdetailsbydateopd($opdid);
             $max_dose                   = $this->patient_model->getMaxByopdid($opdid);
             $data['max_dose']           = $max_dose->max_dose;
@@ -3087,6 +3130,7 @@ This Function is used to Import Multiple Patient Records
         $data["nurse_select"]   = $nurseid;
         $data["disable_option"] = $disable_option;
         $data['roles']          = $this->role_model->get();
+        $data['referral_person_list'] = $this->referral_person_model->get_person();
         $result                 = array();
         $diagnosis_details      = array();
         $opd_details            = array();

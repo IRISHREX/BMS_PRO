@@ -34,7 +34,7 @@ class Pathology extends Admin_Controller
         $this->payment_mode         = $this->config->item('payment_mode');
         $data["charge_type"]        = $this->charge_type;
         $this->patient_login_prefix = "pat";
-        $this->load->model(array('prefix_model', 'transaction_model'));
+        $this->load->model(array('prefix_model', 'transaction_model', 'referral_person_model', 'referral_payment_model'));
         $this->load->helper('customfield_helper');
         $this->load->helper('custom');
         $this->time_format = $this->customlib->getHospitalTimeFormat();
@@ -61,6 +61,7 @@ class Pathology extends Admin_Controller
         $data["title"]    = $this->lang->line('pathology');
         $doctors          = $this->staff_model->getStaffbyrole(3);
         $data["doctors"]  = $doctors;
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
         $patients         = $this->patient_model->getPatientListall();
         $data["patients"] = $patients;
         $data['fields']   = $this->customfield_model->get_custom_fields('pathologytest', 1);
@@ -594,6 +595,25 @@ class Pathology extends Admin_Controller
             }
 
             if ($inserted) {
+                $referral_person_id = $this->input->post('referral_person_id', TRUE);
+                if (!empty($referral_person_id)) {
+                    $percentage = $this->referral_payment_model->get_commission($referral_person_id, 4); // 4 = pathology
+                    if ($percentage) {
+                        $commission_amount = ($this->input->post('net_amount', TRUE) * $percentage) / 100;
+                        $payment = array(
+                            "referral_person_id" => $referral_person_id,
+                            "patient_id"         => $patient_id,
+                            "referral_type"      => 4,
+                            "billing_id"         => $inserted,
+                            "bill_amount"        => $this->input->post('net_amount', TRUE),
+                            "percentage"         => $percentage,
+                            "amount"             => $commission_amount,
+                            "date"               => date("Y-m-d H:i:s"),
+                        );
+                        $this->referral_payment_model->add($payment);
+                    }
+                }
+
                 $patientlist = $this->notificationsetting_model->getpatientDetails($patient_id);
 
                 $event_data = array(
@@ -1648,6 +1668,7 @@ class Pathology extends Admin_Controller
         $data["patients"]     = $patients;
         $doctors              = $this->staff_model->getStaffbyrole(3);
         $data["doctors"]      = $doctors;
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
         $data["payment_mode"] = $this->payment_mode;
         $page                 = $this->load->view("admin/pathology/_assigntestpatho", $data, true);
         $result               = $this->pathology_model->getBillNo();
@@ -1674,6 +1695,7 @@ class Pathology extends Admin_Controller
         $doctors                     = $this->staff_model->getStaffbyrole(3);
         $data['custom_fields_value'] = display_custom_fields('pathology', $id);
         $data["doctors"]             = $doctors;
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
         $data["payment_mode"]        = $this->payment_mode;               
         $page                        = $this->load->view("admin/pathology/_editpathology", $data, true);        
         $total_rows                  = count($pathology_data->pathology_report);

@@ -35,7 +35,7 @@ class Radio extends Admin_Controller
         $this->patient_login_prefix = "pat";
         $this->load->helper('custom');
         $this->load->helper('customfield_helper');
-        $this->load->model(array('prefix_model', 'transaction_model'));
+        $this->load->model(array('prefix_model', 'transaction_model', 'referral_person_model', 'referral_payment_model'));
 		$this->agerange             = $this->config->item('agerange');
 		$this->time_format = $this->customlib->getHospitalTimeFormat();
     }
@@ -633,6 +633,25 @@ class Radio extends Admin_Controller
                 }
             }
             if ($inserted) {
+
+                $referral_person_id = $this->input->post('referral_person_id', TRUE);
+                if (!empty($referral_person_id)) {
+                    $percentage = $this->referral_payment_model->get_commission($referral_person_id, 5); // 5 = radiology
+                    if ($percentage) {
+                        $commission_amount = ($this->input->post('net_amount', TRUE) * $percentage) / 100;
+                        $payment = array(
+                            "referral_person_id" => $referral_person_id,
+                            "patient_id"         => $patient_id,
+                            "referral_type"      => 5,
+                            "billing_id"         => $inserted,
+                            "bill_amount"        => $this->input->post('net_amount', TRUE),
+                            "percentage"         => $percentage,
+                            "amount"             => $commission_amount,
+                            "date"               => date("Y-m-d H:i:s"),
+                        );
+                        $this->referral_payment_model->add($payment);
+                    }
+                }
 
                 $patient_name   = $this->notificationsetting_model->getpatientDetails($patient_id);
                 $doctor_details = $this->notificationsetting_model->getstaffDetails($doctor_id);
@@ -1484,6 +1503,7 @@ class Radio extends Admin_Controller
         $data["patients"]     = $patients;
         $doctors              = $this->staff_model->getStaffbyrole(3);
         $data["doctors"]      = $doctors;
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
         $data['payment_mode'] = $this->payment_mode;
         $page                 = $this->load->view("admin/radio/_assigntestradio", $data, true);
         $result               = $this->radio_model->getBillNo();
@@ -2265,6 +2285,7 @@ class Radio extends Admin_Controller
         $doctors                     = $this->staff_model->getStaffbyrole(3);
         $data['custom_fields_value'] = display_custom_fields('radiology', $id);
         $data["doctors"]             = $doctors;
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
         $data["payment_mode"]        = $this->payment_mode;
         $page                        = $this->load->view("admin/radio/_editradiology", $data, true);
         $total_rows                  = count($radiology_data->radiology_report);

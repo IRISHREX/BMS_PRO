@@ -78,7 +78,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             </div>
             <div class="px-2 py-3">
                 <div class="row g-2">
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <div class="mb-3">
                             <label><?php echo $this->lang->line('referral_doctor'); ?></label>
                             <select name='consultant_doctor' id="consultant_doctor" onchange="get_Docname(this.value)" class="form-control consultant_doctor select2">
@@ -90,11 +90,23 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <span class="text-danger"><?php echo form_error('refference'); ?></span>
                         </div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <div class="mb-3">
                             <label><?php echo $this->lang->line('doctor_name'); ?></label>
                             <input name="doctor_name" id="doctname" type="text" class="form-control" />
                             <span class="text-danger"><?php echo form_error('doctor_name'); ?></span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="mb-3">
+                            <label>Referral Person</label>
+                            <select name='referral_person_id' id="referral_person_id" class="form-control select2">
+                                <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                <?php foreach ($referral_person_list as $dkey => $dvalue) { ?>
+                                    <option value="<?php echo $dvalue->person_id; ?>"><?php echo $dvalue->name . " (" . $dvalue->category_name . ")"; ?></option>
+                                <?php } ?>
+                            </select>
+                            <span class="text-danger"><?php echo form_error('referral_person_id'); ?></span>
                         </div>
                     </div>
                     <div class="col-sm-12">
