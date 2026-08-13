@@ -1398,6 +1398,7 @@ $(document).ready(function () {
 </script>
 <!-- //========datatable end===== -->
 <?php $this->load->view('admin/patient/patientaddmodal') ?>
+<?php $this->load->view('admin/appointment/_appointment_refund') ?>
 
 <?php if ($this->input->get('action') === 'add'): ?>
 <script>$(function(){ shModal('myModal').show(); shCleanUrlParam('action'); });</script>

@@ -1490,3 +1490,4 @@ function delete_record(id) {
 
 <!-- //========datatable end===== -->
 <?php $this->load->view('admin/patient/patientaddmodal') ?>
+<?php $this->load->view('admin/appointment/_appointment_refund') ?>

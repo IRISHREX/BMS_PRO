@@ -689,6 +689,10 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 }
 		
+				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+				$refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
+				$net_paid      = max(0, $paid_amount - $refund_amount);
+
 				$action = "<div class='sh-action-dropdown dropdown text-end'>";
 				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
 				$action .= "<i class='fa fa-ellipsis-v'></i>";
@@ -696,14 +700,25 @@ class Appointment extends Admin_Controller
 				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
 				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
 				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
-				if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-					$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-				}
-				if ($value->appointment_status == 'pending') {
-					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+
+				if ($paid_amount > 0) {
+					if ($net_paid > 0) {
+						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+					} else {
+						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+					}
+				} else {
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+					if ($value->appointment_status == 'pending') {
+						if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+							$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+						}
+						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
 					}
 				}
+
 				$action .= "</ul>";
 				$action .= "</div>";
 				
@@ -752,7 +767,11 @@ class Appointment extends Admin_Controller
                 $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
                 $row[]     = amountFormat($value->standard_amount);
                 $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $row[]     = amountFormat($value->paid_amount);
+                $display_paid = amountFormat($net_paid);
+                if ($refund_amount > 0) {
+                    $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
+                }
+                $row[]     = $display_paid;
                 $row[]     = $action;
                 $dt_data[] = $row;
             }
@@ -790,6 +809,10 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 }
 				
+				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+				$refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
+				$net_paid      = max(0, $paid_amount - $refund_amount);
+
 				$action = "<div class='sh-action-dropdown dropdown text-end'>";
 				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
 				$action .= "<i class='fa fa-ellipsis-v'></i>";
@@ -797,14 +820,25 @@ class Appointment extends Admin_Controller
 				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
 				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
 				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
-				if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-					$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-				}
-				if ($value->appointment_status == 'pending') {
-					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+
+				if ($paid_amount > 0) {
+					if ($net_paid > 0) {
+						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+					} else {
+						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+					}
+				} else {
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+					if ($value->appointment_status == 'pending') {
+						if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+							$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+						}
+						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
 					}
 				}
+
 				$action .= "</ul>";
 				$action .= "</div>";
 				
@@ -854,7 +888,11 @@ class Appointment extends Admin_Controller
                 $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
                 $row[]     = amountFormat($value->standard_amount);
                 $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $row[]     = amountFormat($value->paid_amount);
+                $display_paid = amountFormat($net_paid);
+                if ($refund_amount > 0) {
+                    $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
+                }
+                $row[]     = $display_paid;
                 $row[]     = $action;
                 $dt_data[] = $row;
             }
@@ -893,6 +931,10 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line($value->appointment_status);
                 }
 
+				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+				$refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
+				$net_paid      = max(0, $paid_amount - $refund_amount);
+
 				$action = "<div class='sh-action-dropdown dropdown text-end'>";
 				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
 				$action .= "<i class='fa fa-ellipsis-v'></i>";
@@ -900,14 +942,25 @@ class Appointment extends Admin_Controller
 				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
 				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
 				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
-				if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-					$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-				}
-				if ($value->appointment_status == 'pending') {
-					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+
+				if ($paid_amount > 0) {
+					if ($net_paid > 0) {
+						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+					} else {
+						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+					}
+				} else {
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+					if ($value->appointment_status == 'pending') {
+						if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+							$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+						}
+						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
 					}
 				}
+
 				$action .= "</ul>";
 				$action .= "</div>";
 				
@@ -957,7 +1010,11 @@ class Appointment extends Admin_Controller
                 $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
                 $row[]     = amountFormat($value->standard_amount);
                 $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $row[]     = amountFormat($value->paid_amount);
+                $display_paid = amountFormat($net_paid);
+                if ($refund_amount > 0) {
+                    $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
+                }
+                $row[]     = $display_paid;
                 $row[]     = $action;
                 $dt_data[] = $row;
             }
@@ -969,6 +1026,74 @@ class Appointment extends Admin_Controller
             "data"            => $dt_data,
         );
         echo json_encode($json_data);
+    }
+
+    public function add_refund()
+    {
+        $this->form_validation->set_rules('amount', $this->lang->line('amount'), 'trim|required|numeric|xss_clean');
+        $this->form_validation->set_rules('payment_date', $this->lang->line('payment_date'), 'trim|required|xss_clean');
+        $this->form_validation->set_rules('payment_mode', $this->lang->line('payment_mode'), 'trim|required|xss_clean');
+        $this->form_validation->set_rules('appointment_id', $this->lang->line('appointment'), 'trim|required|xss_clean');
+
+        if ($this->form_validation->run() == false) {
+            $msg = array(
+                'amount'         => form_error('amount'),
+                'payment_mode'   => form_error('payment_mode'),
+                'payment_date'   => form_error('payment_date'),
+                'appointment_id' => form_error('appointment_id'),
+            );
+            $array = array('status' => 'fail', 'error' => $msg, 'message' => '');
+        } else {
+            $appointment_id = $this->input->post('appointment_id', TRUE);
+            $amount         = $this->input->post('amount', TRUE);
+            $payment_date   = $this->customlib->dateFormatToYYYYMMDD($this->input->post("payment_date", TRUE));
+            $patient_id     = $this->input->post('patient_id', TRUE);
+
+            $apt_detail     = $this->transaction_model->appointmentTotalPayments($appointment_id);
+            $paid           = isset($apt_detail->total_paid) ? (float)$apt_detail->total_paid : 0;
+            $refunded       = isset($apt_detail->refund_amount) ? (float)$apt_detail->refund_amount : 0;
+            $max_refundable = max(0, $paid - $refunded);
+
+            if ($amount > $max_refundable) {
+                $array = array('status' => 'fail', 'error' => array('amount' => $this->lang->line('amount_should_not_be_greater_than_balance') . ' ' . amountFormat($max_refundable)), 'message' => '');
+                echo json_encode($array);
+                return;
+            }
+
+            $data = array(
+                'appointment_id' => $appointment_id,
+                'patient_id'     => $patient_id,
+                'section'        => 'Appointment',
+                'amount'         => $amount,
+                'type'           => 'refund',
+                'payment_mode'   => $this->input->post('payment_mode', TRUE),
+                'note'           => $this->input->post('note', TRUE),
+                'payment_date'   => $payment_date,
+                'received_by'    => $this->customlib->getLoggedInUserID(),
+            );
+
+            $insert_id = $this->transaction_model->add($data);
+
+            if (($refunded + $amount) >= $paid) {
+                $this->appointment_model->status($appointment_id, array('appointment_status' => 'cancel'));
+            }
+
+            $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('record_saved_successfully'));
+        }
+
+        echo json_encode($array);
+    }
+
+    public function cancel_appointment()
+    {
+        $id = $this->input->post('id', TRUE);
+        if (!empty($id)) {
+            $this->appointment_model->status($id, array('appointment_status' => 'cancel'));
+            $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('record_saved_successfully'));
+        } else {
+            $array = array('status' => 'fail', 'error' => 'Invalid Appointment ID', 'message' => '');
+        }
+        echo json_encode($array);
     }
 
     public function getDetails()

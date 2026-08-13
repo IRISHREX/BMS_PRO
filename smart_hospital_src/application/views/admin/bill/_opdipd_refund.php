@@ -19,6 +19,19 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         <span class="text-danger"></span>
                     </div>
                 </div>
+                <div class="col-md-12 mb-3">
+                    <label class="form-label font-weight-bold">Refund Type</label><small class="req"> *</small>
+                    <div class="d-flex gap-3 mt-1">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="refund_type" id="opd_ref_type_custom" value="partial" checked onclick="$('#amount').prop('readonly', false);">
+                            <label class="form-check-input-label" for="opd_ref_type_custom">Partial (Custom Amount)</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="refund_type" id="opd_ref_type_full" value="full" onclick="if(typeof total_paid_amount !== 'undefined'){$('#amount').val(total_paid_amount).prop('readonly', true);}">
+                            <label class="form-check-input-label" for="opd_ref_type_full">Full Refund</label>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label><?php echo $this->lang->line('amount') . " (" . $currency_symbol . ")"; ?></label><small class="req"> *</small>
