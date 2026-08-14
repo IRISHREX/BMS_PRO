@@ -15,13 +15,13 @@ class Module_model extends MY_Model
     public function getPermission()
     {
         $query = $this->db->where("system", 0)->order_by('sort_order', 'asc')->get("permission_group");
-        return $query->result_array();
+        return $query->result();
     }
 
     public function getPatientPermission()
     {
         $query = $this->db->where("system", 0)->order_by('sort_order', 'asc')->get("permission_patient");
-        return $query->result_array();
+        return $query->result();
     }
 
     public function changeStatus($data, $data_patient)

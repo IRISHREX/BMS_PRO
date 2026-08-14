@@ -56,7 +56,7 @@
  
     ini_set('max_execution_time', 3000); // 0 = Unlimited
 	
-	define('ENVIRONMENT', 'production');
+	define('ENVIRONMENT', getenv('CI_ENV') ?: 'development');
 
 /*
  *---------------------------------------------------------------
@@ -69,8 +69,8 @@
 switch (ENVIRONMENT)
 {
 	case 'development':
-		error_reporting(-1);
-		ini_set('display_errors', 1);
+		error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_WARNING & ~E_STRICT & ~E_USER_NOTICE & ~E_USER_DEPRECATED);
+		ini_set('display_errors', 0);
 	break;
 
 	case 'testing':

@@ -59,7 +59,7 @@ $autoload['packages'] = array();
   |
   |	$autoload['libraries'] = array('user_agent' => 'ua');
  */
-$autoload['libraries'] = array('session', 'form_validation');
+$autoload['libraries'] = array('database', 'email', 'session', 'form_validation', 'customlib', 'rbac', 'role', 'enc_lib', 'mailer', 'mailgateway', 'module_lib', 'captchalib');
 
 /*
   | -------------------------------------------------------------------
@@ -84,7 +84,7 @@ $autoload['drivers'] = array();
   |
   |	$autoload['helper'] = array('url', 'file');
  */
-$autoload['helper'] = array('url', 'file', 'menu', 'security', 'cookie');
+$autoload['helper'] = array('url', 'file', 'menu', 'security', 'cookie', 'language', 'custom', 'theme');
 
 /*
   | -------------------------------------------------------------------
@@ -127,4 +127,4 @@ $autoload['language'] = array();
   |
   |	$autoload['model'] = array('first_model' => 'first');
  */
-$autoload['model'] = array();
+$autoload['model'] = array('setting_model', 'frontcms_setting_model');

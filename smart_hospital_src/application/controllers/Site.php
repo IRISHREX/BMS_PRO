@@ -13,7 +13,7 @@ class Site extends Public_Controller
         if ($this->config->item('installed') == true) {
             $this->db->reconnect();
         }
-        $this->load->model(array('onlineappointment_model', 'prefix_model'));
+        $this->load->model(array('onlineappointment_model', 'prefix_model', 'cms_program_model'));
         $this->load->library('Auth');
         $this->load->library('Enc_lib');
         $this->load->library('mailer');
@@ -45,7 +45,7 @@ class Site extends Public_Controller
             $this->auth->is_logged_in(true);
         }
 		
-		if ($this->module_lib->hasModule('google_authenticator') 
+		if (!empty($this->module_lib) && $this->module_lib->hasModule('google_authenticator') 
             && $this->module_lib->hasActive('google_authenticator')) {
 
             redirect('gauthenticate/login');
