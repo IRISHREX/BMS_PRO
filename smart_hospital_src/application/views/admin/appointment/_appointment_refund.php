@@ -44,11 +44,12 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                     </div>
 
                     <div class="mb-3 d-none" id="partial_status_div">
-                        <label class="form-label font-weight-bold">Status After Partial Refund</label><small class="req"> *</small>
+                        <label class="form-label font-weight-bold">Appointment Status</label><small class="req"> *</small>
                         <select name="partial_status" id="ref_partial_status" class="form-select">
-                            <option value="partially_refunded" selected>Partially Refunded (Keep Approved)</option>
-                            <option value="partially_refunded_cancelled">Partially Refunded (Cancel Appointment)</option>
+                            <option value="partially_refunded" selected>Approved (Keep Active)</option>
+                            <option value="partially_refunded_cancelled">Cancelled</option>
                         </select>
+                        <small class="text-muted d-block mt-1" id="partial_status_notice"></small>
                     </div>
 
                     <div class="row">
@@ -123,6 +124,19 @@ function openAppointmentRefundModal(appointmentId, paidAmount, alreadyRefunded, 
     $('#appointmentRefundModal').modal('show');
 }
 
+function checkPartialAmountLock() {
+    var maxVal = parseFloat($('#ref_max_refundable').val()) || 0;
+    var enteredVal = parseFloat($('#ref_amount').val()) || 0;
+    
+    if (enteredVal >= maxVal && maxVal > 0) {
+        $('#ref_partial_status').val('partially_refunded_cancelled').prop('disabled', true);
+        $('#partial_status_notice').text('Full remaining balance entered — automatically set to Cancelled.');
+    } else {
+        $('#ref_partial_status').prop('disabled', false);
+        $('#partial_status_notice').text('');
+    }
+}
+
 function toggleRefundType(type) {
     var maxVal = parseFloat($('#ref_max_refundable').val()) || 0;
     if (type === 'full') {
@@ -131,10 +145,17 @@ function toggleRefundType(type) {
     } else {
         $('#ref_amount').val('').prop('readonly', false).focus();
         $('#partial_status_div').removeClass('d-none');
+        checkPartialAmountLock();
     }
 }
 
 $(document).ready(function() {
+    $('#ref_amount').on('input change', function() {
+        if ($('#ref_type_partial').is(':checked')) {
+            checkPartialAmountLock();
+        }
+    });
+
     $('#appointment_refund_form').on('submit', function(e) {
         e.preventDefault();
         var form = $(this);
@@ -149,10 +170,15 @@ $(document).ready(function() {
 
         btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>Processing...');
 
+        var formData = form.serializeArray();
+        if ($('#ref_type_partial').is(':checked') && $('#ref_partial_status').is(':disabled')) {
+            formData.push({name: 'partial_status', value: $('#ref_partial_status').val()});
+        }
+
         $.ajax({
             url: form.attr('action'),
             type: 'POST',
-            data: form.serialize(),
+            data: $.param(formData),
             dataType: 'json',
             success: function(data) {
                 btn.prop('disabled', false).html('<i class="fa fa-check-circle me-1"></i><?php echo $this->lang->line("save"); ?>');

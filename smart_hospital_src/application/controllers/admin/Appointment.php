@@ -711,7 +711,7 @@ class Appointment extends Admin_Controller
                     $status = $this->lang->line('cancel');
                 } else if ($value->appointment_status == "partially_refunded" || $value->appointment_status == "partially_refunded_approved") {
                     $label  = "class='badge bg-info text-white'";
-                    $status = "Partially Refunded";
+                    $status = "Partially Refunded (Approved)";
                 } else if ($value->appointment_status == "partially_refunded_cancelled") {
                     $label  = "class='badge bg-danger text-white'";
                     $status = "Partially Refunded (Cancelled)";
@@ -1158,14 +1158,15 @@ class Appointment extends Admin_Controller
 
             $refund_type        = $this->input->post('refund_type', TRUE);
             $new_total_refunded = $refunded + (float)$amount;
-            if ($refund_type == 'full' || $new_total_refunded >= $paid) {
+            if ($refund_type == 'full' || $new_total_refunded >= $paid || (float)$amount >= $max_refundable) {
                 $this->appointment_model->status($appointment_id, array('appointment_status' => 'cancel'));
             } else if ($new_total_refunded > 0) {
                 $partial_status = $this->input->post('partial_status', TRUE);
-                if (!in_array($partial_status, ['partially_refunded', 'partially_refunded_cancelled'])) {
-                    $partial_status = 'partially_refunded';
+                if ($partial_status == 'partially_refunded_cancelled') {
+                    $this->appointment_model->status($appointment_id, array('appointment_status' => 'partially_refunded_cancelled'));
+                } else {
+                    $this->appointment_model->status($appointment_id, array('appointment_status' => 'partially_refunded'));
                 }
-                $this->appointment_model->status($appointment_id, array('appointment_status' => $partial_status));
             }
 
             $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('record_saved_successfully'));
