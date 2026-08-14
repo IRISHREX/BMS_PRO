@@ -127,4 +127,4 @@ $autoload['language'] = array();
   |
   |	$autoload['model'] = array('first_model' => 'first');
  */
-$autoload['model'] = array('setting_model', 'frontcms_setting_model', 'staff_model', 'staffroles_model', 'rolepermission_model', 'language_model', 'userlog_model', 'role_model', 'notification_model', 'notificationsetting_model', 'customfield_model', 'systemnotification_model', 'expense_model', 'income_model', 'patient_model', 'appointment_model');
+$autoload['model'] = array('setting_model', 'frontcms_setting_model', 'staff_model', 'staffroles_model', 'rolepermission_model', 'language_model', 'userlog_model', 'role_model', 'notification_model', 'notificationsetting_model', 'customfield_model', 'systemnotification_model', 'expense_model', 'income_model', 'patient_model', 'appointment_model', 'organisation_model', 'bloodbankstatus_model', 'pharmacy_model', 'pathology_model', 'radio_model', 'ambulance_model', 'charge_model', 'tpa_model', 'transaction_model', 'audit_model');
