@@ -9,7 +9,7 @@ class Suppliercategory extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('supplier_category_model');
+        $this->load->model('itemsupplier_model');
     }
     public function supplier()
     {

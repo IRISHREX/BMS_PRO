@@ -10,8 +10,6 @@ class Language extends Admin_Controller
     {
         parent::__construct();
         $this->load->model('language_model');
-        $this->load->model('langpharses_model');
-
     }
 
     public function index()

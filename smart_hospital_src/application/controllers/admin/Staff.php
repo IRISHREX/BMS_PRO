@@ -27,7 +27,6 @@ class Staff extends Admin_Controller
         $this->load->model('leaverequest_model');
         $this->load->model('payroll_model');
         $this->load->model('role_model');
-        $this->load->model('session_model');
         $this->load->model('notificationsetting_model');
         $this->load->model('userpermission_model');
         $this->load->model('admin_model');
