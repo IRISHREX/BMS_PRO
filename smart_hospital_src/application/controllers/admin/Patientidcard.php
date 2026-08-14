@@ -12,6 +12,8 @@ class patientidcard extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('patient_id_card_model');
+
         $this->load->model('setting_model');
 
 

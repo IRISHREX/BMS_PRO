@@ -19,6 +19,8 @@ class Payroll extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('staffattendancemodel');
+
         $this->load->model('staff_model');
         $this->load->model('payroll_model');
         $this->load->model('notification_model');

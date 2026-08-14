@@ -11,6 +11,9 @@ class Onlineappointment extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('charge_category_model');
+        $this->load->model('onlineappointment_model');
+
         $this->load->model('charge_model');
 
         $this->load->model("staff_model");

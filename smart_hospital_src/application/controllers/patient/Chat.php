@@ -8,6 +8,8 @@ class Chat extends Patient_Controller {
    public $patient_data;
     public function __construct() {
         parent::__construct();
+        $this->load->model('chatuser_model');
+
           $this->patient_data   = $this->session->userdata('patient');
     }
 

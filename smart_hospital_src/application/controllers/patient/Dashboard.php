@@ -24,6 +24,37 @@ class dashboard extends Patient_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('ambulance_model');
+        $this->load->model('appointment_model');
+        $this->load->model('bed_model');
+        $this->load->model('birthordeath_model');
+        $this->load->model('bloodbankstatus_model');
+        $this->load->model('bloodissue_model');
+        $this->load->model('charge_model');
+        $this->load->model('frontcms_setting_model');
+        $this->load->model('language_model');
+        $this->load->model('medicine_category_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('notification_model');
+        $this->load->model('operationtheatre_model');
+        $this->load->model('organisation_model');
+        $this->load->model('pathology_category_model');
+        $this->load->model('pathology_model');
+        $this->load->model('patient_model');
+        $this->load->model('paymentsetting_model');
+        $this->load->model('payment_model');
+        $this->load->model('pharmacy_model');
+        $this->load->model('prescription_model');
+        $this->load->model('printing_model');
+        $this->load->model('radio_model');
+        $this->load->model('setting_model');
+        $this->load->model('sharecontent_model');
+        $this->load->model('specialist_model');
+        $this->load->model('staff_model');
+        $this->load->model('symptoms_model');
+        $this->load->model('timeline_model');
+        $this->load->model('vehicle_model');
+
         $this->payment_method = $this->paymentsetting_model->getActiveMethod();
         $this->patient_data = $this->session->userdata("patient");
         $this->config->load("payroll");

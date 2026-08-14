@@ -5,6 +5,15 @@ if (!defined('BASEPATH'))
 
 class Razorpay extends Patient_Controller
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->load->model('charge_model');
+        $this->load->model('onlineappointment_model');
+        $this->load->model('paymentsetting_model');
+        $this->load->model('setting_model');
+    }
+
 	public $setting;
 
 

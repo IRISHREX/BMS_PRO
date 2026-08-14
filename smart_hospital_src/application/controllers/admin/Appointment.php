@@ -19,6 +19,11 @@ class Appointment extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('appoint_priority_model');
+        $this->load->model('conference_model');
+        $this->load->model('onlineappointment_model');
+        $this->load->model('transaction_model');
+
         $this->load->model('staff_model');
         $this->load->model('bloodbankstatus_model');
         $this->load->model('customfield_model');

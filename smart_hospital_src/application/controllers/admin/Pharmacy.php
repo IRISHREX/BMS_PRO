@@ -20,6 +20,10 @@ class Pharmacy extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('pharmacy_model');
+        $this->load->model('prefix_model');
+        $this->load->model('transaction_model');
+
         $this->load->model('medicine_category_model');
         $this->load->model('notificationsetting_model');
         $this->load->model('staff_model');

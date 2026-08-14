@@ -11,6 +11,8 @@ class Generatestaffidcard extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('generatestaffidcard_model');
+
         $this->load->model('setting_model');
         $this->load->model('staff_model');
 

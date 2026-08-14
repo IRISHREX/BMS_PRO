@@ -9,6 +9,18 @@ class Site extends Public_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('appointment_model');
+        $this->load->model('cms_program_model');
+        $this->load->model('language_model');
+        $this->load->model('onlineappointment_model');
+        $this->load->model('patient_model');
+        $this->load->model('prefix_model');
+        $this->load->model('setting_model');
+        $this->load->model('sharecontent_model');
+        $this->load->model('staff_model');
+        $this->load->model('uploadcontent_model');
+        $this->load->model('user_model');
+
         $this->check_installation();
         if ($this->config->item('installed') == true) {
             $this->db->reconnect();

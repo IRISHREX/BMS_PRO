@@ -10,6 +10,8 @@ class Contenttype extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('contenttype_model');
+
         $this->load->library('datatables');
         $this->load->model(array('contenttype_model'));
     }

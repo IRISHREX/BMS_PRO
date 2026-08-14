@@ -10,6 +10,9 @@ class Schsettings extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('language_model');
+        $this->load->model('setting_model');
+
         $this->load->library('upload');
         $this->load->library('Enc_lib');
         $this->load->library('SaasValidation');

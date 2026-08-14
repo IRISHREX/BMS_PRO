@@ -17,6 +17,21 @@ class Welcome extends Front_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('cms_menuitems_model');
+        $this->load->model('cms_menu_model');
+        $this->load->model('cms_page_model');
+        $this->load->model('cms_program_model');
+        $this->load->model('complaint_model');
+        $this->load->model('customfield_model');
+        $this->load->model('frontcms_setting_model');
+        $this->load->model('language_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('patient_model');
+        $this->load->model('setting_model');
+        $this->load->model('staff_model');
+        $this->load->model('user_model');
+        $this->load->model('visitors_model');
+
         $this->load->config('form-builder');
         $this->load->library(array('mailer', 'form_builder'));
         $this->load->library('captchalib');

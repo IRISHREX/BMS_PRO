@@ -13,6 +13,10 @@ class Mollie extends Patient_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('paymentsetting_model');
+        $this->load->model('payment_model');
+        $this->load->model('setting_model');
+
         $this->config->load("payroll");
         $this->load->library('Enc_lib');
         $this->patient_data   = $this->session->userdata('patient');

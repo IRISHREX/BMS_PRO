@@ -18,6 +18,12 @@ class Bill extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('appoint_priority_model');
+        $this->load->model('casereference_model');
+        $this->load->model('charge_model');
+        $this->load->model('conference_model');
+        $this->load->model('patient_model');
+
         $this->load->model('pharmacy_model');
         $this->load->model('pathology_model');
         $this->load->model('radio_model');

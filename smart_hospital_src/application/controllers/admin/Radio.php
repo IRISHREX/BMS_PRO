@@ -19,6 +19,11 @@ class Radio extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('prefix_model');
+        $this->load->model('referral_payment_model');
+        $this->load->model('referral_person_model');
+        $this->load->model('transaction_model');
+
         $this->load->model('radio_model');
         $this->load->model('lab_model');
         $this->load->model('charge_category_model');

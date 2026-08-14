@@ -11,6 +11,8 @@ class Staffidcard extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('staffidcard_model');
+
         $this->load->model('setting_model');
 
         $this->load->model(array('Staffidcard_model'));

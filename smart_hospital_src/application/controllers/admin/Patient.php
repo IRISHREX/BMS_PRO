@@ -25,6 +25,16 @@ class patient extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('antenatal_model');
+        $this->load->model('casereference_model');
+        $this->load->model('conference_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('patient_model');
+        $this->load->model('referral_payment_model');
+        $this->load->model('referral_person_model');
+        $this->load->model('transaction_model');
+        $this->load->model('vital_model');
+
         $this->load->model('bloodbankstatus_model');
         $this->load->model('setting_model');
         $this->load->model('customfield_model');

@@ -19,6 +19,9 @@ class Calendar extends Patient_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('calendar_model');
+        $this->load->model('paymentsetting_model');
+
         $this->load->helper('file');
         $this->load->library('customlib');
         $this->load->library('pagination');

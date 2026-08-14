@@ -11,6 +11,16 @@ class Checkout extends Patient_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('appointment_model');
+        $this->load->model('charge_model');
+        $this->load->model('conference_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('onlineappointment_model');
+        $this->load->model('paymentsetting_model');
+        $this->load->model('setting_model');
+        $this->load->model('staff_model');
+        $this->load->model('transaction_model');
+
         $this->setting = $this->setting_model->get()[0];
         $this->pay_method = $this->paymentsetting_model->getActiveMethod();
         $this->load->library('system_notification');

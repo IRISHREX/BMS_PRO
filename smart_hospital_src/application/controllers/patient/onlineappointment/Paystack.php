@@ -15,6 +15,11 @@ class Paystack extends Patient_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('charge_model');
+        $this->load->model('onlineappointment_model');
+        $this->load->model('paymentsetting_model');
+        $this->load->model('setting_model');
+
         $this->pay_method = $this->paymentsetting_model->getActiveMethod();
         $this->setting    = $this->setting_model->get()[0];
         $this->load->model(array('onlineappointment_model', 'charge_model'));

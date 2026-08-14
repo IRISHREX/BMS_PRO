@@ -19,6 +19,11 @@ class Pathology extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('prefix_model');
+        $this->load->model('referral_payment_model');
+        $this->load->model('referral_person_model');
+        $this->load->model('transaction_model');
+
         $this->load->model('pathology_category_model');
         $this->load->model('staff_model');
         $this->load->model('patient_model');

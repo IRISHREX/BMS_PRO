@@ -18,6 +18,8 @@ class Bloodbank extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('transaction_model');
+
         $this->load->model('bloodbankstatus_model');
         $this->load->model('customfield_model');
         $this->load->model('blooddonor_model');

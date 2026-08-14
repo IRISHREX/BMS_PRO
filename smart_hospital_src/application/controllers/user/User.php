@@ -20,6 +20,9 @@ class User extends Patient_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('paymentsetting_model');
+        $this->load->model('user_model');
+
         $this->payment_method = $this->paymentsetting_model->getActiveMethod();
         $this->patient_data   = $this->session->userdata('patient');
         $this->config->load("payroll");

@@ -10,6 +10,8 @@ class Transaction extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('transaction_model');
+
         $this->load->model('printing_model');
 
         $this->load->model(array('transaction_model'));

@@ -2,6 +2,17 @@
 
 class Cron extends CI_Controller
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->load->model('expmedicine_model');
+        $this->load->model('notification_model');
+        $this->load->model('onlineappointment_model');
+        $this->load->model('pharmacy_model');
+        $this->load->model('setting_model');
+        $this->load->model('staff_model');
+    }
+
 	public $cron_key;
 
 
