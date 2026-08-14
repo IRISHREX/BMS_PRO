@@ -13,7 +13,7 @@ class Site extends Public_Controller
         if ($this->config->item('installed') == true) {
             $this->db->reconnect();
         }
-        $this->load->model(array('onlineappointment_model', 'prefix_model', 'cms_program_model'));
+        $this->load->model(array('onlineappointment_model', 'prefix_model', 'cms_program_model', 'staff_model', 'language_model', 'userlog_model', 'role_model'));
         $this->load->library('Auth');
         $this->load->library('Enc_lib');
         $this->load->library('mailer');

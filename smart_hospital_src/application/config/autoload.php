@@ -127,4 +127,4 @@ $autoload['language'] = array();
   |
   |	$autoload['model'] = array('first_model' => 'first');
  */
-$autoload['model'] = array('setting_model', 'frontcms_setting_model');
+$autoload['model'] = array('setting_model', 'frontcms_setting_model', 'staff_model', 'language_model', 'userlog_model', 'role_model');
