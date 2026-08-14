@@ -270,7 +270,8 @@ class Welcome extends Front_Controller
         }
         $data['page_content_type'] = $page_content_type;
         //total rows count
-        $totalRec = count($this->cms_program_model->getByCategory($page_content_type));
+        $category_items = $this->cms_program_model->getByCategory($page_content_type);
+        $totalRec = !empty($category_items) && is_array($category_items) ? count($category_items) : 0;
         //pagination configuration
         $config['target']     = '#postList';
         $config['base_url']   = base_url() . 'welcome/ajaxPaginationData';
