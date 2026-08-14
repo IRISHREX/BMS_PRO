@@ -43,6 +43,14 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         </div>
                     </div>
 
+                    <div class="mb-3 d-none" id="partial_status_div">
+                        <label class="form-label font-weight-bold">Status After Partial Refund</label><small class="req"> *</small>
+                        <select name="partial_status" id="ref_partial_status" class="form-select">
+                            <option value="partially_refunded" selected>Partially Refunded (Keep Approved)</option>
+                            <option value="partially_refunded_cancelled">Partially Refunded (Cancel Appointment)</option>
+                        </select>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -119,8 +127,10 @@ function toggleRefundType(type) {
     var maxVal = parseFloat($('#ref_max_refundable').val()) || 0;
     if (type === 'full') {
         $('#ref_amount').val(maxVal.toFixed(2)).prop('readonly', true);
+        $('#partial_status_div').addClass('d-none');
     } else {
         $('#ref_amount').val('').prop('readonly', false).focus();
+        $('#partial_status_div').removeClass('d-none');
     }
 }
 

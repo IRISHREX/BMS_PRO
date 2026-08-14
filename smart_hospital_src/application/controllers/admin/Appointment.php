@@ -702,19 +702,22 @@ class Appointment extends Admin_Controller
                 $label = "";
                 if ($value->appointment_status == "approved") {
                     $label  = "class='badge bg-success text-white'";
-                    $status = $this->customlib->getSessionPrefixByType('appointment') . $value->id;
+                    $status = $this->lang->line('approved');
                 } else if ($value->appointment_status == "pending") {
                     $label  = "class='badge bg-warning text-dark'";
-                    $status = $this->lang->line($value->appointment_status);
+                    $status = $this->lang->line('pending');
                 } else if ($value->appointment_status == "cancel") {
                     $label  = "class='badge bg-danger text-white'";
-                    $status = $this->lang->line($value->appointment_status);
-                } else if ($value->appointment_status == "partially_refunded") {
+                    $status = $this->lang->line('cancel');
+                } else if ($value->appointment_status == "partially_refunded" || $value->appointment_status == "partially_refunded_approved") {
                     $label  = "class='badge bg-info text-white'";
-                    $status = $this->lang->line($value->appointment_status);
-                } else if ($value->appointment_status == "full_refunded") {
+                    $status = "Partially Refunded";
+                } else if ($value->appointment_status == "partially_refunded_cancelled") {
+                    $label  = "class='badge bg-danger text-white'";
+                    $status = "Partially Refunded (Cancelled)";
+                } else {
                     $label  = "class='badge bg-secondary text-white'";
-                    $status = $this->lang->line($value->appointment_status);
+                    $status = ucwords(str_replace('_', ' ', $value->appointment_status));
                 }
 		
 				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
@@ -738,17 +741,17 @@ class Appointment extends Admin_Controller
 					}
 					$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
 				} else {
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && $value->appointment_status == 'approved') {
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved'])) {
 						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
 					}
 				}
 
-				$std_amount = isset($value->standard_amount) ? (float)$value->standard_amount : 0;
+				$std_amount = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 100.00);
 				$eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
 				$eff_net    = max(0, $eff_paid - $refund_amount);
 
-				if (in_array($value->appointment_status, ['approved', 'partially_refunded'])) {
-					if ($eff_net > 0 || $eff_paid == 0) {
+				if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled'])) {
+					if ($eff_net > 0) {
 						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
 					} else {
 						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
@@ -759,7 +762,7 @@ class Appointment extends Admin_Controller
 				$action .= "</div>";
 				
                 $first_action = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>";
-                $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $status . "</a>";
+                $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $this->customlib->getSessionPrefixByType('appointment') . $value->id . "</a>";
 				
                 if (!empty($value->live_consult)) {
                     $live_consult = $this->lang->line(strtolower($value->live_consult));
@@ -798,7 +801,7 @@ class Appointment extends Admin_Controller
                 }
                 //====================
 				$row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
-                $row[]     = "<small " . $label . ">" . $this->lang->line($value->appointment_status) . "</small>";
+                $row[]     = "<small " . $label . ">" . $status . "</small>";
                 $standard_amount = (float)($value->standard_amount ?? 0);
                 $discount_perc   = (float)($value->discount_percentage ?? 0);
                 $tax_perc        = (float)($value->tax ?? 0);
@@ -1153,11 +1156,16 @@ class Appointment extends Admin_Controller
 
             $insert_id = $this->transaction_model->add($data);
 
+            $refund_type        = $this->input->post('refund_type', TRUE);
             $new_total_refunded = $refunded + (float)$amount;
-            if ($new_total_refunded >= $paid) {
+            if ($refund_type == 'full' || $new_total_refunded >= $paid) {
                 $this->appointment_model->status($appointment_id, array('appointment_status' => 'cancel'));
             } else if ($new_total_refunded > 0) {
-                $this->appointment_model->status($appointment_id, array('appointment_status' => 'partially_refunded'));
+                $partial_status = $this->input->post('partial_status', TRUE);
+                if (!in_array($partial_status, ['partially_refunded', 'partially_refunded_cancelled'])) {
+                    $partial_status = 'partially_refunded';
+                }
+                $this->appointment_model->status($appointment_id, array('appointment_status' => $partial_status));
             }
 
             $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('record_saved_successfully'));
