@@ -1120,8 +1120,11 @@ class Appointment extends Admin_Controller
 
             $insert_id = $this->transaction_model->add($data);
 
-            if (($refunded + $amount) >= $paid) {
+            $new_total_refunded = $refunded + (float)$amount;
+            if ($new_total_refunded >= $paid) {
                 $this->appointment_model->status($appointment_id, array('appointment_status' => 'cancel'));
+            } else if ($new_total_refunded > 0) {
+                $this->appointment_model->status($appointment_id, array('appointment_status' => 'partially_refunded'));
             }
 
             $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('record_saved_successfully'));
@@ -2086,6 +2089,17 @@ class Appointment extends Admin_Controller
         } else {
             $appointment_id  = $this->input->post('appointment_id', TRUE);
             $date            = $this->input->post('appointment_date', TRUE);
+            $date_appoint    = $this->customlib->dateFormatToYYYYMMDDHis($date, $this->time_format);
+
+            $reschedule_time = strtotime($date_appoint);
+            $today_start     = strtotime(date('Y-m-d 00:00:00'));
+
+            if ($reschedule_time < $today_start) {
+                $array = array('status' => 'fail', 'error' => array('appointment_date' => 'Appointment cannot be rescheduled to a past date.'), 'message' => '');
+                echo json_encode($array);
+                return;
+            }
+
             $day             = date("l", strtotime($date));
             $rdoctor_id_r    = $this->input->post('rdoctor_id', TRUE);
             $rglobal_shift_r = $this->input->post('rglobal_shift', TRUE);
