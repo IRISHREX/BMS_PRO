@@ -13,6 +13,10 @@ class Birthordeath extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('birthordeath_model');
+        $this->load->model('patient_model');
+        $this->load->model('customfield_model');
+        $this->load->model('setting_model');
         $this->config->load("payroll");
         $this->config->load("image_valid");
         $this->load->library("datatables");
