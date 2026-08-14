@@ -5,11 +5,6 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?/$1 [L]
 </IfModule>
 
-<IfModule proxy_fcgi_module>
-    <FilesMatch \.php$>
-        SetHandler "proxy:unix:/run/php/php8.4-fpm.sock|fcgi://localhost/"
-    </FilesMatch>
-</IfModule>
 
 # Gzip compression for CSS/JS/HTML/SVG (added 2026-05-28)
 <IfModule mod_deflate.c>
