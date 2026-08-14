@@ -441,7 +441,7 @@ class Income_model extends MY_Model
             ->orderable(
                 "income.name,income.invoice_no,income.date,income.note,income_head.income_category,generated_by_staff.name" .
                     $custom_field_column .
-                    ",income.amount,null",
+                    ",income.amount,income.refund,null",
             )
             ->join("income_head", "income.inc_head_id = income_head.id")
             ->join(

@@ -2291,7 +2291,7 @@ class Radio extends Admin_Controller
             $radiology_billing_id     = $this->input->post('radiology_billing_id', TRUE);
             $radiology_billing_detail = $this->transaction_model->radiologyTotalPayments($radiology_billing_id);
             
-            $total_paid = $radiology_billing_detail->total_paid;
+            $total_paid = ($radiology_billing_detail && isset($radiology_billing_detail->total_paid)) ? $radiology_billing_detail->total_paid : 0;
             $total_refund = $this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
             if(empty($total_refund)) $total_refund = 0;
             $amount_refunding = $this->input->post('amount', TRUE);

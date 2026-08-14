@@ -2578,7 +2578,7 @@ class Pathology extends Admin_Controller
             $pathology_billing_id     = $this->input->post('pathology_billing_id', TRUE);
             $pathology_billing_detail = $this->transaction_model->pathologyTotalPayments($pathology_billing_id);
             
-            $total_paid = $pathology_billing_detail->total_paid;
+            $total_paid = ($pathology_billing_detail && isset($pathology_billing_detail->total_paid)) ? $pathology_billing_detail->total_paid : 0;
             $total_refund = $this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
             if(empty($total_refund)) $total_refund = 0;
             $amount_refunding = $this->input->post('amount', TRUE);

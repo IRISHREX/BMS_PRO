@@ -770,12 +770,14 @@ class Appointment extends Admin_Controller
                 //====================
 				$row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
                 $row[]     = "<small " . $label . ">" . $this->lang->line($value->appointment_status) . "</small>";
-                $dicount_amt=0;
-                $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
-                $row[]     = amountFormat($value->standard_amount);
-                $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $net_amount_calc = $value->standard_amount - $dicount_amt + (($value->standard_amount - $dicount_amt) * $value->tax / 100);
-                $row[]     = amountFormat($net_amount_calc);
+                $standard_amount = (float)($value->standard_amount ?? 0);
+                $discount_perc   = (float)($value->discount_percentage ?? 0);
+                $tax_perc        = (float)($value->tax ?? 0);
+                $dicount_amt     = ($standard_amount * $discount_perc) / 100;
+                $row[]           = amountFormat($standard_amount);
+                $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
+                $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $row[]           = amountFormat($net_amount_calc);
                 $display_paid = amountFormat($net_paid);
                 if ($refund_amount > 0) {
                     $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
@@ -899,12 +901,14 @@ class Appointment extends Admin_Controller
 				$row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
 
                 $row[]     = "<small " . $label . ">" . $this->lang->line($value->appointment_status) . "</small>";
-                $dicount_amt=0;
-                $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
-                $row[]     = amountFormat($value->standard_amount);
-                $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $net_amount_calc = $value->standard_amount - $dicount_amt + (($value->standard_amount - $dicount_amt) * $value->tax / 100);
-                $row[]     = amountFormat($net_amount_calc);
+                $standard_amount = (float)($value->standard_amount ?? 0);
+                $discount_perc   = (float)($value->discount_percentage ?? 0);
+                $tax_perc        = (float)($value->tax ?? 0);
+                $dicount_amt     = ($standard_amount * $discount_perc) / 100;
+                $row[]           = amountFormat($standard_amount);
+                $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
+                $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $row[]           = amountFormat($net_amount_calc);
                 $display_paid = amountFormat($net_paid);
                 if ($refund_amount > 0) {
                     $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
@@ -1029,12 +1033,14 @@ class Appointment extends Admin_Controller
 			    $row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
 
                 $row[]     = "<small " . $label . ">" . $this->lang->line($value->appointment_status) . "</small>";
-                $dicount_amt=0;
-                $dicount_amt=(($value->standard_amount*$value->discount_percentage)/100);
-                $row[]     = amountFormat($value->standard_amount);
-                $row[]     = amountFormat($dicount_amt)." (".$value->discount_percentage." %)";
-                $net_amount_calc = $value->standard_amount - $dicount_amt + (($value->standard_amount - $dicount_amt) * $value->tax / 100);
-                $row[]     = amountFormat($net_amount_calc);
+                $standard_amount = (float)($value->standard_amount ?? 0);
+                $discount_perc   = (float)($value->discount_percentage ?? 0);
+                $tax_perc        = (float)($value->tax ?? 0);
+                $dicount_amt     = ($standard_amount * $discount_perc) / 100;
+                $row[]           = amountFormat($standard_amount);
+                $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
+                $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $row[]           = amountFormat($net_amount_calc);
                 $display_paid = amountFormat($net_paid);
                 if ($refund_amount > 0) {
                     $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";

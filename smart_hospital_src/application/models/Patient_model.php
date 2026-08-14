@@ -4760,7 +4760,7 @@ class Patient_model extends MY_Model
             ->join('patients', 'patients.id = opd_details.patient_id', "inner")
             ->join('consult_charges', 'consult_charges.doctor=visit_details.cons_doctor', 'left')
             ->join('patient_charges', 'opd_details.id=patient_charges.opd_id', 'left')
-            ->searchable('opd_details.id,opd_details.case_reference_id,visit_details.appointment_date,staff.name,visit_details.refference,visit_details.symptoms,patient_name,visit_details.is_antenatal')		
+            ->searchable('opd_details.id,opd_details.case_reference_id,visit_details.appointment_date,staff.name,visit_details.refference,null,visit_details.symptoms,patient_name,visit_details.is_antenatal')		
 			->orderable($orderable_string)
 			
 			
