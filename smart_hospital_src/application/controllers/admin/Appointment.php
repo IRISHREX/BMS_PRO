@@ -1126,7 +1126,10 @@ class Appointment extends Admin_Controller
             $patient_id     = $this->input->post('patient_id', TRUE);
 
             $apt_detail     = $this->transaction_model->appointmentTotalPayments($appointment_id);
-            $paid           = (isset($apt_detail->total_paid) && (float)$apt_detail->total_paid > 0) ? (float)$apt_detail->total_paid : (isset($apt_detail->standard_amount) ? (float)$apt_detail->standard_amount : 0);
+            $paid_tx        = (isset($apt_detail->total_paid) && (float)$apt_detail->total_paid > 0) ? (float)$apt_detail->total_paid : 0;
+            $std_amt        = (isset($apt_detail->standard_amount) && (float)$apt_detail->standard_amount > 0) ? (float)$apt_detail->standard_amount : ((isset($apt_detail->amount) && (float)$apt_detail->amount > 0) ? (float)$apt_detail->amount : 100.00);
+
+            $paid           = ($paid_tx > 0) ? $paid_tx : $std_amt;
             $refunded       = isset($apt_detail->refund_amount) ? (float)$apt_detail->refund_amount : 0;
             $max_refundable = max(0, $paid - $refunded);
 

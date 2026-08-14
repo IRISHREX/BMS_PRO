@@ -105,6 +105,13 @@ function openAppointmentRefundModal(appointmentId, paidAmount, alreadyRefunded, 
     toggleRefundType('full');
     $('#ref_amount_error').text('');
     
+    if (parseFloat(maxRefundable) <= 0) {
+        $('#appointment_refund_btn').prop('disabled', true);
+        $('#ref_amount_error').text('No refundable balance available for this appointment.');
+    } else {
+        $('#appointment_refund_btn').prop('disabled', false);
+    }
+
     $('#appointmentRefundModal').modal('show');
 }
 
