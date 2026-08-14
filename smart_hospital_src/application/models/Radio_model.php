@@ -13,7 +13,7 @@ class Radio_model extends MY_Model
             if (!$this->db->field_exists('status', 'radiology_billing')) {
                 $this->db->query("ALTER TABLE `radiology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             log_message('error', 'Radio_model: Could not add status column: ' . $e->getMessage());
         }
     }
@@ -170,12 +170,10 @@ class Radio_model extends MY_Model
             }
         }
         $this->datatables
-            ->select('radiology_billing.*,(SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id, referral_person.name as referral_person_name' . $field_variable)
+            ->select('radiology_billing.*,(SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id, (SELECT referral_person.name FROM referral_payment JOIN referral_person ON referral_person.id = referral_payment.referral_person_id WHERE referral_payment.billing_id = radiology_billing.id AND referral_payment.referral_type = 5 LIMIT 1) as referral_person_name' . $field_variable)
             ->join('patients', 'patients.id = radiology_billing.patient_id', 'left')
             ->join('staff', 'staff.id = radiology_billing.doctor_id', 'left')
             ->join('staff as generated_by_staff', 'generated_by_staff.id = radiology_billing.generated_by', "left")
-            ->join('referral_payment', 'referral_payment.billing_id = radiology_billing.id AND referral_payment.referral_type = 5', 'left')
-            ->join('referral_person', 'referral_person.id = referral_payment.referral_person_id', 'left')
             ->searchable('radiology_billing.id,radiology_billing.case_reference_id,radiology_billing.date,patients.patient_name,radiology_billing.doctor_id,radiology_billing.note' . $custom_field_column . ',radiology_billing.net_amount,radiology_billing.discount,
                 (SELECT SUM(transactions.amount) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount')
           

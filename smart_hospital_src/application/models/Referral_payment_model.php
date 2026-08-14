@@ -10,8 +10,12 @@ class Referral_payment_model extends MY_Model
     public function __construct()
     {
         parent::__construct();
-        if (!$this->db->field_exists('status', 'referral_payment')) {
-            $this->db->query("ALTER TABLE `referral_payment` ADD `status` varchar(20) DEFAULT 'Paid'");
+        try {
+            if (!$this->db->field_exists('status', 'referral_payment')) {
+                $this->db->query("ALTER TABLE `referral_payment` ADD `status` varchar(20) DEFAULT 'Paid'");
+            }
+        } catch (Throwable $e) {
+            log_message('error', 'Referral_payment_model: Could not add status column: ' . $e->getMessage());
         }
     }
 

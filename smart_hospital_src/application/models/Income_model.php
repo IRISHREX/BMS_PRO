@@ -13,7 +13,7 @@ class Income_model extends MY_Model
             if (!$this->db->field_exists('refund', 'income')) {
                 $this->db->query("ALTER TABLE `income` ADD `refund` varchar(50) DEFAULT '0'");
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             log_message('error', 'Income_model: Could not add refund column: ' . $e->getMessage());
         }
     }

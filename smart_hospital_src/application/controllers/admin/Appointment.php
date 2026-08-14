@@ -101,7 +101,7 @@ class Appointment extends Admin_Controller
             }
         }
 
-        $this->form_validation->set_rules('date', $this->lang->line('appointment_date'), 'trim|required|xss_clean|callback_check_past_date');
+        $this->form_validation->set_rules('date', $this->lang->line('appointment_date'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('doctorid', $this->lang->line('doctor'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('amount', $this->lang->line('doctor_fees'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('patient_id', $this->lang->line('patient'), 'trim|required|xss_clean');
@@ -200,7 +200,6 @@ class Appointment extends Admin_Controller
                 'specialist'             => $specialist,
                 'doctor_global_shift_id' => $this->input->post('global_shift', TRUE),
                 'created_by'             => $this->customlib->getStaffID(),
-                'net_paid_amount'        => 0, // Will be updated if payment happens, but wait, payment logic happens below, and it doesn't update appointment table again! Let's update it in a separate call or wait.
             );
 
             $insert_id = $this->appointment_model->add($appointment);
@@ -478,7 +477,7 @@ class Appointment extends Admin_Controller
                 }
             }
         }
-        $this->form_validation->set_rules('date', $this->lang->line('appointment_date'), 'trim|required|xss_clean|callback_check_past_date');
+        $this->form_validation->set_rules('date', $this->lang->line('appointment_date'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('doctor', $this->lang->line('doctor'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('amount', $this->lang->line('doctor_fees'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('message', $this->lang->line('message'), 'trim|required|xss_clean');
@@ -555,7 +554,7 @@ class Appointment extends Admin_Controller
                 'payment_date'   => date('Y-m-d H:i:s'),
                 'received_by'    => $this->customlib->getLoggedInUserID(),
             );
-            $this->appointment_model->updateAppointment(array('id' => $id, 'net_paid_amount' => $amount_paid, 'amount' => $amount_paid), $payment_data, $transaction_array, array(), array(), array());
+            $this->appointment_model->updateAppointment(array('id' => $id, 'amount' => $amount_paid), $payment_data, $transaction_array, array(), array(), array());
             $visit_data  = $this->patient_model->getVisitdataDetails($appointment_details['visit_details_id']);
             $opd_details = array(
                 'id'           => $visit_data['opdid'],
@@ -1108,21 +1107,6 @@ class Appointment extends Admin_Controller
         }
 
         echo json_encode($array);
-    }
-
-    public function check_past_date($date)
-    {
-        $time_format = $this->customlib->getHospitalTimeFormat();
-        $date_appoint = $this->customlib->dateFormatToYYYYMMDDHis($date, $time_format);
-        $date_only = date("Y-m-d", strtotime($date_appoint));
-        $today = date("Y-m-d");
-
-        if ($date_only < $today) {
-            $this->form_validation->set_message('check_past_date', 'The %s cannot be a past date.');
-            return FALSE;
-        } else {
-            return TRUE;
-        }
     }
 
     public function cancel_appointment()
