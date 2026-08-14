@@ -92,8 +92,8 @@ class Birthordeath_model extends MY_Model
 
         $this->datatables
             ->select('birth_report.id,birth_report.child_name,birth_report.gender, birth_report.birth_date,birth_report.father_name, birth_report.birth_report,patients.patient_name,patients.id as mother_id,birth_report.case_reference_id, generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id' . $field_variable)
-            ->searchable('birth_report.id,birth_report.case_reference_id,birth_report.child_name,birth_report.gender,birth_report.birth_date,patients.patient_name,generated_by_staff.name as generated_byname,birth_report.father_name' . $custom_field_column.',birth_report.id')
-            ->orderable('birth_report.id,birth_report.case_reference_id,birth_report.child_name,birth_report.gender,birth_report.birth_date,patients.patient_name,generated_by_staff.name as generated_byname,birth_report.father_name' . $custom_field_column.',birth_report.id') 				
+            ->searchable('birth_report.id,birth_report.case_reference_id,birth_report.child_name,birth_report.gender,birth_report.birth_date,patients.patient_name,generated_by_staff.name,birth_report.father_name' . $custom_field_column.',birth_report.id')
+            ->orderable('birth_report.id,birth_report.case_reference_id,birth_report.child_name,birth_report.gender,birth_report.birth_date,patients.patient_name,generated_by_staff.name,birth_report.father_name' . $custom_field_column.',birth_report.id') 				
             ->join('patients', 'patients.id=birth_report.patient_id', 'left')
             ->join('staff as generated_by_staff', 'generated_by_staff.id = birth_report.generated_by', "left")
             ->sort('birth_report.id', 'desc')
@@ -123,9 +123,9 @@ class Birthordeath_model extends MY_Model
         $this->datatables
             ->select('death_report.id,patients.gender, death_report.attachment,death_report.attachment_name,death_report.death_date,death_report.guardian_name,death_report.case_reference_id, death_report.death_report,patients.patient_name,patients.id as `patientid`,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id' . $field_variable) 
             
-            ->searchable('death_report.id,death_report.case_reference_id,patients.patient_name,death_report.guardian_name,patients.gender,death_report.death_date,generated_by_staff.employee_id as generated_byemployee_id' . $custom_field_column.',death_report.id')
+            ->searchable('death_report.id,death_report.case_reference_id,patients.patient_name,death_report.guardian_name,patients.gender,death_report.death_date,generated_by_staff.employee_id' . $custom_field_column.',death_report.id')
                         
-            ->orderable('death_report.id,death_report.case_reference_id,patients.patient_name,death_report.guardian_name,patients.gender,death_report.death_date,generated_by_staff.employee_id as generated_byemployee_id' . $custom_field_column.',death_report.id')           
+            ->orderable('death_report.id,death_report.case_reference_id,patients.patient_name,death_report.guardian_name,patients.gender,death_report.death_date,generated_by_staff.employee_id' . $custom_field_column.',death_report.id')           
             ->join('staff as generated_by_staff', 'generated_by_staff.id = death_report.generated_by', "left")
             ->join('patients', 'patients.id=death_report.patient_id', 'left')
             ->sort('death_report.id', 'desc')
