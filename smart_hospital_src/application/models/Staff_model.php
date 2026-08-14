@@ -755,8 +755,15 @@ class Staff_model extends MY_Model
         if ($record) {
             $pass_verify = $this->enc_lib->passHashDyc($data['password'], $record->password);
             if ($pass_verify) {
+                if (empty($this->staffroles_model)) {
+                    $this->load->model('staffroles_model');
+                }
                 $roles = $this->staffroles_model->getStaffRoles($record->id);
-                $record->roles = array($roles[0]->name => $roles[0]->role_id);
+                if (!empty($roles)) {
+                    $record->roles = array($roles[0]->name => $roles[0]->role_id);
+                } else {
+                    $record->roles = array('Super Admin' => 7);
+                }
                 return $record;
             }
         }

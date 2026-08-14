@@ -32,7 +32,9 @@ class Rbac
 
     public function getPermission($role_id)
     {
-
+        if (!isset($this->CI->rolepermission_model)) {
+            $this->CI->load->model('rolepermission_model');
+        }
         $role_perm = $this->CI->rolepermission_model->getPermissionByRole($role_id);
 
         foreach ($role_perm as $key => $value) {
