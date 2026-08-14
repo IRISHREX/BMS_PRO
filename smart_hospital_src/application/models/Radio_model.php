@@ -9,8 +9,12 @@ class Radio_model extends MY_Model
     public function __construct()
     {
         parent::__construct();
-        if (!$this->db->field_exists('status', 'radiology_billing')) {
-            $this->db->query("ALTER TABLE `radiology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
+        try {
+            if (!$this->db->field_exists('status', 'radiology_billing')) {
+                $this->db->query("ALTER TABLE `radiology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Radio_model: Could not add status column: ' . $e->getMessage());
         }
     }
 

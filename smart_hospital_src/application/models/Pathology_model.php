@@ -10,8 +10,12 @@ class Pathology_model extends MY_Model
     {
         parent::__construct();
         $this->load->model('Pathology_category_model');
-        if (!$this->db->field_exists('status', 'pathology_billing')) {
-            $this->db->query("ALTER TABLE `pathology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
+        try {
+            if (!$this->db->field_exists('status', 'pathology_billing')) {
+                $this->db->query("ALTER TABLE `pathology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Pathology_model: Could not add status column: ' . $e->getMessage());
         }
     }
 

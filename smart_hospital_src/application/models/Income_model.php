@@ -9,8 +9,12 @@ class Income_model extends MY_Model
     public function __construct()
     {
         parent::__construct();
-        if (!$this->db->field_exists('refund', 'income')) {
-            $this->db->query("ALTER TABLE `income` ADD `refund` varchar(50) DEFAULT '0'");
+        try {
+            if (!$this->db->field_exists('refund', 'income')) {
+                $this->db->query("ALTER TABLE `income` ADD `refund` varchar(50) DEFAULT '0'");
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Income_model: Could not add refund column: ' . $e->getMessage());
         }
     }
 
