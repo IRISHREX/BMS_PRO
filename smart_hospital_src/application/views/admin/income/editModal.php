@@ -41,6 +41,10 @@
                     <span class="text-danger"><?php echo form_error('amount'); ?></span>
                 </div>
                 <div class="col-sm-6">
+                    <label class="form-label form-label-sm"><?php echo $this->lang->line('refund') . " (" . $currency_symbol . ")"; ?></label>
+                    <input id="refund" name="refund" type="text" class="form-control form-control-sm" value="<?php echo html_escape(set_value('refund', isset($income['refund']) ? $income['refund'] : '0')); ?>">
+                </div>
+                <div class="col-sm-6">
                     <label class="form-label form-label-sm"><?php echo $this->lang->line('attach_document'); ?></label>
                     <input id="documentsf" name="documents" type="file" class="filestyle form-control form-control-sm" data-height="26" value="<?php echo set_value('documents'); ?>">
                     <span class="text-danger"><?php echo form_error('documents'); ?></span>

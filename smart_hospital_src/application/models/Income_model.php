@@ -427,7 +427,7 @@ class Income_model extends MY_Model
 
         $this->datatables
             ->select(
-                "income.id,income.date,income.name,income.invoice_no,income.amount,income.documents,income.note,income_head.income_category,income.inc_head_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id" .
+                "income.id,income.date,income.name,income.invoice_no,income.amount,income.refund,income.documents,income.note,income_head.income_category,income.inc_head_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id" .
                     $field_variable,
             )
             ->searchable(

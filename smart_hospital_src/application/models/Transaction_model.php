@@ -278,6 +278,22 @@ class Transaction_model extends MY_Model
         return $result;
     }
 
+    public function getTotalRefundAmountByRadiologyBillId($radiology_billing_id)
+    {
+        $sql = "SELECT sum(amount) as payment_amount FROM `transactions` WHERE radiology_billing_id =".$this->db->escape_str($radiology_billing_id)." and type='refund'";
+        $query  = $this->db->query($sql);
+        $result = $query->row();
+        return $result ? $result->payment_amount : 0;
+    }
+
+    public function getTotalRefundAmountByPathologyBillId($pathology_billing_id)
+    {
+        $sql = "SELECT sum(amount) as payment_amount FROM `transactions` WHERE pathology_billing_id =".$this->db->escape_str($pathology_billing_id)." and type='refund'";
+        $query  = $this->db->query($sql);
+        $result = $query->row();
+        return $result ? $result->payment_amount : 0;
+    }
+
     public function getAlltransactionRecord()
     {
         $this->datatables

@@ -54,7 +54,7 @@ class Referralpayment extends Admin_Controller
                 "percentage"         => $this->input->post("percentage", TRUE),
                 "amount"             => $this->input->post("commission_amount", TRUE),
                 "status"             => $this->input->post("status", TRUE) ? $this->input->post("status", TRUE) : 'Paid',
-                "date"               => date("Y-m-d H:i:s"),
+                "entry_date"         => $this->input->post("entry_date", TRUE) ? $this->customlib->dateFormatToYYYYMMDDHis($this->input->post("entry_date", TRUE), $this->customlib->getHospitalTimeFormat()) : date("Y-m-d H:i:s"),
             );
 
             $this->referral_payment_model->add($payment);
@@ -124,6 +124,7 @@ class Referralpayment extends Admin_Controller
                 "percentage" => $this->input->post('commission_percentage', TRUE),
                 "amount"     => $this->input->post('commission_amount', TRUE),
                 "status"     => $this->input->post('edit_status', TRUE) ? $this->input->post('edit_status', TRUE) : 'Paid',
+                "entry_date" => $this->input->post('edit_entry_date', TRUE) ? $this->customlib->dateFormatToYYYYMMDDHis($this->input->post('edit_entry_date', TRUE), $this->customlib->getHospitalTimeFormat()) : date("Y-m-d H:i:s"),
             );
 
             $this->referral_payment_model->update($payment);

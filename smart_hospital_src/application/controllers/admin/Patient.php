@@ -1704,6 +1704,7 @@ This Function is used to Import Multiple Patient Records
                 $row[] = composeStaffNameByString($value->generated_byname, $value->generated_bysurname, $value->generated_byemployee_id);
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
                 $row[] = $value->refference;
+                $row[] = $value->referral_person_name ? $value->referral_person_name : "";
                 $row[] = $symptoms;
 				if ($this->rbac->hasPrivilege('opd_antenatal', 'can_view')) { 
                 $row[] = $is_antenatal;

@@ -112,7 +112,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <select name='referral_person_id' id="referral_person_id" class="form-control select2">
                                 <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 <?php foreach ($referral_person_list as $dkey => $dvalue) { ?>
-                                    <option value="<?php echo $dvalue->person_id; ?>"><?php echo $dvalue->name . " (" . $dvalue->category_name . ")"; ?></option>
+                                    <option value="<?php echo $dvalue->person_id; ?>" <?php if (isset($referral_person_id) && $dvalue->person_id == $referral_person_id) { echo "selected"; } ?>><?php echo $dvalue->name . " (" . $dvalue->category_name . ")"; ?></option>
                                 <?php } ?>
                             </select>
                             <span class="text-danger"><?php echo form_error('referral_person_id'); ?></span>

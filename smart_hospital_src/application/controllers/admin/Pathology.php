@@ -1470,6 +1470,7 @@ class Pathology extends Admin_Controller
                 $row[] = $value->patient_name . " (" . $value->pid . ")";
                 $row[] = composeStaffNameByString($value->generated_byname, $value->generated_bysurname, $value->generated_byemployee_id);
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
+                $row[] = $value->referral_person_name ? $value->referral_person_name : "";
                 $row[] = $value->status ? $value->status : "";
 
                 //====================
@@ -2556,4 +2557,62 @@ class Pathology extends Admin_Controller
         echo json_encode($json_data);
     }	
 
+    public function partial_refund()
+    {
+        if (!$this->rbac->hasPrivilege('pathology_partial_payment', 'can_add')) {
+            access_denied();
+        }
+
+        $this->form_validation->set_rules('payment_date', $this->lang->line('date'), 'required|xss_clean');
+        $this->form_validation->set_rules('amount', $this->lang->line('amount'), 'required|valid_amount|xss_clean');
+        $this->form_validation->set_rules('payment_mode', $this->lang->line('payment_mode'), 'required|xss_clean');
+
+        if ($this->form_validation->run() == false) {
+            $msg = array(
+                'payment_date' => form_error('payment_date'),
+                'amount'       => form_error('amount'),
+                'payment_mode' => form_error('payment_mode'),
+            );
+            $array = array('status' => 'fail', 'error' => $msg, 'message' => '');
+        } else {
+            $pathology_billing_id     = $this->input->post('pathology_billing_id', TRUE);
+            $pathology_billing_detail = $this->transaction_model->pathologyTotalPayments($pathology_billing_id);
+            
+            $total_paid = $pathology_billing_detail->total_paid;
+            $total_refund = $this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
+            if(empty($total_refund)) $total_refund = 0;
+            $amount_refunding = $this->input->post('amount', TRUE);
+            
+            $max_refundable = max(0, $total_paid - $total_refund);
+            
+            if ($amount_refunding > $max_refundable) {
+                $array = array('status' => 'fail', 'error' => array('amount' => $this->lang->line('amount_should_not_be_greater_than_balance') . ' ' . amountFormat($max_refundable)), 'message' => '');
+                echo json_encode($array);
+                return;
+            }
+
+            $bill_date       = $this->input->post("payment_date", TRUE);
+            $payment_section = $this->config->item('payment_section');
+            $payment_array   = array(
+                'amount'               => $amount_refunding,
+                'type'                 => 'refund',
+                'patient_id'           => $this->input->post('patient_id', TRUE),
+                'section'              => $payment_section['pathology'],
+                'pathology_billing_id' => $pathology_billing_id,
+                'payment_mode'         => $this->input->post('payment_mode', TRUE),
+                'note'                 => $this->input->post('note', TRUE),
+                'payment_date'         => $this->customlib->dateFormatToYYYYMMDDHis($bill_date, $this->customlib->getHospitalTimeFormat()),
+                'received_by'          => $this->customlib->getLoggedInUserID(),
+            );
+
+            if (!empty($this->input->post('case_reference_id', TRUE)) && $this->input->post('case_reference_id', TRUE) != "") {
+                $payment_array['case_reference_id'] = $this->input->post('case_reference_id', TRUE);
+            }
+
+            $this->transaction_model->add($payment_array);
+            
+            $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
+        }
+        echo json_encode($array);
+    }
 }

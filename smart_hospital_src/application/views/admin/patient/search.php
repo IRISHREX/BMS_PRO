@@ -61,6 +61,7 @@ $genderList      = $this->customlib->getGender_Patient();
                                             <th><?php echo $this->lang->line('generated_by'); ?></th>
                                             <th><?php echo $this->lang->line('consultant'); ?></th>
                                             <th><?php echo $this->lang->line('reference'); ?></th>
+                                            <th>Referral Person Name</th>
                                             <th><?php echo $this->lang->line('symptoms'); ?></th>
 											<?php if ($this->rbac->hasPrivilege('opd_antenatal', 'can_view')) { ?>
                                             <th><?php echo $this->lang->line('is_antenatal'); ?></th>

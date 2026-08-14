@@ -207,6 +207,13 @@ $has_payment_perm = $this->rbac->hasPrivilege('pathology_partial_payment', 'can_
                     <input type="hidden" name="patient_id" value="<?php echo $pathology_billing->patient_id; ?>">
                     <div class="row g-2">
                         <div class="col-sm-6">
+                            <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('type'); ?><small class="req"> *</small></label>
+                            <select class="form-control form-select-sm" name="action_type" onchange="$('#<?php echo $form_id; ?>').attr('action', this.value === 'refund' ? '<?php echo site_url('admin/pathology/partial_refund'); ?>' : '<?php echo site_url('admin/pathology/partialbill'); ?>')">
+                                <option value="payment"><?php echo $this->lang->line('payment'); ?></option>
+                                <option value="refund"><?php echo $this->lang->line('refund'); ?></option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
                             <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('date'); ?><small class="req"> *</small></label>
                             <input type="text" name="payment_date" id="date" class="form-control form-control-sm datetime">
                             <span class="text-danger"><?php echo form_error('apply_charge'); ?></span>

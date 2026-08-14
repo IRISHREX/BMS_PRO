@@ -93,6 +93,10 @@
                                         <input id="amount" name="amount" type="text" class="form-control form-control-sm" value="<?php echo set_value('amount'); ?>">
                                     </div>
                                     <div class="col-sm-6">
+                                        <label class="form-label form-label-sm"><?php echo $this->lang->line('refund') . " (" . $currency_symbol . ")"; ?></label>
+                                        <input id="refund" name="refund" type="text" class="form-control form-control-sm" value="<?php echo set_value('refund'); ?>">
+                                    </div>
+                                    <div class="col-sm-6">
                                         <label class="form-label form-label-sm"><?php echo $this->lang->line('attach_document'); ?></label>
                                         <input id="documents" name="documents" type="file" class="filestyle form-control form-control-sm" value="<?php echo set_value('documents'); ?>">
                                     </div>

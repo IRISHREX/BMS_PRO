@@ -10,6 +10,9 @@ class Pathology_model extends MY_Model
     {
         parent::__construct();
         $this->load->model('Pathology_category_model');
+        if (!$this->db->field_exists('status', 'pathology_billing')) {
+            $this->db->query("ALTER TABLE `pathology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
+        }
     }
 
     public function add($data, $insert_parameter_array, $update_parameter_array, $deleted_parameter_array)
@@ -275,10 +278,12 @@ class Pathology_model extends MY_Model
             }
         }
         $this->datatables
-            ->select('pathology_billing.*,( SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.pathology_billing_id=pathology_billing.id ) as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id'.$field_variable)
+            ->select('pathology_billing.*,( SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.pathology_billing_id=pathology_billing.id ) as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id, referral_person.name as referral_person_name'.$field_variable)
             ->join('patients', 'patients.id = pathology_billing.patient_id', 'left')
             ->join('staff', 'staff.id = pathology_billing.doctor_id', 'left')
             ->join('staff as generated_by_staff', 'generated_by_staff.id = pathology_billing.generated_by', "left")
+            ->join('referral_payment', 'referral_payment.billing_id = pathology_billing.id AND referral_payment.referral_type = 4', 'left')
+            ->join('referral_person', 'referral_person.id = referral_payment.referral_person_id', 'left')
             ->searchable('pathology_billing.id,`pathology_billing`.`case_reference_id`,pathology_billing.date,patients.patient_name,pathology_billing.doctor_id,pathology_billing.total'.$custom_field_column.',pathology_billing.discount,pathology_billing.tax,pathology_billing.net_amount')
           
             ->orderable(
@@ -481,7 +486,7 @@ class Pathology_model extends MY_Model
         $field_variable = (empty($field_var_array))? "": ",".implode(',', $field_var_array);
         $custom_field_column = (empty($custom_field_column_array))? "": ",".implode(',', $custom_field_column_array);
 
-		$query = $this->db->select('pathology_billing.*,blood_bank_products.name as blood_group_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE pathology_billing_id=pathology_billing.id),0) as total_deposit,patients.patient_name,patients.id as patient_unique_id,patients.dob,patients.as_of_date,patients.age,patients.month,patients.day,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address,staff.name,staff.surname,staff.employee_id,transactions.payment_mode,transactions.amount,transactions.cheque_no,transactions.cheque_date,transactions.note as `transaction_note`,staff_roles.role_id as staff_roles_id,org.organisation_name,pathology_billing.insurance_validity,pathology_billing.insurance_id'.$field_variable)
+		$query = $this->db->select('pathology_billing.*, (SELECT referral_person_id FROM referral_payment WHERE billing_id=pathology_billing.id and referral_type=4 limit 1) as referral_person_id, blood_bank_products.name as blood_group_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE pathology_billing_id=pathology_billing.id),0) as total_deposit,patients.patient_name,patients.id as patient_unique_id,patients.dob,patients.as_of_date,patients.age,patients.month,patients.day,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address,staff.name,staff.surname,staff.employee_id,transactions.payment_mode,transactions.amount,transactions.cheque_no,transactions.cheque_date,transactions.note as `transaction_note`,staff_roles.role_id as staff_roles_id,org.organisation_name,pathology_billing.insurance_validity,pathology_billing.insurance_id'.$field_variable)
             ->join('patients', 'pathology_billing.patient_id = patients.id')
             ->join('blood_bank_products', 'blood_bank_products.id = patients.blood_bank_product_id','left')
             ->join('staff', 'staff.id = pathology_billing.generated_by')

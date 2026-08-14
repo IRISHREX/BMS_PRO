@@ -234,6 +234,10 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                                     <option value="Unpaid"><?php echo $this->lang->line('unpaid'); ?></option>
                                                 </select>
                                             </div>
+                                            <div class="col-12">
+                                                <label class="form-label form-label-sm"><?php echo $this->lang->line('date'); ?></label>
+                                                <input class="form-control form-control-sm datetime" id="entry_date" name="entry_date" type="text">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -281,6 +285,10 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                             <option value="Paid"><?php echo $this->lang->line('paid'); ?></option>
                                             <option value="Unpaid"><?php echo $this->lang->line('unpaid'); ?></option>
                                         </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label form-label-sm"><?php echo $this->lang->line('date'); ?></label>
+                                        <input id="edit_entry_date" name="edit_entry_date" type="text" class="form-control form-control-sm datetime">
                                     </div>
                                 </div>
                             </div>
@@ -347,6 +355,13 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                     $("#edit_status").val(data.status);
                 } else {
                     $("#edit_status").val('Paid');
+                }
+                if (data.entry_date) {
+                    var dateObj = new Date(data.entry_date);
+                    var formattedDate = dateObj.getFullYear() + '-' + ('0' + (dateObj.getMonth()+1)).slice(-2) + '-' + ('0' + dateObj.getDate()).slice(-2) + ' ' + ('0' + dateObj.getHours()).slice(-2) + ':' + ('0' + dateObj.getMinutes()).slice(-2) + ':' + ('0' + dateObj.getSeconds()).slice(-2);
+                    $("#edit_entry_date").val(formattedDate);
+                } else {
+                    $("#edit_entry_date").val("");
                 }
                 $("#paymentid").val(id);
             },

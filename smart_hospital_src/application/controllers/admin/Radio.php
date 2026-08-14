@@ -1581,6 +1581,7 @@ class Radio extends Admin_Controller
                 $row[] = $value->patient_name . " (" . $value->pid . ")";
                 $row[] = composeStaffNameByString($value->generated_byname, $value->generated_bysurname, $value->generated_byemployee_id);
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
+                $row[] = $value->referral_person_name ? $value->referral_person_name : "";
                 $row[] = $value->status ? $value->status : "";
                 //====================
                 if (!empty($fields)) {
@@ -2269,6 +2270,65 @@ class Radio extends Admin_Controller
         echo json_encode($array);
     }
 
+    public function partial_refund()
+    {
+        if (!$this->rbac->hasPrivilege('radiology_partial_payment', 'can_add')) {
+            access_denied();
+        }
+
+        $this->form_validation->set_rules('payment_date', $this->lang->line('date'), 'required|xss_clean');
+        $this->form_validation->set_rules('amount', $this->lang->line('amount'), 'required|valid_amount|xss_clean');
+        $this->form_validation->set_rules('payment_mode', $this->lang->line('payment_mode'), 'required|xss_clean');
+
+        if ($this->form_validation->run() == false) {
+            $msg = array(
+                'payment_date' => form_error('payment_date'),
+                'amount'       => form_error('amount'),
+                'payment_mode' => form_error('payment_mode'),
+            );
+            $array = array('status' => 'fail', 'error' => $msg, 'message' => '');
+        } else {
+            $radiology_billing_id     = $this->input->post('radiology_billing_id', TRUE);
+            $radiology_billing_detail = $this->transaction_model->radiologyTotalPayments($radiology_billing_id);
+            
+            $total_paid = $radiology_billing_detail->total_paid;
+            $total_refund = $this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+            if(empty($total_refund)) $total_refund = 0;
+            $amount_refunding = $this->input->post('amount', TRUE);
+            
+            $max_refundable = max(0, $total_paid - $total_refund);
+            
+            if ($amount_refunding > $max_refundable) {
+                $array = array('status' => 'fail', 'error' => array('amount' => $this->lang->line('amount_should_not_be_greater_than_balance') . ' ' . amountFormat($max_refundable)), 'message' => '');
+                echo json_encode($array);
+                return;
+            }
+
+            $bill_date       = $this->input->post("payment_date", TRUE);
+            $payment_section = $this->config->item('payment_section');
+            $payment_array   = array(
+                'amount'               => $amount_refunding,
+                'type'                 => 'refund',
+                'patient_id'           => $this->input->post('patient_id', TRUE),
+                'section'              => $payment_section['radiology'],
+                'radiology_billing_id' => $radiology_billing_id,
+                'payment_mode'         => $this->input->post('payment_mode', TRUE),
+                'note'                 => $this->input->post('note', TRUE),
+                'payment_date'         => $this->customlib->dateFormatToYYYYMMDDHis($bill_date, $this->customlib->getHospitalTimeFormat()),
+                'received_by'          => $this->customlib->getLoggedInUserID(),
+            );
+
+            if (!empty($this->input->post('case_reference_id', TRUE)) && $this->input->post('case_reference_id', TRUE) != "") {
+                $payment_array['case_reference_id'] = $this->input->post('case_reference_id', TRUE);
+            }
+
+            $this->transaction_model->add($payment_array);
+            
+            $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
+        }
+        echo json_encode($array);
+    }
+
     public function printPatientReportDetail()
     {
         $print_details         = $this->printing_model->get('', 'radiology');
@@ -2297,6 +2357,10 @@ class Radio extends Admin_Controller
         $data["doctors"]             = $doctors;
         $data["referral_person_list"] = $this->referral_person_model->get_person();
         $data["payment_mode"]        = $this->payment_mode;
+        
+        $referral_payment = $this->db->where('billing_id', $id)->where('referral_type', 5)->get('referral_payment')->row_array();
+        $data["referral_person_id"] = !empty($referral_payment) ? $referral_payment['referral_person_id'] : "";
+        
         $page                        = $this->load->view("admin/radio/_editradiology", $data, true);
         $total_rows                  = count($radiology_data->radiology_report);
         $case_reference_id           = $radiology_data->case_reference_id;
