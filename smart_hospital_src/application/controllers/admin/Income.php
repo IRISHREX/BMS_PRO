@@ -13,16 +13,20 @@ class Income extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model("income_model");
+        $this->load->model("incomehead_model");
+        $this->load->model("customfield_model");
+        $this->load->model("transaction_model");
+        $this->load->model("patient_model");
+        $this->load->model("report_model");
         $this->load->helper('form');
         $this->load->library("datatables");
         $this->load->library("SaasValidation");
-        $this->load->model("transaction_model");
         $this->modules = $this->config->item('modules');
         $this->config->load("payroll");
         $this->config->load("image_valid");
         $this->search_type = $this->config->item('search_type');
         $this->load->helper('customfield_helper');
-        $this->config->item('search_type');
     }
 
     public function index()

@@ -12,12 +12,16 @@ class Expense extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model("expense_model");
+        $this->load->model("expensehead_model");
+        $this->load->model("customfield_model");
+        $this->load->model("transaction_model");
+        $this->load->model("report_model");
         $this->load->library('Customlib');
         $this->load->library("datatables");
         $this->load->library("SaasValidation");
         $this->config->load("payroll");
         $this->config->load("image_valid");
-        $this->load->model("transaction_model");
         $this->search_type = $this->config->item('search_type');
         $this->load->helper('customfield_helper');
     }
