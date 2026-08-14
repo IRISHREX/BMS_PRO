@@ -22,17 +22,30 @@ class Customlib
 
     public function getBaseUrl()
     {
-        if($this->CI->session->has_userdata('hospitaladmin')){
-
+        if ($this->CI->session->has_userdata('hospitaladmin')) {
             $admin    = $this->CI->session->userdata('hospitaladmin');
-    
-            $base_url = $admin['db_array']['base_url'];
-            if ($base_url == "") {
+            $base_url = isset($admin['db_array']['base_url']) ? $admin['db_array']['base_url'] : '';
+            if (empty($base_url)) {
                 $base_url = base_url();
             }
-        }else{
+        } else {
             $base_url = base_url();
         }
+
+        $current_base = base_url();
+        $curr_parsed  = parse_url($current_base);
+        $base_parsed  = parse_url($base_url);
+
+        if (isset($curr_parsed['host']) && isset($base_parsed['host'])) {
+            if ($curr_parsed['host'] === $base_parsed['host']) {
+                $curr_port = isset($curr_parsed['port']) ? $curr_parsed['port'] : (isset($_SERVER['SERVER_PORT']) ? $_SERVER['SERVER_PORT'] : '');
+                $base_port = isset($base_parsed['port']) ? $base_parsed['port'] : '';
+                if ($curr_port != $base_port) {
+                    $base_url = $current_base;
+                }
+            }
+        }
+
         return $base_url;
     }
 
