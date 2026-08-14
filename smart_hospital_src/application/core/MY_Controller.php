@@ -511,4 +511,22 @@ class Front_Controller extends CI_Controller
         }
     }
 
+    public function __get($key)
+    {
+        $CI = &get_instance();
+        if (isset($CI->$key)) {
+            return $CI->$key;
+        }
+
+        // Auto-load model dynamically on first access if property ends in _model
+        if (substr($key, -6) === '_model' || file_exists(APPPATH . 'models/' . ucfirst($key) . '.php')) {
+            $this->load->model($key);
+            if (isset($CI->$key)) {
+                return $CI->$key;
+            }
+        }
+
+        return null;
+    }
+
 }
