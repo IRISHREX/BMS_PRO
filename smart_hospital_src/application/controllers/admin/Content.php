@@ -10,6 +10,12 @@ class Content extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('uploadcontent_model');
+        $this->load->model('sharecontent_model');
+        $this->load->model('contenttype_model');
+        $this->load->model('setting_model');
+        $this->load->model('role_model');
+        $this->load->library('enc_lib');
         $this->load->library('datatables');
         $this->load->library('SaasValidation');
         $this->config->load("image_valid");
