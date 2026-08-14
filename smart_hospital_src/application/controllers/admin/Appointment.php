@@ -725,11 +725,17 @@ class Appointment extends Admin_Controller
 					}
 				}
 
-				if ($paid_amount > 0 && $value->appointment_status != 'pending') {
-					if ($net_paid > 0) {
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
-					} else {
-						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+				$std_amount = isset($value->standard_amount) ? (float)$value->standard_amount : 0;
+				$eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+				$eff_net    = max(0, $eff_paid - $refund_amount);
+
+				if (in_array($value->appointment_status, ['approved', 'partially_refunded']) || ($paid_amount > 0 && $value->appointment_status != 'pending')) {
+					if ($value->appointment_status != 'cancel' && $value->appointment_status != 'full_refunded') {
+						if ($eff_net > 0 && $eff_paid > 0) {
+							$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+						} else if ($eff_paid > 0) {
+							$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+						}
 					}
 				}
 
@@ -859,11 +865,17 @@ class Appointment extends Admin_Controller
 					}
 				}
 
-				if ($paid_amount > 0 && $value->appointment_status != 'pending') {
-					if ($net_paid > 0) {
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
-					} else {
-						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+				$std_amount = isset($value->standard_amount) ? (float)$value->standard_amount : 0;
+				$eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+				$eff_net    = max(0, $eff_paid - $refund_amount);
+
+				if (in_array($value->appointment_status, ['approved', 'partially_refunded']) || ($paid_amount > 0 && $value->appointment_status != 'pending')) {
+					if ($value->appointment_status != 'cancel' && $value->appointment_status != 'full_refunded') {
+						if ($eff_net > 0 && $eff_paid > 0) {
+							$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+						} else if ($eff_paid > 0) {
+							$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+						}
 					}
 				}
 
@@ -995,11 +1007,17 @@ class Appointment extends Admin_Controller
 					}
 				}
 
-				if ($paid_amount > 0 && $value->appointment_status != 'pending') {
-					if ($net_paid > 0) {
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
-					} else {
-						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+				$std_amount = isset($value->standard_amount) ? (float)$value->standard_amount : 0;
+				$eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+				$eff_net    = max(0, $eff_paid - $refund_amount);
+
+				if (in_array($value->appointment_status, ['approved', 'partially_refunded']) || ($paid_amount > 0 && $value->appointment_status != 'pending')) {
+					if ($value->appointment_status != 'cancel' && $value->appointment_status != 'full_refunded') {
+						if ($eff_net > 0 && $eff_paid > 0) {
+							$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+						} else if ($eff_paid > 0) {
+							$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+						}
 					}
 				}
 
@@ -1096,7 +1114,7 @@ class Appointment extends Admin_Controller
             $patient_id     = $this->input->post('patient_id', TRUE);
 
             $apt_detail     = $this->transaction_model->appointmentTotalPayments($appointment_id);
-            $paid           = isset($apt_detail->total_paid) ? (float)$apt_detail->total_paid : 0;
+            $paid           = (isset($apt_detail->total_paid) && (float)$apt_detail->total_paid > 0) ? (float)$apt_detail->total_paid : (isset($apt_detail->standard_amount) ? (float)$apt_detail->standard_amount : 0);
             $refunded       = isset($apt_detail->refund_amount) ? (float)$apt_detail->refund_amount : 0;
             $max_refundable = max(0, $paid - $refunded);
 
