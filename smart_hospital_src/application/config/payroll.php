@@ -67,7 +67,8 @@ $config['payment_mode'] = array(
     'Cheque'                   => lang('cheque'),
     'transfer_to_bank_account' => lang('transfer_to_bank_account'),
     'UPI'                      => lang('upi'),
-    'Online'                    => lang('online'),
+    'Online'                   => lang('online'),
+    'Pay Later'                => 'Pay Later',
     'Other'                    => lang('other'),    
 );
 

@@ -279,9 +279,10 @@ $genderList      = $this->customlib->getGender_Patient();
                   <label class="form-label"><?php echo $this->lang->line('status'); ?><small class="req"> *</small></label>
                   <select name="appointment_status" class="form-control form-control-sm" id="appointment_status">
                     <option value=""><?php echo $this->lang->line('select'); ?></option>
-                    <?php foreach ($appointment_status as $appointment_status_key => $appointment_status_value) { ?>
+                    <?php foreach ($appointment_status as $appointment_status_key => $appointment_status_value) { 
+                      if (in_array($appointment_status_key, ['pending', 'approved'])) { ?>
                     <option value="<?php echo $appointment_status_key ?>"><?php echo $appointment_status_value ?></option>
-                    <?php } ?>
+                    <?php } } ?>
                   </select>
                 </div>
                 <div class="col-sm-3">
@@ -1392,7 +1393,7 @@ $("#appointment_status").change(function(){
  
 <script>
 $(document).ready(function () {
-  /* initialize all tooltips after Bootstrap JS is loaded */
+    /* initialize all tooltips after Bootstrap JS is loaded */
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -1404,7 +1405,26 @@ $(document).ready(function () {
         SHPicker.setRestriction('#datetimepicker', { minDate: today });
         SHPicker.setRestriction('#rdates', { minDate: today });
     }
-  });
+
+    $(document).on('change', '.payment_mode', function() {
+        if ($(this).val() === 'Pay Later') {
+            $('#appointment_status').val('pending').prop('disabled', true);
+            if ($('#appointment_status_hidden').length === 0) {
+                $('<input>').attr({
+                    type: 'hidden',
+                    id: 'appointment_status_hidden',
+                    name: 'appointment_status',
+                    value: 'pending'
+                }).insertAfter('#appointment_status');
+            } else {
+                $('#appointment_status_hidden').val('pending');
+            }
+        } else {
+            $('#appointment_status').prop('disabled', false);
+            $('#appointment_status_hidden').remove();
+        }
+    });
+});
 </script>
 <!-- //========datatable end===== -->
 <?php $this->load->view('admin/patient/patientaddmodal') ?>

@@ -185,6 +185,12 @@ class Appointment extends Admin_Controller
             $day    =   date("l", strtotime($date));
 
             $getDoctorShiftTimeId = $this->onlineappointment_model->getDoctorShiftTimeId($doctor, $this->input->post('global_shift', TRUE), $day);
+            $doctor_shift_time_id = (!empty($getDoctorShiftTimeId) && isset($getDoctorShiftTimeId->id)) ? $getDoctorShiftTimeId->id : 0;
+
+            $app_status = $this->input->post('appointment_status', TRUE);
+            if ($this->input->post('payment_mode', TRUE) === 'Pay Later') {
+                $app_status = 'pending';
+            }
 
             $appointment = array(
                 'patient_id'             => $patient_id,
@@ -192,11 +198,11 @@ class Appointment extends Admin_Controller
                 'priority'               => $this->input->post('priority', TRUE),
                 'doctor'                 => $doctor,
                 'message'                => $this->input->post('message', TRUE),
-                'doctor_shift_time_id'   => $getDoctorShiftTimeId->id,
+                'doctor_shift_time_id'   => $doctor_shift_time_id,
                 'is_queue'               => 0,
                 'live_consult'           => $consult,
                 'source'                 => 'Offline',
-                'appointment_status'     => $this->input->post('appointment_status', TRUE),
+                'appointment_status'     => $app_status,
                 'specialist'             => $specialist,
                 'doctor_global_shift_id' => $this->input->post('global_shift', TRUE),
                 'created_by'             => $this->customlib->getStaffID(),
@@ -204,10 +210,6 @@ class Appointment extends Admin_Controller
 
             $insert_id = $this->appointment_model->add($appointment);
 
-            // SaaS: increment the appointment count usage by 1 (count-based resource:
-            // no_of_appointment). The pre-check only blocks when over limit; this raises the
-            // usage so the limit stays meaningful. Own try/catch so a quota-API hiccup does
-            // not abort the already-created appointment's flow (updateResouceQuota throws).
             if ($insert_id) {
                 try {
                     $this->saasvalidation->updateResouceQuota('no_of_appointment', 1);
@@ -216,7 +218,7 @@ class Appointment extends Admin_Controller
                 }
             }
 
-	            if ($this->input->post('amount', TRUE) == 0) {
+            if ($this->input->post('amount', TRUE) == 0) {
                 $discount_percentage = 0;
             } else {
                 if (empty($this->input->post('discount_percentage', TRUE))) {
@@ -226,29 +228,27 @@ class Appointment extends Admin_Controller
                 }
             }			
 			
-			$shift_details  = $this->onlineappointment_model->getShiftDetails($doctor);		
-        
-            $charge_details = $this->charge_model->getChargeDetailsById($shift_details['charge_id']);
+            $shift_details  = $this->onlineappointment_model->getShiftDetails($doctor);
+            $charge_id      = (is_array($shift_details) && isset($shift_details['charge_id'])) ? $shift_details['charge_id'] : 0;
+            $charge_details = ($charge_id > 0) ? $this->charge_model->getChargeDetailsById($charge_id) : null;
             
-            $standard_amount = isset($charge_details->standard_charge) ? amountFormat($charge_details->standard_charge + ($charge_details->standard_charge * $charge_details->percentage / 100)) : "";
-			
-            $charge_id = $shift_details['charge_id'];			
-			
-            $amount_paid1 = $this->input->post('amount', TRUE) - calculatePercent($this->input->post('amount', TRUE), $discount_percentage);
+            $tax_percentage = (is_object($charge_details) && isset($charge_details->percentage) && $charge_details->percentage !== null) ? (float)$charge_details->percentage : 0;
+            $std_charge     = (is_object($charge_details) && isset($charge_details->standard_charge) && $charge_details->standard_charge !== null) ? (float)$charge_details->standard_charge : 0;
 
+            $standard_amount = ($std_charge > 0) ? amountFormat($std_charge + ($std_charge * $tax_percentage / 100)) : "";
+            $post_amount     = (float)$this->input->post('amount', TRUE);
+            $amount_paid1    = $post_amount - calculatePercent($post_amount, $discount_percentage);
+            $amount_paid     = $amount_paid1 + calculatePercent($amount_paid1, $tax_percentage);
 
-			$amount_paid =  $amount_paid1 + calculatePercent($amount_paid1, $charge_details->percentage);				
-				
-			
             $payment_data = array(
-                'appointment_id' => $insert_id,
+                'appointment_id'     => $insert_id,
                 'standard_amount'    => $standard_amount,
-                'paid_amount'    => $amount_paid,
-                'charge_id'      => $charge_id,
+                'paid_amount'        => $amount_paid,
+                'charge_id'          => $charge_id,
                 'discount_percentage' => $discount_percentage,
-                'tax' => $charge_details->percentage,
-                'payment_type'   => 'Offline',
-                'date'           => date("Y-m-d H:i:s"),
+                'tax'                => $tax_percentage,
+                'payment_type'       => 'Offline',
+                'date'               => date("Y-m-d H:i:s"),
             );
             $payment_section   = $this->config->item('payment_section');
             $transaction_array = array(
