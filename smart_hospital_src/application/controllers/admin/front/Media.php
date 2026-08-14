@@ -10,6 +10,7 @@ class Media extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('cms_media_model');
         $this->config->load('image_valid');
         $this->load->model("filetype_model");
         $this->load->library('SaasValidation');

@@ -10,6 +10,9 @@ class Menus extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('cms_menu_model');
+        $this->load->model('cms_menuitems_model');
+        $this->load->model('cms_page_model');
         $this->load->library('imageResize');
     }
 

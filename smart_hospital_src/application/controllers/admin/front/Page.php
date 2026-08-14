@@ -10,6 +10,8 @@ class Page extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('cms_page_model');
+        $this->load->model('cms_page_content_model');
         $config = array(
             'field' => 'slug',
             'title' => 'title',
