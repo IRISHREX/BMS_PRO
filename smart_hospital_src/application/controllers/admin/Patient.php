@@ -3973,14 +3973,18 @@ This Function is used to Import Multiple Patient Records
         $file_exists  = FCPATH . "uploads/patient_id_card/barcodes/$id.png";
         $file_exists2 = FCPATH . "uploads/patient_id_card/qrcode/$id.png";
 
-        if(file_exists($file_exists)){
+        if (!file_exists($file_exists) || !file_exists($file_exists2)) {
+            $this->customlib->generatebarcode($id);
+        }
+
+        if (file_exists($file_exists)) {
             $result['getbarcode'] = base_url("uploads/patient_id_card/barcodes/$id.png") . img_time();
-        }else{
+        } else {
             $result['getbarcode'] = null;
         }
-        if(file_exists($file_exists2)){
+        if (file_exists($file_exists2)) {
             $result['getqrcode'] = base_url("uploads/patient_id_card/qrcode/$id.png") . img_time();
-        }else{
+        } else {
             $result['getqrcode'] = null;
         }       
         
@@ -4033,18 +4037,22 @@ This Function is used to Import Multiple Patient Records
         $cutom_fields_data             = get_custom_table_values($id, 'patient');
         $result['field_data']          = $cutom_fields_data;
 
-        $path1= $this->customlib->getFolderPath()."./uploads/patient_id_card/barcodes/$id.png";
-        $path2= $this->customlib->getFolderPath()."./uploads/patient_id_card/qrcode/$id.png";
+        $path1 = $this->customlib->getFolderPath()."./uploads/patient_id_card/barcodes/$id.png";
+        $path2 = $this->customlib->getFolderPath()."./uploads/patient_id_card/qrcode/$id.png";
 
-        if(file_exists("$path1")){
-            $getbarcode=$this->media_storage->getImageURL("./uploads/patient_id_card/barcodes/$id.png");
-        }else{
-            $getbarcode=null;
+        if (!file_exists($path1) || !file_exists($path2)) {
+            $this->customlib->generatebarcode($id);
         }
-        if(file_exists("$path2")){
-            $getqrcode=$this->media_storage->getImageURL("./uploads/patient_id_card/qrcode/$id.png");
-        }else{
-            $getqrcode=null;
+
+        if (file_exists($path1)) {
+            $getbarcode = $this->media_storage->getImageURL("./uploads/patient_id_card/barcodes/$id.png");
+        } else {
+            $getbarcode = null;
+        }
+        if (file_exists($path2)) {
+            $getqrcode = $this->media_storage->getImageURL("./uploads/patient_id_card/qrcode/$id.png");
+        } else {
+            $getqrcode = null;
         }
         if(!empty($result['image'])){        
             $result['image']          = $this->media_storage->getImageURL($result['image']);
