@@ -239,6 +239,9 @@ class Appointment extends Admin_Controller
             $post_amount     = (float)$this->input->post('amount', TRUE);
             $amount_paid1    = $post_amount - calculatePercent($post_amount, $discount_percentage);
             $amount_paid     = $amount_paid1 + calculatePercent($amount_paid1, $tax_percentage);
+            if ($this->input->post('payment_mode', TRUE) === 'Pay Later') {
+                $amount_paid = 0.00;
+            }
 
             $payment_data = array(
                 'appointment_id'     => $insert_id,
@@ -708,21 +711,25 @@ class Appointment extends Admin_Controller
 				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
 				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
 
-				if ($paid_amount > 0) {
+				if ($value->appointment_status == 'pending') {
+					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+					}
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+					$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
+				} else {
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && $value->appointment_status == 'approved') {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+				}
+
+				if ($paid_amount > 0 && $value->appointment_status != 'pending') {
 					if ($net_paid > 0) {
 						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
 					} else {
 						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
-					}
-				} else {
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-					if ($value->appointment_status == 'pending') {
-						if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-							$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
-						}
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
 					}
 				}
 
@@ -838,21 +845,25 @@ class Appointment extends Admin_Controller
 				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
 				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
 
-				if ($paid_amount > 0) {
+				if ($value->appointment_status == 'pending') {
+					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+					}
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+					$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
+				} else {
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && $value->appointment_status == 'approved') {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+				}
+
+				if ($paid_amount > 0 && $value->appointment_status != 'pending') {
 					if ($net_paid > 0) {
 						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
 					} else {
 						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
-					}
-				} else {
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-					if ($value->appointment_status == 'pending') {
-						if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-							$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
-						}
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
 					}
 				}
 
@@ -970,21 +981,25 @@ class Appointment extends Admin_Controller
 				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
 				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
 
-				if ($paid_amount > 0) {
+				if ($value->appointment_status == 'pending') {
+					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+					}
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+					$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
+				} else {
+					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && $value->appointment_status == 'approved') {
+						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+					}
+				}
+
+				if ($paid_amount > 0 && $value->appointment_status != 'pending') {
 					if ($net_paid > 0) {
 						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $paid_amount . ", " . $refund_amount . ", " . $net_paid . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
 					} else {
 						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
-					}
-				} else {
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-					if ($value->appointment_status == 'pending') {
-						if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-							$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
-						}
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
 					}
 				}
 
