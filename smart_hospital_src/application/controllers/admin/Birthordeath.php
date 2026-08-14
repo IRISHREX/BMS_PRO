@@ -13,6 +13,9 @@ class Birthordeath extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('printing_model');
+        $this->load->model('report_model');
+
         $this->load->model('birthordeath_model');
         $this->load->model('patient_model');
         $this->load->model('customfield_model');

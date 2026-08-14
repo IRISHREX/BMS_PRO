@@ -9,6 +9,8 @@ class Bulkmessage extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('user_model');
+
         $this->load->model("bulkmessage_model");
         $this->load->library('mailsmsconf');
         $this->load->library('Customlib');

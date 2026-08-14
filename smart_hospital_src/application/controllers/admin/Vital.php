@@ -12,6 +12,10 @@ class Vital extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('chargetype_model');
+        $this->load->model('organisation_model');
+        $this->load->model('charge_model');
+
         $this->load->model('unittype_model');
         $this->load->model('taxcategory_model');
         $this->load->library('datatables');

@@ -12,6 +12,10 @@ class Notification extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('notification_model');
+        $this->load->model('role_model');
+        $this->load->model('notificationsetting_model');
+
         $this->patient_notification = array('add_bad_stock', 'add_bag_stock', 'purchase_medicine', 'add_component_of_blood', 'live_meeting_add', 'live_meeting_start', 'add_referral_payment', 'generate_staff_id_card', 'add_death_record', 'staff_enabale_disable', 'staff_generate_payroll', 'staff_leave', 'staff_leave_status', 'add_medicine', 'add_payroll_payment');
     }
 

@@ -11,6 +11,13 @@ class Bloodbankstatus extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('bloodissue_model');
+        $this->load->model('bloodbankstatus_model');
+        $this->load->model('chargetype_model');
+        $this->load->model('blooddonor_model');
+        $this->load->model('patient_model');
+        $this->load->model('blood_donorcycle_model');
+
         $this->load->config("payroll");
         $this->payment_mode = $this->config->item('payment_mode');
         $this->load->model("unittype_model");

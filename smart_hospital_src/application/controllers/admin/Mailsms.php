@@ -13,6 +13,13 @@ class Mailsms extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('report_model');
+        $this->load->model('staff_model');
+        $this->load->model('patient_model');
+        $this->load->model('role_model');
+        $this->load->model('vehicle_model');
+        $this->load->model('messages_model');
+
         $this->load->library('smsgateway');
         $this->load->library('mailgateway');
         $this->load->library('mailsmsconf');

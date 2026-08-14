@@ -17,6 +17,15 @@ class Payment extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('patient_model');
+        $this->load->model('payment_model');
+        $this->load->model('vehicle_model');
+        $this->load->model('bloodissue_model');
+        $this->load->model('operationtheatre_model');
+        $this->load->model('printing_model');
+        $this->load->model('charge_model');
+        $this->load->model('bed_model');
+
         $this->config->load("payroll");
         $this->load->library('Enc_lib');
         $this->marital_status = $this->config->item('marital_status');

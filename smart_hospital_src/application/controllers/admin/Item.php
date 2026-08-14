@@ -12,6 +12,10 @@ class Item extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('item_model');
+        $this->load->model('itemcategory_model');
+        $this->load->model('itemstock_model');
+
         $this->load->helper('form');
         $this->load->library('datatables');
         $this->config->load("payroll");

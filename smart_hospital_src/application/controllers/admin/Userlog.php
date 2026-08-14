@@ -13,6 +13,9 @@ class Userlog extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('userlog_model');
+        $this->load->model('report_model');
+
         $this->config->load("payroll");
         $this->search_type = $this->config->item('search_type');
         $this->load->library('datatables');

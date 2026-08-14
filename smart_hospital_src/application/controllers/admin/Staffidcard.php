@@ -11,6 +11,8 @@ class Staffidcard extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('setting_model');
+
         $this->load->model(array('Staffidcard_model'));
         $this->load->library('SaasValidation');
         $this->config->load('image_valid');

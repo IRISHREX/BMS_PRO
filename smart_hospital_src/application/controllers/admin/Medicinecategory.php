@@ -6,6 +6,11 @@ if (!defined('BASEPATH')) {
 
 class Medicinecategory extends Admin_Controller
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->load->model('medicine_category_model');
+    }
 
     public function medicine()
     {        

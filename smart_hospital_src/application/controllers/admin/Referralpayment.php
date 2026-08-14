@@ -10,6 +10,8 @@ class Referralpayment extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('notificationsetting_model');
+
         $this->load->model("referral_payment_model");
         $this->load->model("referral_person_model");
         $this->load->library("form_validation");

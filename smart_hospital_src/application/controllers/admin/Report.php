@@ -9,6 +9,10 @@ class Report extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('pharmacy_model');
+        $this->load->model('medicine_category_model');
+        $this->load->model('patient_model');
+
         $this->load->library('datatables');
         $this->load->model('report_model');
     }

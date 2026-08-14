@@ -14,6 +14,8 @@ class Customfield extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('customfield_model');
+
         $this->load->library('encoding_lib');
         $this->load->helper('customfield_helper');
         $this->config->load('custom_filed-config');

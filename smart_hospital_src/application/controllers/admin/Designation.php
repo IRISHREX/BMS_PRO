@@ -10,6 +10,8 @@ class Designation extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('designation_model');
+
         $this->load->helper('file');
         $this->config->load("payroll");
         $this->load->library('datatables');

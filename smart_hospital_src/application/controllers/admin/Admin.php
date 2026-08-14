@@ -10,6 +10,17 @@ class Admin extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('staff_model');
+        $this->load->model('setting_model');
+        $this->load->model('admin_model');
+        $this->load->model('customfield_model');
+        $this->load->model('organisation_model');
+        $this->load->model('patient_model');
+        $this->load->model('notification_model');
+        $this->load->model('role_model');
+        $this->load->model('expense_model');
+        $this->load->model('income_model');
+
         $this->load->library('Enc_lib');
         $this->load->library('datatables');
         $this->config->load("payroll");

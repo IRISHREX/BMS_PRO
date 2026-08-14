@@ -15,6 +15,17 @@ class Prescription extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('printing_model');
+        $this->load->model('prescription_model');
+        $this->load->model('customfield_model');
+        $this->load->model('patient_model');
+        $this->load->model('medicine_category_model');
+        $this->load->model('pharmacy_model');
+        $this->load->model('medicine_dosage_model');
+        $this->load->model('role_model');
+        $this->load->model('pathology_model');
+        $this->load->model('radio_model');
+
         $this->config->load("payroll");
         $this->load->library('Enc_lib');
         $this->load->library('SaasValidation');

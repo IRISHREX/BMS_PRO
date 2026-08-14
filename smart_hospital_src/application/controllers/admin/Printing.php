@@ -8,6 +8,8 @@ class Printing extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('printing_model');
+
         $this->load->library('media_storage');
         $this->load->library('SaasValidation');
     }

@@ -16,6 +16,10 @@ class Antenatal extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('patient_model');
+        $this->load->model('customfield_model');
+        $this->load->model('printing_model');
+
         $this->config->load("payroll");
         $this->load->library('Enc_lib');
 		$this->load->library('Customlib');

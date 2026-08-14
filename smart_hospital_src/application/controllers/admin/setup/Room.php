@@ -10,6 +10,8 @@ class Room extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('floor_model');
+
         $this->load->library('form_validation');
     }
 

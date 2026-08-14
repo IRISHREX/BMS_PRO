@@ -18,6 +18,18 @@ class Bloodbank extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('bloodbankstatus_model');
+        $this->load->model('customfield_model');
+        $this->load->model('blooddonor_model');
+        $this->load->model('bloodissue_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('staff_model');
+        $this->load->model('patient_model');
+        $this->load->model('chargetype_model');
+        $this->load->model('organisation_model');
+        $this->load->model('blood_donorcycle_model');
+        $this->load->model('printing_model');
+
         $this->config->load("payroll");
         $this->load->library('Enc_lib');
         $this->load->library('mailsmsconf');

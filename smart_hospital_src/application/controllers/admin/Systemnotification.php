@@ -12,6 +12,12 @@ class Systemnotification extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('notification_model');
+        $this->load->model('operationtheatre_model');
+        $this->load->model('appointment_model');
+        $this->load->model('patient_model');
+        $this->load->model('staff_model');
+
         $this->load->library('Enc_lib');
         $this->load->library('customlib');
         $this->config->load("mailsms");

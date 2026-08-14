@@ -19,6 +19,20 @@ class Radio extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('radio_model');
+        $this->load->model('lab_model');
+        $this->load->model('charge_category_model');
+        $this->load->model('customfield_model');
+        $this->load->model('patient_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('staff_model');
+        $this->load->model('prescription_model');
+        $this->load->model('user_model');
+        $this->load->model('printing_model');
+        $this->load->model('pharmacy_model');
+        $this->load->model('bloodbankstatus_model');
+        $this->load->model('organisation_model');
+
         $this->load->library("datatables");
         $this->config->load("payroll");
         $this->load->library('SaasValidation');

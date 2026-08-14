@@ -10,6 +10,8 @@ class Itemcategory extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('itemcategory_model');
+
         $this->load->helper('url');
     }
 

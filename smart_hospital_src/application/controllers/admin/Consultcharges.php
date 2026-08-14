@@ -10,6 +10,11 @@ class Consultcharges extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('staff_model');
+        $this->load->model('charge_model');
+        $this->load->model('organisation_model');
+        $this->load->model('tpa_model');
+
         $this->config->load("payroll");
         $this->load->library('form_validation');
     }

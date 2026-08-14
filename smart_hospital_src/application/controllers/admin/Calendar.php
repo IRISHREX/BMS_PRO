@@ -12,6 +12,8 @@ class Calendar extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('calendar_model');
+
         $this->load->helper('file');
         $this->load->library('customlib');
         $this->load->library('pagination');

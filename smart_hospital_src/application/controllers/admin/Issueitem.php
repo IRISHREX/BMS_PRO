@@ -12,6 +12,12 @@ class Issueitem extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('role_model');
+        $this->load->model('itemcategory_model');
+        $this->load->model('itemissue_model');
+        $this->load->model('item_model');
+        $this->load->model('staff_model');
+
         $this->load->helper('form');
         $this->load->library('datatables');
         $this->config->load("payroll");

@@ -18,6 +18,17 @@ class Vehicle extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('vehicle_model');
+        $this->load->model('customfield_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('Notificationsetting_model');
+        $this->load->model('printing_model');
+        $this->load->model('patient_model');
+        $this->load->model('charge_category_model');
+        $this->load->model('bloodbankstatus_model');
+        $this->load->model('pathology_category_model');
+        $this->load->model('organisation_model');
+
         $this->config->load("payroll");
         $this->load->library('Enc_lib');
         $this->load->library('mailsmsconf');

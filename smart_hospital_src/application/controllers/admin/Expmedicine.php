@@ -13,6 +13,10 @@ class Expmedicine extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('vehicle_model');
+        $this->load->model('medicine_category_model');
+        $this->load->model('report_model');
+
         $this->config->load("payroll");
         $this->search_type = $this->config->item('search_type_expiry');
         $this->load->library('datatables');

@@ -11,6 +11,8 @@ class Referral extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('report_model');
+
         $this->load->library('form_validation');
         $this->load->model('referral_category_model');
         $this->load->model('referral_person_model');

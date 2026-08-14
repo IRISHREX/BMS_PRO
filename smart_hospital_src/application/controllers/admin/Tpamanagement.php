@@ -12,6 +12,11 @@ class Tpamanagement extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('organisation_model');
+        $this->load->model('staff_model');
+        $this->load->model('charge_category_model');
+        $this->load->model('report_model');
+
         $this->load->library("datatables");
         $this->config->load("payroll"); // search_type config is defined in payroll config
         $this->search_type = $this->config->item('search_type');

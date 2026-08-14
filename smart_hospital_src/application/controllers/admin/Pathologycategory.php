@@ -6,6 +6,12 @@ if (!defined('BASEPATH')) {
 
 class Pathologycategory extends Admin_Controller
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->load->model('pathology_category_model');
+        $this->load->model('lab_model');
+    }
 
     public function addcategory()
     {

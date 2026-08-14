@@ -14,6 +14,14 @@ class Zoom_conference extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('setting_model');
+        $this->load->model('staff_model');
+        $this->load->model('patient_model');
+        $this->load->model('bloodbankstatus_model');
+        $this->load->model('role_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('customfield_model');
+
         $this->load->library('mailsmsconf');
         $this->load->library('datatables');
         $this->load->library('system_notification');

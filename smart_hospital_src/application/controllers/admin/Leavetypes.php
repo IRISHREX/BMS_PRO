@@ -10,6 +10,9 @@ class Leavetypes extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('leavetypes_model');
+        $this->load->model('staff_model');
+
         $this->load->helper('file');
         $this->config->load("payroll");
         $this->load->library('datatables');

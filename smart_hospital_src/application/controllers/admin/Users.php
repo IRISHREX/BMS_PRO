@@ -9,6 +9,10 @@ class Users extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('staff_model');
+        $this->load->model('user_model');
+        $this->load->model('patient_model');
+
         $this->load->library('datatables');
     }
 

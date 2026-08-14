@@ -10,6 +10,8 @@ class Complaint extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('complaint_model');
+
         $this->load->library('form_validation');
         $this->load->library('datatables');
         $this->load->library('SaasValidation');

@@ -10,6 +10,9 @@ class Medicinedosage extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('medicine_dosage_model');
+        $this->load->model('medicine_category_model');
+
         $this->load->library('datatables');
         $this->load->model('unittype_model');
         $this->load->helper('file');

@@ -12,6 +12,8 @@ class Frontcms extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('frontcms_setting_model');
+
 
         $this->load->config('ci-blog');
         $this->front_themes = $this->config->item('ci_front_themes');

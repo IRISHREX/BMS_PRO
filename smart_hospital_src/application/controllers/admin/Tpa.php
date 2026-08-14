@@ -12,6 +12,10 @@ class Tpa extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('setting_model');
+        $this->load->model('organisation_model');
+        $this->load->model('tpa_model');
+
         $this->config->load("payroll");
         $this->load->library("datatables");
         $this->charge_type = $this->customlib->getChargeMaster();

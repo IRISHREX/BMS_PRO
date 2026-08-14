@@ -5,6 +5,13 @@ if (!defined('BASEPATH')) {
 
 class Chargetype extends Admin_Controller
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->load->model('setting_model');
+        $this->load->model('organisation_model');
+        $this->load->model('chargetype_model');
+    }
     public function index()
     {
         if (!$this->rbac->hasPrivilege('charge_type', 'can_view')) {

@@ -13,6 +13,8 @@ class Dutyroster extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('department_model');
+
       
         $this->load->library('datatables');      
         $this->load->model('dutyroster_model');

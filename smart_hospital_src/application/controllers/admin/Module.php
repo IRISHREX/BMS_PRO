@@ -10,6 +10,8 @@ class Module extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('module_model');
+
     }
 
     public function index()

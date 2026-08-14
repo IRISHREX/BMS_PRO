@@ -10,6 +10,9 @@ class Generatecertificate extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('patient_model');
+        $this->load->model('setting_model');
+
 
         $this->load->library('Customlib');
         $this->load->library('datatables');

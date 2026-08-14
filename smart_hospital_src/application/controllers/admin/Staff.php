@@ -20,6 +20,18 @@ class Staff extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('setting_model');
+        $this->load->model('staff_model');
+        $this->load->model('customfield_model');
+        $this->load->model('timeline_model');
+        $this->load->model('leaverequest_model');
+        $this->load->model('payroll_model');
+        $this->load->model('role_model');
+        $this->load->model('session_model');
+        $this->load->model('notificationsetting_model');
+        $this->load->model('userpermission_model');
+        $this->load->model('admin_model');
+
         $this->config->load("payroll");
         $this->load->library('Enc_lib');
         $this->load->library('mailsmsconf');

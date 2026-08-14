@@ -16,6 +16,10 @@ class Leaverequest extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('staff_model');
+        $this->load->model('leaverequest_model');
+        $this->load->model('notificationsetting_model');
+
 
         $this->config->load("payroll");
         $this->load->library('datatables');
