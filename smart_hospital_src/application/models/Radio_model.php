@@ -483,7 +483,7 @@ class Radio_model extends MY_Model
     {
         $query = $this->db->select('radiology_parameterdetails.*,radiology_parameter.parameter_name,radiology_parameter.reference_range,radiology_parameter.unit,unit.unit_name')
             ->join('radiology_parameter', 'radiology_parameter.id = radiology_parameterdetails.parameter_id')
-            ->join('unit', 'unit.id = radiology_parameter.unit')
+            ->join('unit', 'unit.id = radiology_parameter.unit', 'left')
             ->where('radiology_parameterdetails.radiology_id', $id)
             ->get('radiology_parameterdetails');
         return $query->result_array();
@@ -493,7 +493,7 @@ class Radio_model extends MY_Model
     {
         $query = $this->db->select('radiology_report_parameterdetails.*,radiology_parameter.parameter_name,radiology_parameter.reference_range,radiology_parameter.unit,unit.unit_name')
             ->join('radiology_parameter', 'radiology_parameter.id = radiology_report_parameterdetails.parameter_id')
-            ->join('unit', 'unit.id = radiology_parameter.unit')
+            ->join('unit', 'unit.id = radiology_parameter.unit', 'left')
             ->where("radiology_report_parameterdetails.radiology_report_id", $report_id)
             ->get('radiology_report_parameterdetails');
         return $query->result_array();
@@ -632,9 +632,9 @@ class Radio_model extends MY_Model
     {
         $sql    = "SELECT * from (SELECT `radio`.*, `lab`.`id` as `category_id`, `lab`.`lab_name`, `charges`.`name`, `charges`.`charge_category_id`, `charges`.`standard_charge`, `charges`.`description`, `charges`.`name` as `charge_name`, `charge_categories`.`name` as `charge_category_name`, `tax_category`.`name` as `apply_tax`, `tax_category`.`percentage`,organisations_charges.org_id,organisations_charges.org_charge,IFNULL(patients.organisation_id,0) as temp_col,patients.insurance_validity   FROM `radio` LEFT JOIN `lab` ON `radio`.`radiology_category_id` = `lab`.`id` 
         LEFT JOIN `charges` ON `radio`.`charge_id` = `charges`.`id` 
-        JOIN `charge_categories` ON `charge_categories`.`id` = `charges`.`charge_category_id` 
-        JOIN `tax_category` ON `tax_category`.`id` = `charges`.`tax_category_id` 
-        JOIN `charge_type_master` ON `charge_categories`.`charge_type_id` = `charge_type_master`.`id`
+        LEFT JOIN `charge_categories` ON `charge_categories`.`id` = `charges`.`charge_category_id` 
+        LEFT JOIN `tax_category` ON `tax_category`.`id` = `charges`.`tax_category_id` 
+        LEFT JOIN `charge_type_master` ON `charge_categories`.`charge_type_id` = `charge_type_master`.`id`
         LEFT JOIN `organisations_charges` ON `organisations_charges`.`charge_id` = `charges`.`id` 
         LEFT join patients on `patients`.`organisation_id` = `organisations_charges`.`org_id` and patients.id= ".$this->db->escape($patient_id)."
         WHERE `radio`.`id` = ".$this->db->escape($id).") d where d.temp_col = (SELECT CASE WHEN COUNT(*) = 1 THEN IFNULL(patients.organisation_id,0) ELSE COUNT(*) END AS 'Updated City' FROM `patients` where patients.id=".$this->db->escape($patient_id).")";
@@ -670,9 +670,9 @@ class Radio_model extends MY_Model
         $this->db->select('radio.*,lab.id as category_id,lab.lab_name, charges.id as charge_id, charges.name, charges.charge_category_id, charges.standard_charge, charges.description,charges.name as `charge_name`,charge_categories.name as `charge_category_name`,tax_category.name as apply_tax,tax_category.percentage,' . $field_variable);
         $this->db->join('lab', 'radio.radiology_category_id = lab.id', 'left');
         $this->db->join('charges', 'radio.charge_id = charges.id', 'left');
-        $this->db->join('charge_categories', 'charge_categories.id = charges.charge_category_id');
-        $this->db->join('tax_category', 'tax_category.id = charges.tax_category_id');
-        $this->db->join("charge_type_master", 'charge_categories.charge_type_id = charge_type_master.id');
+        $this->db->join('charge_categories', 'charge_categories.id = charges.charge_category_id', 'left');
+        $this->db->join('tax_category', 'tax_category.id = charges.tax_category_id', 'left');
+        $this->db->join("charge_type_master", 'charge_categories.charge_type_id = charge_type_master.id', 'left');
         $this->db->where('radio.id', $id);
         $this->db->order_by('radio.id', 'desc');
         $query = $this->db->get('radio');
@@ -688,7 +688,7 @@ class Radio_model extends MY_Model
     {
         $this->db->select('radiology_parameterdetails.*,radiology_parameter.parameter_name,radiology_parameter.reference_range,radiology_parameter.unit,unit.unit_name');
         $this->db->join('radiology_parameter', 'radiology_parameter.id = radiology_parameterdetails.radiology_parameter_id');
-        $this->db->join('unit', 'unit.id = radiology_parameter.unit');
+        $this->db->join('unit', 'unit.id = radiology_parameter.unit', 'left');
         $this->db->where('radiology_id', $id);
         $query = $this->db->get('radiology_parameterdetails');
         return $query->result();

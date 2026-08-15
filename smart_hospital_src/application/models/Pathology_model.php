@@ -371,7 +371,7 @@ class Pathology_model extends MY_Model
         LEFT JOIN `charge_categories` ON `charge_categories`.`id` = `charges`.`charge_category_id` 
         LEFT JOIN `organisations_charges` ON `organisations_charges`.`charge_id` = `charges`.`id` 
         LEFT join patients on `patients`.`organisation_id` = `organisations_charges`.`org_id` and patients.id= ".$this->db->escape($patient_id)."
-        JOIN `charge_type_master` ON `charge_categories`.`charge_type_id` = `charge_type_master`.`id` 
+        LEFT JOIN `charge_type_master` ON `charge_categories`.`charge_type_id` = `charge_type_master`.`id` 
         WHERE  `pathology`.`id` = ".$this->db->escape($id).") d where d.temp_col = (SELECT CASE WHEN COUNT(*) = 1 THEN IFNULL(patients.organisation_id,0) ELSE COUNT(*) END AS 'Updated City' FROM `patients` where patients.id=".$this->db->escape($patient_id).")";
         $query  = $this->db->query($sql);        
         if ($query->num_rows() > 0) {
@@ -403,7 +403,7 @@ class Pathology_model extends MY_Model
         $this->db->join('charges', 'pathology.charge_id = charges.id', 'left');
         $this->db->join('tax_category', 'charges.tax_category_id = tax_category.id', 'left');
         $this->db->join('charge_categories', 'charge_categories.id = charges.charge_category_id','left');
-        $this->db->join("charge_type_master", 'charge_categories.charge_type_id = charge_type_master.id');
+        $this->db->join("charge_type_master", 'charge_categories.charge_type_id = charge_type_master.id', 'left');
         $this->db->where('pathology.id', $id);
         $this->db->order_by('pathology.id', 'desc');
         $query = $this->db->get('pathology');
