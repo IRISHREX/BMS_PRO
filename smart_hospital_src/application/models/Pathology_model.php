@@ -372,7 +372,7 @@ class Pathology_model extends MY_Model
         LEFT JOIN `organisations_charges` ON `organisations_charges`.`charge_id` = `charges`.`id` 
         LEFT join patients on `patients`.`organisation_id` = `organisations_charges`.`org_id` and patients.id= ".$this->db->escape($patient_id)."
         LEFT JOIN `charge_type_master` ON `charge_categories`.`charge_type_id` = `charge_type_master`.`id` 
-        WHERE  `pathology`.`id` = ".$this->db->escape($id).") d where d.temp_col = (SELECT CASE WHEN COUNT(*) = 1 THEN IFNULL(patients.organisation_id,0) ELSE COUNT(*) END AS 'Updated City' FROM `patients` where patients.id=".$this->db->escape($patient_id).")";
+        WHERE  `pathology`.`id` = ".$this->db->escape($id).") d where d.temp_col = (SELECT CASE WHEN COUNT(*) = 1 THEN MAX(IFNULL(patients.organisation_id,0)) ELSE COUNT(*) END AS 'Updated City' FROM `patients` where patients.id=".$this->db->escape($patient_id).")";
         $query  = $this->db->query($sql);        
         if ($query->num_rows() > 0) {
             $result = $query->row();          
