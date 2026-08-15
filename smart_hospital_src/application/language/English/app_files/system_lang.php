@@ -3271,7 +3271,6 @@ $lang['your_selection'] = 'Your Selection';
 $lang['zoom_credential'] = 'Zoom Credential';
 $lang["zoom_oauth_setup"] = "Zoom OAuth Setup";
 $lang["partially_refunded"] = "Partially Refunded";
+$lang["partially_refunded_cancelled"] = "Partially Refunded (Cancelled)";
 $lang["full_refunded"] = "Full Refunded";
-$ l a n g [ " p a r t i a l l y _ r e f u n d e d _ c a n c e l l e d " ]   =   " P a r t i a l l y   R e f u n d e d   ( C a n c e l l e d ) " ;  
- $ l a n g [ " v a l i d _ a m o u n t " ]   =   " V a l i d   A m o u n t " ;  
- 
+$lang["valid_amount"] = "Valid Amount";
