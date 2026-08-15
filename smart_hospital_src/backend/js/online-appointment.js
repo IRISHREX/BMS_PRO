@@ -2,20 +2,22 @@
 // Uses native fetch — no jQuery dependency.
 
 var base_url = base_url || '';
-var lang_select  = lang_select  || '— Select —';
+var lang_select = lang_select || '— Select —';
 var lang_loading = lang_loading || 'Loading…';
 var lang_no_slot = lang_no_slot || 'No slots available for this date.';
 
 /* ── helpers ────────────────────────────────────────────────── */
 function _post(url, params) {
     var body = new URLSearchParams();
-    Object.keys(params).forEach(function(k) { body.append(k, params[k]); });
+    Object.keys(params).forEach(function (k) { body.append(k, params[k]); });
     return fetch(base_url + url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded',
-                   'X-Requested-With': 'XMLHttpRequest' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: body.toString()
-    }).then(function(r) {
+    }).then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
     });
@@ -31,16 +33,16 @@ function getdoctor(id, doc) {
         return;
     }
     sel.innerHTML = '<option value="">' + lang_loading + '</option>';
-    _post('site/getdoctor', {id: id, active: 'yes'})
-        .then(function(res) {
+    _post('site/getdoctor', { id: id, active: 'yes' })
+        .then(function (res) {
             var html = '<option value="">' + lang_select + '</option>';
-            res.forEach(function(obj) {
+            res.forEach(function (obj) {
                 var sel2 = (doc !== '' && doc == obj.id) ? ' selected' : '';
                 html += '<option value="' + parseInt(obj.id) + '"' + sel2 + '>' + obj.name + '</option>';
             });
             sel.innerHTML = html;
         })
-        .catch(function() { sel.innerHTML = '<option value="">' + lang_select + '</option>'; });
+        .catch(function () { sel.innerHTML = '<option value="">' + lang_select + '</option>'; });
     clearSlots();
 }
 
@@ -48,18 +50,18 @@ function getdoctor(id, doc) {
 function getDoctorShift(prev_val) {
     prev_val = prev_val || 0;
     var doctor_id = document.getElementById('doctor').value;
-    var shiftSel  = document.getElementById('global_shift');
+    var shiftSel = document.getElementById('global_shift');
     if (!doctor_id) { clearSlots(); return; }
-    _post('site/doctorshiftbyid', {doctor_id: doctor_id})
-        .then(function(res) {
+    _post('site/doctorshiftbyid', { doctor_id: doctor_id })
+        .then(function (res) {
             var html = '<option value="">' + lang_select + '</option>';
-            res.forEach(function(list) {
+            res.forEach(function (list) {
                 var sel2 = (list.id == prev_val) ? ' selected' : '';
                 html += '<option value="' + parseInt(list.id) + '"' + sel2 + '>' + list.name + '</option>';
             });
             shiftSel.innerHTML = html;
         })
-        .catch(function() {});
+        .catch(function () { });
     // Update aside with doctor name
     var doctorSel = document.getElementById('doctor');
     var sel = doctorSel && doctorSel.selectedIndex > 0 ? doctorSel.options[doctorSel.selectedIndex] : null;
@@ -69,13 +71,13 @@ function getDoctorShift(prev_val) {
 
 /* ── 3. Load time slots for selected shift + date ─────────── */
 function getShift() {
-    var date         = document.getElementById('datepicker_input').value;
-    var doctor       = document.getElementById('doctor').value;
+    var date = document.getElementById('datepicker_input').value;
+    var doctor = document.getElementById('doctor').value;
     var global_shift = document.getElementById('global_shift').value;
-    var slotDiv      = document.getElementById('slot');
-    var shiftDiv     = document.getElementById('shift');
+    var slotDiv = document.getElementById('slot');
+    var shiftDiv = document.getElementById('shift');
 
-    slotDiv.innerHTML  = '';
+    slotDiv.innerHTML = '';
     shiftDiv.innerHTML = '';
     document.getElementById('slot_id').value = '';
 
@@ -83,8 +85,8 @@ function getShift() {
 
     slotDiv.innerHTML = '<p style="font-size:13px;color:var(--muted,#888);margin:4px 0;">' + lang_loading + '</p>';
 
-    _post('site/getShift', {doctor: doctor, date: date, global_shift: global_shift})
-        .then(function(res) {
+    _post('site/getShift', { doctor: doctor, date: date, global_shift: global_shift })
+        .then(function (res) {
             slotDiv.innerHTML = '';
             if (res && res.length) {
                 var shift = res[0];
@@ -98,7 +100,7 @@ function getShift() {
                 slotDiv.innerHTML = '<p style="font-size:13px;color:var(--muted,#888);margin:4px 0;">' + lang_no_slot + '</p>';
             }
         })
-        .catch(function() {
+        .catch(function () {
             slotDiv.innerHTML = '<p style="font-size:13px;color:var(--muted,#888);margin:4px 0;">' + lang_no_slot + '</p>';
         });
 }
@@ -106,27 +108,27 @@ function getShift() {
 /* ── 4. Load individual time slots ───────────────────────────── */
 function loadSlots(shift, doctor, date, global_shift) {
     document.getElementById('shift_id').value = shift;
-    _post('site/getSlotByShift', {shift: shift, doctor: doctor, date: date, global_shift: global_shift})
-        .then(function(data) {
+    _post('site/getSlotByShift', { shift: shift, doctor: doctor, date: date, global_shift: global_shift })
+        .then(function (data) {
             var slotDiv = document.getElementById('slot');
             if (!data.result || !data.result.length) {
                 slotDiv.innerHTML = '<p style="font-size:13px;color:var(--muted,#888);margin:4px 0;">' + lang_no_slot + '</p>';
                 return;
             }
             var html = '<div class="slots">';
-            data.result.forEach(function(obj, i) {
-                var isOff   = obj.filled === 'filled';
-                var cls     = isOff ? 'slot off' : 'slot';
+            data.result.forEach(function (obj, i) {
+                var isOff = obj.filled === 'filled';
+                var cls = isOff ? 'slot off' : 'slot';
                 var onclick = isOff ? '' : ' onclick="setSlot(' + i + ',this)"';
-                var fill    = obj.filled ? ' data-filled="filled"' : '';
+                var fill = obj.filled ? ' data-filled="filled"' : '';
                 html += '<div class="' + cls + '" id="slot_' + i + '"' + fill + onclick + '>' + obj.time + '</div>';
             });
             html += '</div>';
             slotDiv.innerHTML = html;
-            if (data.fees)     { asideSet('fees', data.fees); }
+            if (data.fees) { asideSet('fees', data.fees); }
             if (data.duration) { asideSet('duration', data.duration); }
         })
-        .catch(function() {
+        .catch(function () {
             document.getElementById('slot').innerHTML =
                 '<p style="font-size:13px;color:var(--muted,#888);margin:4px 0;">' + lang_no_slot + '</p>';
         });
@@ -134,7 +136,7 @@ function loadSlots(shift, doctor, date, global_shift) {
 
 /* ── 5. Select a time slot ───────────────────────────────────── */
 function setSlot(i, el) {
-    document.querySelectorAll('#slot .slot').forEach(function(s) { s.classList.remove('on'); });
+    document.querySelectorAll('#slot .slot').forEach(function (s) { s.classList.remove('on'); });
     if (el && el.dataset.filled === 'filled') { return; }
     if (el) { el.classList.add('on'); }
     document.getElementById('slot_id').value = i;
@@ -147,38 +149,38 @@ function refreshCaptcha() {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-    .then(function(r) { return r.text(); })
-    .then(function(html) {
-        var el = document.querySelector('.captcha_image');
-        if (el) el.innerHTML = html;
-        var inp = document.getElementById('captcha_login');
-        if (inp) inp.value = '';
-    });
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+            var el = document.querySelector('.captcha_image');
+            if (el) el.innerHTML = html;
+            var inp = document.getElementById('captcha_login');
+            if (inp) inp.value = '';
+        });
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 function clearSlots() {
-    document.getElementById('slot').innerHTML  = '';
+    document.getElementById('slot').innerHTML = '';
     document.getElementById('shift').innerHTML = '';
-    document.getElementById('slot_id').value   = '';
+    document.getElementById('slot_id').value = '';
     asideClear('slot');
     asideClear('fees');
 }
 
 function asideSet(key, val) {
-    var row  = document.getElementById('aside-' + key + '-row');
+    var row = document.getElementById('aside-' + key + '-row');
     var name = document.getElementById('aside-' + key + '-name') ||
-               document.getElementById('aside-' + key + '-time') ||
-               document.getElementById('aside-' + key);
-    if (row)  { row.style.display = ''; }
+        document.getElementById('aside-' + key + '-time') ||
+        document.getElementById('aside-' + key);
+    if (row) { row.style.display = ''; }
     if (name) { name.textContent = val; }
 }
 
 function asideClear(key) {
-    var row  = document.getElementById('aside-' + key + '-row');
+    var row = document.getElementById('aside-' + key + '-row');
     var name = document.getElementById('aside-' + key + '-name') ||
-               document.getElementById('aside-' + key + '-time') ||
-               document.getElementById('aside-' + key);
-    if (row)  { row.style.display = 'none'; }
+        document.getElementById('aside-' + key + '-time') ||
+        document.getElementById('aside-' + key);
+    if (row) { row.style.display = 'none'; }
     if (name) { name.textContent = '—'; }
 }
