@@ -221,9 +221,10 @@ class Radio_model extends MY_Model
 
     public function getradiotestDetails()
     {
-        $this->db->select('radio.*,lab.id as category_id,lab.lab_name as category_name,charges.id as charge_id, charges.name, charges.charge_category_id, charges.standard_charge, charges.description');
+        $this->db->select('radio.*,lab.id as category_id,lab.lab_name as category_name,charges.id as charge_id, charges.name, charges.charge_category_id, charges.standard_charge, charges.description,IFNULL(tax_category.percentage, 0) as percentage');
         $this->db->join('lab', 'radio.radiology_category_id = lab.id', 'left');
         $this->db->join('charges', 'radio.charge_id = charges.id', 'left');
+        $this->db->join('tax_category', 'tax_category.id = charges.tax_category_id', 'left');
         $this->db->order_by('radio.id', 'desc');
         $query = $this->db->get('radio');
         return $query->result_array();
@@ -628,9 +629,9 @@ class Radio_model extends MY_Model
         return $result;
     }    
 	
-	public function getRadiologyChargeByPatient($id,$patient_id=null)
+    public function getRadiologyChargeByPatient($id,$patient_id=null)
     {
-        $sql    = "SELECT * from (SELECT `radio`.*, `lab`.`id` as `category_id`, `lab`.`lab_name`, `charges`.`name`, `charges`.`charge_category_id`, `charges`.`standard_charge`, `charges`.`description`, `charges`.`name` as `charge_name`, `charge_categories`.`name` as `charge_category_name`, `tax_category`.`name` as `apply_tax`, `tax_category`.`percentage`,organisations_charges.org_id,organisations_charges.org_charge,IFNULL(patients.organisation_id,0) as temp_col,patients.insurance_validity   FROM `radio` LEFT JOIN `lab` ON `radio`.`radiology_category_id` = `lab`.`id` 
+        $sql    = "SELECT * from (SELECT `radio`.*, `lab`.`id` as `category_id`, `lab`.`lab_name`, `charges`.`name`, `charges`.`charge_category_id`, `charges`.`standard_charge`, `charges`.`description`, `charges`.`name` as `charge_name`, `charge_categories`.`name` as `charge_category_name`, `tax_category`.`name` as `apply_tax`, IFNULL(`tax_category`.`percentage`, 0) as `percentage`,organisations_charges.org_id,organisations_charges.org_charge,IFNULL(patients.organisation_id,0) as temp_col,patients.insurance_validity   FROM `radio` LEFT JOIN `lab` ON `radio`.`radiology_category_id` = `lab`.`id` 
         LEFT JOIN `charges` ON `radio`.`charge_id` = `charges`.`id` 
         LEFT JOIN `charge_categories` ON `charge_categories`.`id` = `charges`.`charge_category_id` 
         LEFT JOIN `tax_category` ON `tax_category`.`id` = `charges`.`tax_category_id` 
@@ -667,7 +668,7 @@ class Radio_model extends MY_Model
 
         $field_variable      = implode(',', $field_var_array);
         $custom_field_column = implode(',', $custom_field_column_array);
-        $this->db->select('radio.*,lab.id as category_id,lab.lab_name, charges.id as charge_id, charges.name, charges.charge_category_id, charges.standard_charge, charges.description,charges.name as `charge_name`,charge_categories.name as `charge_category_name`,tax_category.name as apply_tax,tax_category.percentage,' . $field_variable);
+        $this->db->select('radio.*,lab.id as category_id,lab.lab_name, charges.id as charge_id, charges.name, charges.charge_category_id, charges.standard_charge, charges.description,charges.name as `charge_name`,charge_categories.name as `charge_category_name`,tax_category.name as apply_tax,IFNULL(tax_category.percentage, 0) as percentage,' . $field_variable);
         $this->db->join('lab', 'radio.radiology_category_id = lab.id', 'left');
         $this->db->join('charges', 'radio.charge_id = charges.id', 'left');
         $this->db->join('charge_categories', 'charge_categories.id = charges.charge_category_id', 'left');

@@ -363,7 +363,7 @@ class Pathology_model extends MY_Model
     
     public function getPathologyChargeByPatient($id,$patient_id=null)
     {      
-        $sql    = "SELECT * from (SELECT `pathology`.*, `pathology_category`.`id` as `category_id`, `pathology_category`.`category_name` as `pathology_category_name`, `charges`.`name` as `charge_name`, `charges`.`charge_category_id`, `charges`.`standard_charge`, `charges`.`description`, `charge_categories`.`name` as `charge_category_name`, `tax_category`.`name` as `apply_tax`, `tax_category`.`percentage` as `tax`,organisations_charges.org_id,organisations_charges.org_charge,IFNULL(patients.organisation_id,0) as temp_col,patients.insurance_validity 
+        $sql    = "SELECT * from (SELECT `pathology`.*, `pathology_category`.`id` as `category_id`, `pathology_category`.`category_name` as `pathology_category_name`, `charges`.`name` as `charge_name`, `charges`.`charge_category_id`, `charges`.`standard_charge`, `charges`.`description`, `charge_categories`.`name` as `charge_category_name`, `tax_category`.`name` as `apply_tax`, IFNULL(`tax_category`.`percentage`, 0) as `tax`,organisations_charges.org_id,organisations_charges.org_charge,IFNULL(patients.organisation_id,0) as temp_col,patients.insurance_validity 
          FROM `pathology` 
         LEFT JOIN `pathology_category` ON `pathology`.`pathology_category_id` = `pathology_category`.`id` 
         LEFT JOIN `charges` ON `pathology`.`charge_id` = `charges`.`id` 
@@ -398,7 +398,7 @@ class Pathology_model extends MY_Model
         }
         $field_variable      = implode(',', $field_var_array);
         $custom_field_column = implode(',', $custom_field_column_array);
-        $this->db->select('pathology.*,pathology_category.id as category_id,pathology_category.category_name as `pathology_category_name`, charges.id as charge_id, charges.name as `charge_name`, charges.charge_category_id, charges.standard_charge, charges.description,charge_categories.name as `charge_category_name`,tax_category.name as apply_tax,tax_category.percentage as tax,' . $field_variable);
+        $this->db->select('pathology.*,pathology_category.id as category_id,pathology_category.category_name as `pathology_category_name`, charges.id as charge_id, charges.name as `charge_name`, charges.charge_category_id, charges.standard_charge, charges.description,charge_categories.name as `charge_category_name`,tax_category.name as apply_tax,IFNULL(tax_category.percentage, 0) as tax,' . $field_variable);
         $this->db->join('pathology_category', 'pathology.pathology_category_id = pathology_category.id', 'left');
         $this->db->join('charges', 'pathology.charge_id = charges.id', 'left');
         $this->db->join('tax_category', 'charges.tax_category_id = tax_category.id', 'left');
@@ -418,7 +418,7 @@ class Pathology_model extends MY_Model
 
     public function getpathotestDetails()
     {
-        $this->db->select('pathology.*,pathology_category.id as category_id,pathology_category.category_name,charges.id as charge_id, charges.name, charges.charge_category_id, charges.standard_charge, charges.description,tax_category.percentage as tax');
+        $this->db->select('pathology.*,pathology_category.id as category_id,pathology_category.category_name,charges.id as charge_id, charges.name, charges.charge_category_id, charges.standard_charge, charges.description,IFNULL(tax_category.percentage, 0) as tax');
         $this->db->join('pathology_category', 'pathology.pathology_category_id = pathology_category.id', 'left');
         $this->db->join('charges', 'pathology.charge_id = charges.id', 'left');
         $this->db->join('tax_category', 'charges.tax_category_id = tax_category.id', 'left');
