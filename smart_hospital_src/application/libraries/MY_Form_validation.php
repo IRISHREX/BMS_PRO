@@ -3,8 +3,8 @@
 class MY_Form_validation extends CI_Form_validation {
     protected $CI;
 
-    public function __construct() {
-        parent::__construct();
+    public function __construct($config = array()) {
+        parent::__construct($config);
             // reference to the CodeIgniter super object
         $this->CI =& get_instance();
     }

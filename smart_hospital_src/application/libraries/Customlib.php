@@ -1501,7 +1501,8 @@ class Customlib
     public function dateTimeformatTwentyfourhourStrtotime($date, $twentyfour = false)
     {
         $format = $this->getHospitalDateFormat();
-        if ($twentyfour) {
+        $is24h = ($twentyfour === '24-hour' || $twentyfour === true || $twentyfour === 1 || $twentyfour === '1');
+        if ($is24h) {
             $date_formated = date_parse_from_format($format . ' G:i:s', $date); // 18:00:00 or 24:00:00
 
         } else {

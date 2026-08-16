@@ -25,7 +25,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                     <tr>
                                         <th><?php echo $this->lang->line('payee'); ?></th>
                                         <th><?php echo $this->lang->line('patient_name'); ?></th>
-                                        <th><?php echo $this->lang->line('date'); ?></th>
+                                        <th><?php echo "Entry Date"; ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('bill_no'); ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('bill_amount').' ('. $currency_symbol .')'; ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
@@ -47,7 +47,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                             <tr>
                                                 <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
                                                 <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
-                                                <td><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->time_format); ?></td>
+                                                <td><?php echo date('d.m.Y @ H:i:s', strtotime($value['date'])); ?></td>
                                                 <td class="text-end"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
                                                 <td class="text-end"><?php echo amountFormat($value["bill_amount"]); ?></td>
                                                 <td class="text-end"><?php echo html_escape($value["percentage"]); ?></td>
@@ -235,7 +235,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                                 </select>
                                             </div>
                                             <div class="col-12">
-                                                <label class="form-label form-label-sm"><?php echo $this->lang->line('date'); ?></label>
+                                                <label class="form-label form-label-sm"><?php echo "Entry Date"; ?></label>
                                                 <input class="form-control form-control-sm datetime" id="entry_date" name="entry_date" type="text">
                                             </div>
                                         </div>
@@ -287,7 +287,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                         </select>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label form-label-sm"><?php echo $this->lang->line('date'); ?></label>
+                                        <label class="form-label form-label-sm"><?php echo "Entry Date"; ?></label>
                                         <input id="edit_entry_date" name="edit_entry_date" type="text" class="form-control form-control-sm datetime">
                                     </div>
                                 </div>
@@ -356,10 +356,8 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                 } else {
                     $("#edit_status").val('Paid');
                 }
-                if (data.entry_date) {
-                    var dateObj = new Date(data.entry_date);
-                    var formattedDate = dateObj.getFullYear() + '-' + ('0' + (dateObj.getMonth()+1)).slice(-2) + '-' + ('0' + dateObj.getDate()).slice(-2) + ' ' + ('0' + dateObj.getHours()).slice(-2) + ':' + ('0' + dateObj.getMinutes()).slice(-2) + ':' + ('0' + dateObj.getSeconds()).slice(-2);
-                    $("#edit_entry_date").val(formattedDate);
+                if (data.formatted_date) {
+                    $("#edit_entry_date").val(data.formatted_date);
                 } else {
                     $("#edit_entry_date").val("");
                 }
