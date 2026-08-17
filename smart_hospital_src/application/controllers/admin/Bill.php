@@ -1496,14 +1496,17 @@ class Bill extends Admin_Controller
         $data['pathology_transaction']   = $pathology_transaction;
         $pathology_billing               = $this->pathology_model->getPathologyBillByID($pathology_billing_id);
         $data['pathology_billing']       = $pathology_billing;
+        $total_paid                      = (float)($this->transaction_model->pathologyTotalPayments($pathology_billing_id)->total_paid ?? 0);
+        $total_refund                    = (float)$this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
+        $data['pathology_total_payment'] = $total_paid;
+        $data['pathology_total_refund']  = $total_refund;
+        $data['max_refundable']          = max(0, round($total_paid - $total_refund, 2));
+        $data['action_type']             = $this->input->post('action_type', TRUE) ?: 'payment';
+
         $page                            = $this->load->view("admin/bill/pathology/_getPathologyTransaction", $data, true);
-        $paid_amount = isset($pathology_billing->total_deposit) ? (float)$pathology_billing->total_deposit : (float)($data['pathology_total_payment'] ?? 0);
-        $net_amount  = isset($pathology_billing->net_amount) ? (float)$pathology_billing->net_amount : 0;
-        if ($paid_amount > $net_amount && $net_amount > 0) {
-            $refund_balance = round($paid_amount - $net_amount, 2);
-        } else {
-            $refund_balance = max(0, round($paid_amount, 2));
-        }
+        $paid_amount                     = $total_paid;
+        $net_amount                      = isset($pathology_billing->net_amount) ? (float)$pathology_billing->net_amount : 0;
+        $refund_balance                  = $data['max_refundable'];
         echo json_encode(array('status' => 1, 'page' => $page, 'refund_balance' => $refund_balance, 'paid_amount' => $paid_amount, 'net_amount' => $net_amount));
     }
 
@@ -1592,9 +1595,11 @@ class Bill extends Admin_Controller
 
         $this->form_validation->set_rules('date', $this->lang->line('date'), 'trim|required|xss_clean');
         $total_rows = $this->input->post('total_rows', TRUE);
-        if (!isset($total_rows) && !isset($pathology) && !isset($radiology)) {
-            $this->form_validation->set_rules('no_records', $this->lang->line('no_records'), 'trim|required|xss_clean',
-                array('required' => $this->lang->line('no_test_selected')));
+        if (empty($pathology_billing_id)) {
+            if (!isset($total_rows) && !isset($pathology) && !isset($radiology)) {
+                $this->form_validation->set_rules('no_records', $this->lang->line('no_records'), 'trim|required|xss_clean',
+                    array('required' => $this->lang->line('no_test_selected')));
+            }
         }
         $check_duplicate_test = array();
         if (isset($total_rows) && !empty($total_rows)) {
@@ -1740,29 +1745,31 @@ class Bill extends Admin_Controller
                 $prev_reports_array = $prev_reports;
             }
 
-            foreach ($total_rows as $row_key => $row_value) {
-                $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
-                if ($test_report_id == 0) {
-                    $report = array(
-                        'pathology_bill_id' => 0,
-                        'patient_id'        => $patient_id,
-                        'pathology_id'      => $this->input->post('test_name_' . $row_value, TRUE),
-                        'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
-                        'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
-                    );
-                    $insert_array[] = $report;
-                } else if ($test_report_id > 0) {
-                    $report = array(
-                        'id'             => $test_report_id,
-                        'patient_id'     => $patient_id,
-                        'pathology_id'   => $this->input->post('test_name_' . $row_value, TRUE),
-                        'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
-                        'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
-                    );
-                    $prev_reports_update_array[] = $test_report_id;
-                    $update_array[]              = $report;
+            if (isset($total_rows) && !empty($total_rows)) {
+                foreach ($total_rows as $row_key => $row_value) {
+                    $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
+                    if ($test_report_id == 0) {
+                        $report = array(
+                            'pathology_bill_id' => 0,
+                            'patient_id'        => $patient_id,
+                            'pathology_id'      => $this->input->post('test_name_' . $row_value, TRUE),
+                            'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
+                            'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
+                        );
+                        $insert_array[] = $report;
+                    } else if ($test_report_id > 0) {
+                        $report = array(
+                            'id'             => $test_report_id,
+                            'patient_id'     => $patient_id,
+                            'pathology_id'   => $this->input->post('test_name_' . $row_value, TRUE),
+                            'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
+                            'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
+                        );
+                        $prev_reports_update_array[] = $test_report_id;
+                        $update_array[]              = $report;
+                    }
                 }
             }
 
@@ -1801,6 +1808,59 @@ class Bill extends Admin_Controller
             }
 
             $array_delete = array_diff($prev_reports_array, $prev_reports_update_array);
+
+            if ($pathology_billing_id > 0) {
+                $existing_payments = $this->transaction_model->pathologyTotalPayments($pathology_billing_id);
+                $prev_total_paid   = ($existing_payments && isset($existing_payments->total_paid)) ? (float)$existing_payments->total_paid : 0;
+                $prev_total_refund = (float)$this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
+                $net_paid          = max(0, round($prev_total_paid - $prev_total_refund, 2));
+                $new_net           = (float)$this->input->post('net_amount', TRUE);
+
+                if (empty($total_rows) || $new_net <= 0) {
+                    if ($net_paid > 0) {
+                        $payment_section = $this->config->item('payment_section');
+                        $auto_refund     = array(
+                            'pathology_billing_id' => $pathology_billing_id,
+                            'patient_id'           => $patient_id,
+                            'case_reference_id'    => $case_reference_id,
+                            'section'              => $payment_section['pathology'],
+                            'amount'               => $net_paid,
+                            'type'                 => 'refund',
+                            'payment_mode'         => 'Cash',
+                            'payment_date'         => date('Y-m-d H:i:s'),
+                            'note'                 => 'Full refund on cancelling all test(s)',
+                            'received_by'          => $this->customlib->getLoggedInUserID(),
+                        );
+                        $this->transaction_model->add($auto_refund);
+                    }
+                    $data['total']               = 0;
+                    $data['discount']            = 0;
+                    $data['discount_percentage'] = 0;
+                    $data['tax']                  = 0;
+                    $data['net_amount']          = 0;
+                    $data['status']              = 'refunded_cancelled';
+                } else if ($net_paid > $new_net) {
+                    $excess_amount   = round($net_paid - $new_net, 2);
+                    $payment_section = $this->config->item('payment_section');
+                    $auto_refund     = array(
+                        'pathology_billing_id' => $pathology_billing_id,
+                        'patient_id'           => $patient_id,
+                        'case_reference_id'    => $case_reference_id,
+                        'section'              => $payment_section['pathology'],
+                        'amount'               => $excess_amount,
+                        'type'                 => 'refund',
+                        'payment_mode'         => 'Cash',
+                        'payment_date'         => date('Y-m-d H:i:s'),
+                        'note'                 => 'Auto-refund for deducted test(s)',
+                        'received_by'          => $this->customlib->getLoggedInUserID(),
+                    );
+                    $this->transaction_model->add($auto_refund);
+                    $data['status'] = 'refunded_approved';
+                } else {
+                    $data['status'] = NULL;
+                }
+            }
+
             $inserted     = $this->pathology_model->addBill($data, $insert_array, $update_array, $array_delete, $pathology_billing_id, $transaction_data);
 
             if ($pathology_billing_id > 0) {
@@ -2109,17 +2169,20 @@ class Bill extends Admin_Controller
             $data['form_id'] = "add_partial_payment";
         }
         $radio_billing         = $this->radio_model->getRadiologyBillByID($radiology_billing_id);
-        $data['radio_billing'] = $radio_billing;
+        $data['radio_billing']         = $radio_billing;
         $data["radiology_billing_id"]  = $radiology_billing_id;
         $data["payment_mode"]          = $this->payment_mode;
+        $total_paid                    = (float)($this->transaction_model->radiologyTotalPayments($radiology_billing_id)->total_paid ?? 0);
+        $total_refund                  = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+        $data['radiology_total_payment'] = $total_paid;
+        $data['radiology_total_refund']  = $total_refund;
+        $data['max_refundable']          = max(0, round($total_paid - $total_refund, 2));
+        $data['action_type']             = $this->input->post('action_type', TRUE) ?: 'payment';
+
         $page                          = $this->load->view("admin/bill/radiology/_getRadiologyTransactions", $data, true);
-        $paid_amount = isset($radio_billing->total_deposit) ? (float)$radio_billing->total_deposit : 0;
-        $net_amount  = isset($radio_billing->net_amount) ? (float)$radio_billing->net_amount : 0;
-        if ($paid_amount > $net_amount && $net_amount > 0) {
-            $refund_balance = round($paid_amount - $net_amount, 2);
-        } else {
-            $refund_balance = max(0, round($paid_amount, 2));
-        }
+        $paid_amount                   = $total_paid;
+        $net_amount                    = isset($radio_billing->net_amount) ? (float)$radio_billing->net_amount : 0;
+        $refund_balance                = $data['max_refundable'];
         echo json_encode(array('status' => 1, 'page' => $page, 'refund_balance' => $refund_balance, 'paid_amount' => $paid_amount, 'net_amount' => $net_amount));
     }
 
@@ -2294,9 +2357,11 @@ class Bill extends Admin_Controller
         $this->form_validation->set_rules('date', $this->lang->line('date'), 'trim|required|xss_clean');
 
         $total_rows = $this->input->post('total_rows');
-        if (!isset($total_rows) && !isset($radiology) && !isset($radiology)) {
-            $this->form_validation->set_rules('no_records', $this->lang->line('no_records'), 'trim|required|xss_clean',
-                array('required' => $this->lang->line('no_test_selected')));
+        if (empty($radiology_billing_id)) {
+            if (!isset($total_rows) && !isset($radiology) && !isset($radiology)) {
+                $this->form_validation->set_rules('no_records', $this->lang->line('no_records'), 'trim|required|xss_clean',
+                    array('required' => $this->lang->line('no_test_selected')));
+            }
         }
         $check_duplicate_test = array();
         if (isset($total_rows) && !empty($total_rows)) {
@@ -2448,29 +2513,31 @@ class Bill extends Admin_Controller
                 $prev_reports_array = $prev_reports;
             }
 
-            foreach ($total_rows as $row_key => $row_value) {
-                $test_report_id = $this->input->post('inserted_id_' . $row_value);
-                if ($test_report_id == 0) {
-                    $report = array(
-                        'radiology_bill_id' => 0,
-                        'radiology_id'      => $this->input->post('test_name_' . $row_value),
-                        'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value)),
-                        'patient_id'        => $patient_id,
-                        'apply_charge'      => $this->input->post('amount_' . $row_value),
-                        'tax_percentage'    => $this->input->post('taxpercent_' . $row_value),
-                    );
-                    $insert_array[] = $report;
-                } else if ($test_report_id > 0) {
-                    $report = array(
-                        'id'             => $test_report_id,
-                        'radiology_id'   => $this->input->post('test_name_' . $row_value),
-                        'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value)),
-                        'patient_id'     => $patient_id,
-                        'apply_charge'   => $this->input->post('amount_' . $row_value),
-                        'tax_percentage' => $this->input->post('taxpercent_' . $row_value),
-                    );
-                    $prev_reports_update_array[] = $test_report_id;
-                    $update_array[]              = $report;
+            if (isset($total_rows) && !empty($total_rows)) {
+                foreach ($total_rows as $row_key => $row_value) {
+                    $test_report_id = $this->input->post('inserted_id_' . $row_value);
+                    if ($test_report_id == 0) {
+                        $report = array(
+                            'radiology_bill_id' => 0,
+                            'radiology_id'      => $this->input->post('test_name_' . $row_value),
+                            'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value)),
+                            'patient_id'        => $patient_id,
+                            'apply_charge'      => $this->input->post('amount_' . $row_value),
+                            'tax_percentage'    => $this->input->post('taxpercent_' . $row_value),
+                        );
+                        $insert_array[] = $report;
+                    } else if ($test_report_id > 0) {
+                        $report = array(
+                            'id'             => $test_report_id,
+                            'radiology_id'   => $this->input->post('test_name_' . $row_value),
+                            'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value)),
+                            'patient_id'     => $patient_id,
+                            'apply_charge'   => $this->input->post('amount_' . $row_value),
+                            'tax_percentage' => $this->input->post('taxpercent_' . $row_value),
+                        );
+                        $prev_reports_update_array[] = $test_report_id;
+                        $update_array[]              = $report;
+                    }
                 }
             }
 
@@ -2509,6 +2576,59 @@ class Bill extends Admin_Controller
             }
 			
             $array_delete = array_diff($prev_reports_array, $prev_reports_update_array);
+
+            if ($radiology_billing_id > 0) {
+                $existing_payments = $this->transaction_model->radiologyTotalPayments($radiology_billing_id);
+                $prev_total_paid   = ($existing_payments && isset($existing_payments->total_paid)) ? (float)$existing_payments->total_paid : 0;
+                $prev_total_refund = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+                $net_paid          = max(0, round($prev_total_paid - $prev_total_refund, 2));
+                $new_net           = (float)$this->input->post('net_amount', TRUE);
+
+                if (empty($total_rows) || $new_net <= 0) {
+                    if ($net_paid > 0) {
+                        $payment_section = $this->config->item('payment_section');
+                        $auto_refund     = array(
+                            'radiology_billing_id' => $radiology_billing_id,
+                            'patient_id'           => $patient_id,
+                            'case_reference_id'    => $case_reference_id,
+                            'section'              => $payment_section['radiology'],
+                            'amount'               => $net_paid,
+                            'type'                 => 'refund',
+                            'payment_mode'         => 'Cash',
+                            'payment_date'         => date('Y-m-d H:i:s'),
+                            'note'                 => 'Full refund on cancelling all test(s)',
+                            'received_by'          => $this->customlib->getLoggedInUserID(),
+                        );
+                        $this->transaction_model->add($auto_refund);
+                    }
+                    $data['total']               = 0;
+                    $data['discount']            = 0;
+                    $data['discount_percentage'] = 0;
+                    $data['tax']                  = 0;
+                    $data['net_amount']          = 0;
+                    $data['status']              = 'refunded_cancelled';
+                } else if ($net_paid > $new_net) {
+                    $excess_amount   = round($net_paid - $new_net, 2);
+                    $payment_section = $this->config->item('payment_section');
+                    $auto_refund     = array(
+                        'radiology_billing_id' => $radiology_billing_id,
+                        'patient_id'           => $patient_id,
+                        'case_reference_id'    => $case_reference_id,
+                        'section'              => $payment_section['radiology'],
+                        'amount'               => $excess_amount,
+                        'type'                 => 'refund',
+                        'payment_mode'         => 'Cash',
+                        'payment_date'         => date('Y-m-d H:i:s'),
+                        'note'                 => 'Auto-refund for deducted test(s)',
+                        'received_by'          => $this->customlib->getLoggedInUserID(),
+                    );
+                    $this->transaction_model->add($auto_refund);
+                    $data['status'] = 'refunded_approved';
+                } else {
+                    $data['status'] = NULL;
+                }
+            }
+
             $inserted = $this->radio_model->addBill($data, $insert_array, $update_array, $array_delete, $radiology_billing_id, $transaction_data);
 
             if ($radiology_billing_id > 0) {

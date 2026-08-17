@@ -1319,27 +1319,24 @@ $('#addpatient_id').on('select2:select', function (e) {
         form.find('[name="appointment_status"]').prop('disabled', !isRefund);
     }
 
-   function getPayments(record_id, action_type = 'payment'){
-         var payment_modal=$('#addPaymentModal');
+    function getPayments(record_id, action_type = 'payment'){
+        var payment_modal=$('#addPaymentModal');
         $.ajax({
             url: '<?php echo base_url() ?>admin/pathology/getPathologyTransaction',
             type: "POST",
-            data: {'id': record_id},
+            data: {'id': record_id, 'action_type': action_type},
             dataType:"JSON",
             beforeSend: function(){
             },          
             success: function (data) {
-         
-           $('.modal-body',payment_modal).html(data.page);
-            if(action_type === 'refund') {
-                $('select[name="action_type"]', payment_modal).val('refund').trigger('change');
-            }
-            payment_modal.removeClass('modal_loading');  
+                $('.modal-body',payment_modal).html(data.page);
+                payment_modal.removeClass('modal_loading');  
             },
-             error: function () {
-             payment_modal.removeClass('modal_loading'); 
-            },  complete: function(){
-             payment_modal.removeClass('modal_loading'); 
+            error: function () {
+                payment_modal.removeClass('modal_loading'); 
+            },
+            complete: function(){
+                payment_modal.removeClass('modal_loading'); 
             }
         });
     }

@@ -985,25 +985,22 @@ foreach ($testlist as $dkey => $testlist_value) {
         $.ajax({
             url: '<?php echo base_url() ?>admin/radio/getRadiologyTransaction',
             type: "POST",
-            data: {'id': record_id},
+            data: {'id': record_id, 'action_type': action_type},
             dataType:"JSON",
             beforeSend: function(){
             },          
             success: function (data) {
-
-           $('.modal-body',payment_modal).html(data.page);
-            $('[data-bs-toggle="tooltip"]', payment_modal).each(function () {
-                bootstrap.Tooltip.getOrCreateInstance(this);
-            });
-            if(action_type === 'refund') {
-                $('select[name="action_type"]', payment_modal).val('refund').trigger('change');
-            }
-            payment_modal.removeClass('modal_loading');
+                $('.modal-body',payment_modal).html(data.page);
+                $('[data-bs-toggle="tooltip"]', payment_modal).each(function () {
+                    bootstrap.Tooltip.getOrCreateInstance(this);
+                });
+                payment_modal.removeClass('modal_loading');
             },
-             error: function () {
-             payment_modal.removeClass('modal_loading'); 
-            },  complete: function(){
-             payment_modal.removeClass('modal_loading'); 
+            error: function () {
+                payment_modal.removeClass('modal_loading'); 
+            },
+            complete: function(){
+                payment_modal.removeClass('modal_loading'); 
             }
         });
     }

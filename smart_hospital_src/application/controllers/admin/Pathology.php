@@ -363,9 +363,11 @@ class Pathology extends Admin_Controller
         $this->form_validation->set_rules('date', $this->lang->line('date'), 'trim|required|xss_clean');
 
         $total_rows = $this->input->post('total_rows', TRUE);
-        if (!isset($total_rows) && !isset($pathology) && !isset($radiology)) {
-            $this->form_validation->set_rules('no_records', $this->lang->line('no_records'), 'trim|required|xss_clean',
-                array('required' => $this->lang->line('no_test_selected')));
+        if (empty($pathology_billing_id)) {
+            if (!isset($total_rows) && !isset($pathology) && !isset($radiology)) {
+                $this->form_validation->set_rules('no_records', $this->lang->line('no_records'), 'trim|required|xss_clean',
+                    array('required' => $this->lang->line('no_test_selected')));
+            }
         }
         $check_duplicate_test = array();
         if (isset($total_rows) && !empty($total_rows)) {
@@ -522,29 +524,31 @@ class Pathology extends Admin_Controller
                 $prev_reports_array = $prev_reports;
             }
 
-            foreach ($total_rows as $row_key => $row_value) {
-                $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
-                if ($test_report_id == 0) {
-                    $report = array(
-                        'pathology_bill_id' => 0,
-                        'patient_id'        => $patient_id,
-                        'pathology_id'      => $this->input->post('test_name_' . $row_value, TRUE),
-                        'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
-                        'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
-                    );
-                    $insert_array[] = $report;
-                } else if ($test_report_id > 0) {
-                    $report = array(
-                        'id'             => $test_report_id,
-                        'patient_id'     => $patient_id,
-                        'pathology_id'   => $this->input->post('test_name_' . $row_value, TRUE),
-                        'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
-                        'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
-                    );
-                    $prev_reports_update_array[] = $test_report_id;
-                    $update_array[]              = $report;
+            if (isset($total_rows) && !empty($total_rows)) {
+                foreach ($total_rows as $row_key => $row_value) {
+                    $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
+                    if ($test_report_id == 0) {
+                        $report = array(
+                            'pathology_bill_id' => 0,
+                            'patient_id'        => $patient_id,
+                            'pathology_id'      => $this->input->post('test_name_' . $row_value, TRUE),
+                            'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
+                            'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
+                        );
+                        $insert_array[] = $report;
+                    } else if ($test_report_id > 0) {
+                        $report = array(
+                            'id'             => $test_report_id,
+                            'patient_id'     => $patient_id,
+                            'pathology_id'   => $this->input->post('test_name_' . $row_value, TRUE),
+                            'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
+                            'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
+                        );
+                        $prev_reports_update_array[] = $test_report_id;
+                        $update_array[]              = $report;
+                    }
                 }
             }
 
@@ -586,7 +590,60 @@ class Pathology extends Admin_Controller
             }
 
             $array_delete = array_diff($prev_reports_array, $prev_reports_update_array);
-            $inserted= $this->pathology_model->addBill($data, $insert_array, $update_array, $array_delete, $pathology_billing_id, $transaction_data);
+
+            if ($pathology_billing_id > 0) {
+                $existing_payments = $this->transaction_model->pathologyTotalPayments($pathology_billing_id);
+                $prev_total_paid   = ($existing_payments && isset($existing_payments->total_paid)) ? (float)$existing_payments->total_paid : 0;
+                $prev_total_refund = (float)$this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
+                $net_paid          = max(0, round($prev_total_paid - $prev_total_refund, 2));
+                $new_net           = (float)$this->input->post('net_amount', TRUE);
+
+                if (empty($total_rows) || $new_net <= 0) {
+                    if ($net_paid > 0) {
+                        $payment_section = $this->config->item('payment_section');
+                        $auto_refund     = array(
+                            'pathology_billing_id' => $pathology_billing_id,
+                            'patient_id'           => $patient_id,
+                            'case_reference_id'    => $case_reference_id,
+                            'section'              => $payment_section['pathology'],
+                            'amount'               => $net_paid,
+                            'type'                 => 'refund',
+                            'payment_mode'         => 'Cash',
+                            'payment_date'         => date('Y-m-d H:i:s'),
+                            'note'                 => 'Full refund on cancelling all test(s)',
+                            'received_by'          => $this->customlib->getLoggedInUserID(),
+                        );
+                        $this->transaction_model->add($auto_refund);
+                    }
+                    $data['total']               = 0;
+                    $data['discount']            = 0;
+                    $data['discount_percentage'] = 0;
+                    $data['tax']                  = 0;
+                    $data['net_amount']          = 0;
+                    $data['status']              = 'refunded_cancelled';
+                } else if ($net_paid > $new_net) {
+                    $excess_amount   = round($net_paid - $new_net, 2);
+                    $payment_section = $this->config->item('payment_section');
+                    $auto_refund     = array(
+                        'pathology_billing_id' => $pathology_billing_id,
+                        'patient_id'           => $patient_id,
+                        'case_reference_id'    => $case_reference_id,
+                        'section'              => $payment_section['pathology'],
+                        'amount'               => $excess_amount,
+                        'type'                 => 'refund',
+                        'payment_mode'         => 'Cash',
+                        'payment_date'         => date('Y-m-d H:i:s'),
+                        'note'                 => 'Auto-refund for deducted test(s)',
+                        'received_by'          => $this->customlib->getLoggedInUserID(),
+                    );
+                    $this->transaction_model->add($auto_refund);
+                    $data['status'] = 'refunded_approved';
+                } else {
+                    $data['status'] = NULL;
+                }
+            }
+
+            $inserted = $this->pathology_model->addBill($data, $insert_array, $update_array, $array_delete, $pathology_billing_id, $transaction_data);
 
             if ($pathology_billing_id > 0) {
                 if (!empty($custom_fields)) {
@@ -1469,12 +1526,16 @@ class Pathology extends Admin_Controller
                 $balance_amount = ($value->net_amount) - ($value->paid_amount);
                 //====================================
 
+                $billing_status = $value->status ?? '';
                 $action = "<div class='btn-group action-btn-inner'><button type='button' class='btn btn-default btn-xs dropdown-toggle' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-v'></i></button><ul class='dropdown-menu dropdown-menu-end'>";
                 $action .= "<li><a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item view_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i> " . $this->lang->line('view_reports') . "</a></li>";
+                if ($this->rbac->hasPrivilege('pathology_bill', 'can_edit') && $billing_status !== 'refunded_cancelled') {
+                    $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item edit_pathology' data-bs-toggle='tooltip' title='" . $this->lang->line('edit_pathology') . "'><i class='fa fa-pencil'></i> " . $this->lang->line('edit_pathology') . "</a></li>";
+                }
                 if ($this->rbac->hasPrivilege('pathology_partial_payment', 'can_view')) {
                     $action .= "<li><a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' data-record-caseid='" . $value->case_reference_id . "' class='dropdown-item add_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i> " . $this->lang->line('add_view_payments') . "</a></li>";
                     // Add Refund Option
-                    if ($value->paid_amount > 0) {
+                    if ($value->paid_amount > 0 && $billing_status !== 'refunded_cancelled') {
                         $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' data-record-caseid='" . $value->case_reference_id . "' class='dropdown-item partial_refund' data-bs-toggle='tooltip' title='" . $this->lang->line('refund') . "' ><i class='fa fa-reply'></i> " . $this->lang->line('refund') . "</a></li>";
                     }
                 }
@@ -1524,19 +1585,29 @@ class Pathology extends Admin_Controller
                 }
                 //====================
 				
-				$row[]     = amountFormat($value->total);
-				$discount_amt = ( $value->total * $value->discount_percentage ) / 100 ;	
-                $row[]     = amountFormat($discount_amt) ." (". $value->discount_percentage ."%)"  ;		
-				$tax_amt = (($value->total - $discount_amt) * $value->tax_percentage ) / 100;	
+                if ($billing_status === 'refunded_cancelled') {
+                    $row[] = amountFormat(0, 2);
+                    $row[] = amountFormat(0, 2) . " (0.00%)";
+                    $row[] = amountFormat(0, 2) . " (0.00%)";
+                    $row[] = amountFormat(0, 2);
+                    $row[] = amountFormat(0, 2);
+                    $row[] = amountFormat(0, 2);
+                } else {
+                    $discount_amt = ($value->total * $value->discount_percentage) / 100;
+                    $tax_amt      = (($value->total - $discount_amt) * $value->tax_percentage) / 100;
 
-                if(($value->total - $discount_amt)==0){
-                     $row[]     = $value->tax."(0.00%)";     
-                }else{
-                     $row[]     =   $value->tax ." (".amountFormat(($value->tax * 100) / ($value->total - $discount_amt), 2)."%)";  
+                    $row[] = amountFormat($value->total);
+                    $row[] = amountFormat($discount_amt) . " (" . $value->discount_percentage . "%)";
+
+                    if (($value->total - $discount_amt) == 0) {
+                        $row[] = $value->tax . "(0.00%)";
+                    } else {
+                        $row[] = $value->tax . " (" . amountFormat(($value->tax * 100) / ($value->total - $discount_amt), 2) . "%)";
+                    }
+                    $row[] = amountFormat($value->net_amount, 2);
+                    $row[] = amountFormat($value->paid_amount, 2);
+                    $row[] = amountFormat($balance_amount, 2);
                 }
-				$row[]     = amountFormat($value->net_amount, 2);
-                $row[]     = amountFormat($value->paid_amount, 2);
-                $row[]     = amountFormat($balance_amount, 2);
                 $row[]     = $action;
                 $dt_data[] = $row;
             }
@@ -2014,7 +2085,12 @@ class Pathology extends Admin_Controller
         $pathology_billing               = $this->pathology_model->getPathologyBillByID($pathology_billing_id);
 		 
         $data['pathology_billing']       = $pathology_billing;
-        $data['pathology_total_payment'] = $this->transaction_model->pathologyTotalPayments($pathology_billing_id)->total_paid;
+        $total_paid                      = (float)($this->transaction_model->pathologyTotalPayments($pathology_billing_id)->total_paid ?? 0);
+        $total_refund                    = (float)$this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
+        $data['pathology_total_payment'] = $total_paid;
+        $data['pathology_total_refund']  = $total_refund;
+        $data['max_refundable']          = max(0, round($total_paid - $total_refund, 2));
+        $data['action_type']             = $this->input->post('action_type', TRUE) ?: 'payment';
  
         $page = $this->load->view("admin/pathology/_getPathologyTransaction", $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
@@ -2617,14 +2693,13 @@ class Pathology extends Admin_Controller
             $pathology_billing_id     = $this->input->post('pathology_billing_id', TRUE);
             $pathology_billing_detail = $this->transaction_model->pathologyTotalPayments($pathology_billing_id);
             
-            $total_paid = ($pathology_billing_detail && isset($pathology_billing_detail->total_paid)) ? $pathology_billing_detail->total_paid : 0;
-            $total_refund = $this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
-            if(empty($total_refund)) $total_refund = 0;
-            $amount_refunding = $this->input->post('amount', TRUE);
+            $total_paid       = ($pathology_billing_detail && isset($pathology_billing_detail->total_paid)) ? (float)$pathology_billing_detail->total_paid : 0;
+            $total_refund     = (float)$this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
+            $amount_refunding = (float)$this->input->post('amount', TRUE);
             
-            $max_refundable = max(0, $total_paid - $total_refund);
+            $max_refundable = max(0, round($total_paid - $total_refund, 2));
             
-            if ($amount_refunding > $max_refundable) {
+            if ($amount_refunding <= 0 || $amount_refunding > $max_refundable) {
                 $array = array('status' => 'fail', 'error' => array('amount' => $this->lang->line('amount_should_not_be_greater_than_balance') . ' ' . amountFormat($max_refundable)), 'message' => '');
                 echo json_encode($array);
                 return;
@@ -2650,17 +2725,21 @@ class Pathology extends Admin_Controller
 
             $this->transaction_model->add($payment_array);
             
-            $this->db->set('net_amount', "net_amount - $amount_refunding", FALSE);
-            $this->db->set('total', "total - $amount_refunding", FALSE);
-            
-            // Save appointment status based on dropdown selection
+            // Save status based on full refund or selection
             $appointment_status = $this->input->post('appointment_status', TRUE);
-            if ($appointment_status === 'cancelled') {
-                $this->db->set('status', 'refunded_cancelled');
+            $is_full_refund     = ($amount_refunding >= $max_refundable);
+            
+            if ($is_full_refund || $appointment_status === 'cancelled' || $appointment_status === 'refunded_cancelled') {
+                $status = 'refunded_cancelled';
+                $this->db->set('net_amount', 0);
+                $this->db->set('total', 0);
+                $this->db->set('discount', 0);
+                $this->db->set('tax', 0);
             } else {
-                $this->db->set('status', 'refunded_approved');
+                $status = 'refunded_approved';
             }
             
+            $this->db->set('status', $status);
             $this->db->where('id', $pathology_billing_id);
             $this->db->update('pathology_billing');
             

@@ -1043,26 +1043,12 @@ function getPrescriptionData(modal_prescription_){
         $.ajax({
             url: '<?php echo base_url() ?>admin/radio/getRadiologyTransaction',
             type: "POST",
-            data: {'id': record_id},
+            data: {'id': record_id, 'action_type': action_type},
             dataType:"JSON",
             beforeSend: function(){
             },          
             success: function (data) {
                 $('.modal-body',payment_modal).html(data.page);
-                if(action_type === 'refund') {
-                    payment_modal.find('.sh-card-header-title').text('<?php echo $this->lang->line('refund') ?: 'Refund'; ?>');
-                    var typeSelect = $('select[name="action_type"]', payment_modal);
-                    typeSelect.html('<option value="refund" selected><?php echo $this->lang->line('refund') ?: 'Refund'; ?></option>');
-                    radioToggleRefundStatus(typeSelect[0], payment_modal.find('form').attr('id'));
-                    if (data.refund_balance !== undefined) {
-                        payment_modal.find('#amount').val(data.refund_balance);
-                    }
-                } else {
-                    payment_modal.find('.sh-card-header-title').text('<?php echo $this->lang->line('add_payment'); ?>');
-                    var typeSelect = $('select[name="action_type"]', payment_modal);
-                    typeSelect.html('<option value="payment" selected><?php echo $this->lang->line('payment'); ?></option>');
-                    radioToggleRefundStatus(typeSelect[0], payment_modal.find('form').attr('id'));
-                }
                 payment_modal.removeClass('modal_loading');  
             },
             error: function () {

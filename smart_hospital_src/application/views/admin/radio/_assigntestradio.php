@@ -107,20 +107,6 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                 <?php } ?>
                             </select>
                             <span class="text-danger"><?php echo form_error('referral_person_id'); ?></span>
-                        </div>
-                    </div>
-                    <div class="col-sm-12">
-                        <div class="mb-3">
-                            <label>Status</label>
-                            <select name="status" id="status" class="form-control">
-                                <?php
-                                $statuses = ['Paid', 'Cancelled', 'Refund'];
-                                foreach ($statuses as $status) {
-                                    echo "<option value='$status'>$status</option>";
-                                }
-                                ?>
-                            </select>
-                        </div>
                     </div>
                     <div class="col-sm-12">
                         <div class="mb-3">

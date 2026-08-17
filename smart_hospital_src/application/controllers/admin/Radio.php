@@ -385,13 +385,15 @@ class Radio extends Admin_Controller
         $this->form_validation->set_rules('date', $this->lang->line('date'), 'trim|required|xss_clean');
 
         $total_rows = $this->input->post('total_rows', TRUE);
-        if (!isset($total_rows) && !isset($radiology) && !isset($radiology)) {
-            $this->form_validation->set_rules(
-                'no_records',
-                $this->lang->line('no_records'),
-                'trim|required|xss_clean',
-                array('required' => $this->lang->line('no_test_selected'))
-            );
+        if (empty($radiology_billing_id)) {
+            if (!isset($total_rows) && !isset($radiology) && !isset($radiology)) {
+                $this->form_validation->set_rules(
+                    'no_records',
+                    $this->lang->line('no_records'),
+                    'trim|required|xss_clean',
+                    array('required' => $this->lang->line('no_test_selected'))
+                );
+            }
         }
 		
         $check_duplicate_test = array();
@@ -556,30 +558,32 @@ class Radio extends Admin_Controller
                 $prev_reports_array = $prev_reports;
             }
 
-            foreach ($total_rows as $row_key => $row_value) {
-                $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
-                if ($test_report_id == 0) {
-                    $report = array(
-                        'radiology_bill_id' => 0,
-                        'radiology_id'      => $this->input->post('test_name_' . $row_value, TRUE),
-                        'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'patient_id'        => $patient_id,
-                        'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
-                        'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
-                        'generated_by'      => $this->customlib->getLoggedInUserID(),
-                    );
-                    $insert_array[] = $report;
-                } else if ($test_report_id > 0) {
-                    $report = array(
-                        'id'             => $test_report_id,
-                        'radiology_id'   => $this->input->post('test_name_' . $row_value, TRUE),
-                        'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'patient_id'     => $patient_id,
-                        'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
-                        'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
-                    );
-                    $prev_reports_update_array[] = $test_report_id;
-                    $update_array[]              = $report;
+            if (isset($total_rows) && !empty($total_rows)) {
+                foreach ($total_rows as $row_key => $row_value) {
+                    $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
+                    if ($test_report_id == 0) {
+                        $report = array(
+                            'radiology_bill_id' => 0,
+                            'radiology_id'      => $this->input->post('test_name_' . $row_value, TRUE),
+                            'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'patient_id'        => $patient_id,
+                            'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
+                            'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
+                            'generated_by'      => $this->customlib->getLoggedInUserID(),
+                        );
+                        $insert_array[] = $report;
+                    } else if ($test_report_id > 0) {
+                        $report = array(
+                            'id'             => $test_report_id,
+                            'radiology_id'   => $this->input->post('test_name_' . $row_value, TRUE),
+                            'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'patient_id'     => $patient_id,
+                            'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
+                            'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
+                        );
+                        $prev_reports_update_array[] = $test_report_id;
+                        $update_array[]              = $report;
+                    }
                 }
             }
 
@@ -626,6 +630,59 @@ class Radio extends Admin_Controller
             }
 			
             $array_delete = array_diff($prev_reports_array, $prev_reports_update_array);
+
+            if ($radiology_billing_id > 0) {
+                $existing_payments = $this->transaction_model->radiologyTotalPayments($radiology_billing_id);
+                $prev_total_paid   = ($existing_payments && isset($existing_payments->total_paid)) ? (float)$existing_payments->total_paid : 0;
+                $prev_total_refund = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+                $net_paid          = max(0, round($prev_total_paid - $prev_total_refund, 2));
+                $new_net           = (float)$this->input->post('net_amount', TRUE);
+
+                if (empty($total_rows) || $new_net <= 0) {
+                    if ($net_paid > 0) {
+                        $payment_section = $this->config->item('payment_section');
+                        $auto_refund     = array(
+                            'radiology_billing_id' => $radiology_billing_id,
+                            'patient_id'           => $patient_id,
+                            'case_reference_id'    => $case_reference_id,
+                            'section'              => $payment_section['radiology'],
+                            'amount'               => $net_paid,
+                            'type'                 => 'refund',
+                            'payment_mode'         => 'Cash',
+                            'payment_date'         => date('Y-m-d H:i:s'),
+                            'note'                 => 'Full refund on cancelling all test(s)',
+                            'received_by'          => $this->customlib->getLoggedInUserID(),
+                        );
+                        $this->transaction_model->add($auto_refund);
+                    }
+                    $data['total']               = 0;
+                    $data['discount']            = 0;
+                    $data['discount_percentage'] = 0;
+                    $data['tax']                  = 0;
+                    $data['net_amount']          = 0;
+                    $data['status']              = 'refunded_cancelled';
+                } else if ($net_paid > $new_net) {
+                    $excess_amount   = round($net_paid - $new_net, 2);
+                    $payment_section = $this->config->item('payment_section');
+                    $auto_refund     = array(
+                        'radiology_billing_id' => $radiology_billing_id,
+                        'patient_id'           => $patient_id,
+                        'case_reference_id'    => $case_reference_id,
+                        'section'              => $payment_section['radiology'],
+                        'amount'               => $excess_amount,
+                        'type'                 => 'refund',
+                        'payment_mode'         => 'Cash',
+                        'payment_date'         => date('Y-m-d H:i:s'),
+                        'note'                 => 'Auto-refund for deducted test(s)',
+                        'received_by'          => $this->customlib->getLoggedInUserID(),
+                    );
+                    $this->transaction_model->add($auto_refund);
+                    $data['status'] = 'refunded_approved';
+                } else {
+                    $data['status'] = NULL;
+                }
+            }
+
             $inserted     = $this->radio_model->addBill($data, $insert_array, $update_array, $array_delete, $radiology_billing_id, $transaction_data);
 
             if ($radiology_billing_id > 0) {
@@ -1580,13 +1637,17 @@ class Radio extends Admin_Controller
                 $row            = array();
                 $balance_amount = ($value->net_amount) - ($value->paid_amount);
                 //====================================
+                $billing_status = $value->status ?? '';
                 $action = "<div class='btn-group action-btn-inner'><button type='button' class='btn btn-default btn-xs dropdown-toggle' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-v'></i></button><ul class='dropdown-menu dropdown-menu-end'>";
 
                 $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item view_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i> " . $this->lang->line('view_reports') . "</a></li>";
+                if ($this->rbac->hasPrivilege('radiology_bill', 'can_edit') && $billing_status !== 'refunded_cancelled') {
+                    $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item edit_radiology' data-bs-toggle='tooltip' title='" . $this->lang->line('edit_radiology') . "'><i class='fa fa-pencil'></i> " . $this->lang->line('edit_radiology') . "</a></li>";
+                }
                 if ($this->rbac->hasPrivilege('radiology_partial_payment', 'can_view')) {
                     $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item add_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i> " . $this->lang->line('add_view_payments') . "</a></li>";
                     // Add Refund Option
-                    if ($value->paid_amount > 0) {
+                    if ($value->paid_amount > 0 && $billing_status !== 'refunded_cancelled') {
                         $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item partial_refund' data-bs-toggle='tooltip' title='" . $this->lang->line('refund') . "' ><i class='fa fa-reply'></i> " . $this->lang->line('refund') . "</a></li>";
                     }
                 }
@@ -1633,23 +1694,31 @@ class Radio extends Admin_Controller
                     }
                 }
                 //====================
-                $row[] = $value->total;
-                $row[] = $value->discount.' ('.$value->discount_percentage.'%)';
-                 
-                $discount_amt 	= ( $value->total * $value->discount_percentage ) / 100 ; 
-				
-				$div_by			= $value->total - $discount_amt;
-				
-				if($div_by > 0){
-					$row[]  =  $value->tax ." (".amountFormat(($value->tax * 100) / $div_by)."%)";          
-                }else{
-					$row[]  =  0;  
-				} 
-                $row[] = $value->net_amount;
-                $row[] = $value->paid_amount;
-                $row[] = number_format($balance_amount, 2);
-                $row[] = $action;
+                if ($billing_status === 'refunded_cancelled') {
+                    $row[] = amountFormat(0, 2);
+                    $row[] = amountFormat(0, 2) . ' (0.00%)';
+                    $row[] = amountFormat(0, 2) . ' (0.00%)';
+                    $row[] = amountFormat(0, 2);
+                    $row[] = amountFormat(0, 2);
+                    $row[] = amountFormat(0, 2);
+                } else {
+                    $row[] = $value->total;
+                    $row[] = $value->discount . ' (' . $value->discount_percentage . '%)';
 
+                    $discount_amt = ($value->total * $value->discount_percentage) / 100;
+
+                    $div_by = $value->total - $discount_amt;
+
+                    if ($div_by > 0) {
+                        $row[] = $value->tax . " (" . amountFormat(($value->tax * 100) / $div_by) . "%)";
+                    } else {
+                        $row[] = 0;
+                    }
+                    $row[] = $value->net_amount;
+                    $row[] = $value->paid_amount;
+                    $row[] = number_format($balance_amount, 2);
+                }
+                $row[]     = $action;
                 $dt_data[] = $row;
             }
         }
@@ -2215,6 +2284,13 @@ class Radio extends Admin_Controller
         $data["radiology_billing_id"]  = $radiology_billing_id;
         $data["payment_mode"]          = $this->payment_mode;
         $data['radiology_transaction'] = $radiology_transaction;
+        $total_paid                    = (float)($this->transaction_model->radiologyTotalPayments($radiology_billing_id)->total_paid ?? 0);
+        $total_refund                  = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+        $data['radiology_total_payment'] = $total_paid;
+        $data['radiology_total_refund']  = $total_refund;
+        $data['max_refundable']          = max(0, round($total_paid - $total_refund, 2));
+        $data['action_type']             = $this->input->post('action_type', TRUE) ?: 'payment';
+
         $page                          = $this->load->view("admin/radio/_getRadiologyTransaction", $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
     }
@@ -2330,15 +2406,14 @@ class Radio extends Admin_Controller
         } else {
             $radiology_billing_id     = $this->input->post('radiology_billing_id', TRUE);
             $radiology_billing_detail = $this->transaction_model->radiologyTotalPayments($radiology_billing_id);
-            
-            $total_paid = ($radiology_billing_detail && isset($radiology_billing_detail->total_paid)) ? $radiology_billing_detail->total_paid : 0;
-            $total_refund = $this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
-            if(empty($total_refund)) $total_refund = 0;
-            $amount_refunding = $this->input->post('amount', TRUE);
-            
-            $max_refundable = max(0, $total_paid - $total_refund);
-            
-            if ($amount_refunding > $max_refundable) {
+
+            $total_paid       = ($radiology_billing_detail && isset($radiology_billing_detail->total_paid)) ? (float)$radiology_billing_detail->total_paid : 0;
+            $total_refund     = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+            $amount_refunding = (float)$this->input->post('amount', TRUE);
+
+            $max_refundable = max(0, round($total_paid - $total_refund, 2));
+
+            if ($amount_refunding <= 0 || $amount_refunding > $max_refundable) {
                 $array = array('status' => 'fail', 'error' => array('amount' => $this->lang->line('amount_should_not_be_greater_than_balance') . ' ' . amountFormat($max_refundable)), 'message' => '');
                 echo json_encode($array);
                 return;
@@ -2363,21 +2438,25 @@ class Radio extends Admin_Controller
             }
 
             $this->transaction_model->add($payment_array);
-            
-            $this->db->set('net_amount', "net_amount - $amount_refunding", FALSE);
-            $this->db->set('total', "total - $amount_refunding", FALSE);
-            
-            // Save appointment status based on dropdown selection
+
+            // Save status based on full refund or selection
             $appointment_status = $this->input->post('appointment_status', TRUE);
-            if ($appointment_status === 'cancelled') {
-                $this->db->set('status', 'refunded_cancelled');
+            $is_full_refund     = ($amount_refunding >= $max_refundable);
+
+            if ($is_full_refund || $appointment_status === 'cancelled' || $appointment_status === 'refunded_cancelled') {
+                $status = 'refunded_cancelled';
+                $this->db->set('net_amount', 0);
+                $this->db->set('total', 0);
+                $this->db->set('discount', 0);
+                $this->db->set('tax', 0);
             } else {
-                $this->db->set('status', 'refunded_approved');
+                $status = 'refunded_approved';
             }
-            
+
+            $this->db->set('status', $status);
             $this->db->where('id', $radiology_billing_id);
             $this->db->update('radiology_billing');
-            
+
             $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
         }
         echo json_encode($array);
@@ -2699,5 +2778,4 @@ class Radio extends Admin_Controller
         );
         echo json_encode($json_data);
     }
-	
 }
