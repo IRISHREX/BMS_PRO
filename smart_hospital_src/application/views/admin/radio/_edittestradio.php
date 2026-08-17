@@ -22,11 +22,9 @@
                                                 <td>
                                                     <input type="hidden" id="" name="total_rows[]" value="1">
                                                     <select class="form-control test_name select2 w-100"  onchange="gettestradiodetails(this.value, 0)" name='test_name[]'>
-                                                        <option value="<?php echo set_value('test_name_id'); ?>"><?php echo $this->lang->line('select') ?>
-                                                        </option>
+                                                        <option value=""><?php echo $this->lang->line('select'); ?></option>
                                                     <?php foreach ($testlist as $dkey => $dvalue) { ?>
-                                                            <option value="<?php echo $dvalue["id"]; ?>"><?php echo $dvalue["test_name"] ?>
-                                                            </option>
+                                                            <option value="<?php echo $dvalue["id"]; ?>"><?php echo $dvalue["test_name"]; ?></option>
                                                         <?php }?>
                                                     </select>
                                                     <span class="text-danger"><?php echo form_error('test_name_id[]'); ?>

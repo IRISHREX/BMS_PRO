@@ -31,13 +31,13 @@ backup/_tmp/*
 backup/temp_uploaded/*
 !backup/temp_uploaded/index.html
 
-# Archive / Zip files
-*.zip
-*.tar.gz
-*.rar
-smart_hospital.zip
-
 # Node / Composer dependencies
 node_modules/
 npm-debug.log
 .env
+
+# Generated uploads
+uploads/patient_id_card/barcodes/*
+!uploads/patient_id_card/barcodes/index.html
+uploads/patient_id_card/qrcode/*
+!uploads/patient_id_card/qrcode/index.html

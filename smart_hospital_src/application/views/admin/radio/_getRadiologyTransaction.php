@@ -251,7 +251,7 @@ $has_payment_perm = $this->rbac->hasPrivilege('radiology_billing_payment', 'can_
                         </div>
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('cheque_date'); ?><small class="req"> *</small></label>
-                            <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date no-past-date" data-min-date="today">
+                            <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date">
                             <span class="text-danger"><?php echo form_error('cheque_date'); ?></span>
                         </div>
                         <div class="col-12">

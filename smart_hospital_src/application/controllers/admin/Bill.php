@@ -1496,9 +1496,15 @@ class Bill extends Admin_Controller
         $data['pathology_transaction']   = $pathology_transaction;
         $pathology_billing               = $this->pathology_model->getPathologyBillByID($pathology_billing_id);
         $data['pathology_billing']       = $pathology_billing;
-        $data['pathology_total_payment'] = $this->transaction_model->pathologyTotalPayments($pathology_billing_id)->total_paid;
         $page                            = $this->load->view("admin/bill/pathology/_getPathologyTransaction", $data, true);
-        echo json_encode(array('status' => 1, 'page' => $page));
+        $paid_amount = isset($pathology_billing->total_deposit) ? (float)$pathology_billing->total_deposit : (float)($data['pathology_total_payment'] ?? 0);
+        $net_amount  = isset($pathology_billing->net_amount) ? (float)$pathology_billing->net_amount : 0;
+        if ($paid_amount > $net_amount && $net_amount > 0) {
+            $refund_balance = round($paid_amount - $net_amount, 2);
+        } else {
+            $refund_balance = max(0, round($paid_amount, 2));
+        }
+        echo json_encode(array('status' => 1, 'page' => $page, 'refund_balance' => $refund_balance, 'paid_amount' => $paid_amount, 'net_amount' => $net_amount));
     }
 
     public function editpathology()
@@ -2106,9 +2112,15 @@ class Bill extends Admin_Controller
         $data['radio_billing'] = $radio_billing;
         $data["radiology_billing_id"]  = $radiology_billing_id;
         $data["payment_mode"]          = $this->payment_mode;
-        $data['radiology_transaction'] = $radiology_transaction;
         $page                          = $this->load->view("admin/bill/radiology/_getRadiologyTransactions", $data, true);
-        echo json_encode(array('status' => 1, 'page' => $page));
+        $paid_amount = isset($radio_billing->total_deposit) ? (float)$radio_billing->total_deposit : 0;
+        $net_amount  = isset($radio_billing->net_amount) ? (float)$radio_billing->net_amount : 0;
+        if ($paid_amount > $net_amount && $net_amount > 0) {
+            $refund_balance = round($paid_amount - $net_amount, 2);
+        } else {
+            $refund_balance = max(0, round($paid_amount, 2));
+        }
+        echo json_encode(array('status' => 1, 'page' => $page, 'refund_balance' => $refund_balance, 'paid_amount' => $paid_amount, 'net_amount' => $net_amount));
     }
 
     public function partial_radiology_bill()

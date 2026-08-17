@@ -32,7 +32,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         <input type="hidden" name="total_rows[]" value="<?php echo $total_rows; ?>">
                         <input type="hidden" name="inserted_id_<?php echo $total_rows; ?>" value="<?php echo $report_value->id; ?>">
                         <select class="form-control form-control-sm test_name select2 w-100"  name="test_name_<?php echo $total_rows; ?>" id="<?php echo $total_rows; ?>">
-                            <option value="<?php echo set_value('test_name_id'); ?>"><?php echo $this->lang->line('select'); ?></option>
+                            <option value=""><?php echo $this->lang->line('select'); ?></option>
                             <?php foreach ($testlist as $dkey => $dvalue) { ?>
                                 <option value="<?php echo $dvalue["id"]; ?>" <?php echo set_select('test_name_' . $total_rows, $dvalue["id"], ($report_value->radiology_id == $dvalue["id"]) ? TRUE : FALSE); ?>><?php echo $dvalue["test_name"] . " (" . $dvalue["short_name"] . ")"; ?></option>
                             <?php } ?>

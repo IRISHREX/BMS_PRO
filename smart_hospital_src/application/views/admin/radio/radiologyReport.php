@@ -80,13 +80,11 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                 <div class="mb-3">
                                     <label><?php echo $this->lang->line('test_name'); ?></label>
                                     <select class="form-control test_name select2 w-100" name='test_name'>
-                                        <option value="<?php echo set_value('test_name_id'); ?>"><?php echo $this->lang->line('select'); ?>
-                                        </option>
+                                        <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php foreach ($testlist as $dkey => $dvalue) { ?>
-                                            <option value="<?php echo $dvalue["id"]; ?>"><?php echo $dvalue["test_name"]." (".$dvalue["short_name"].")"; ?>
-                                            </option>
-                                    <?php }?>
-                                </select>
+                                            <option value="<?php echo $dvalue["id"]; ?>"><?php echo $dvalue["test_name"]." (".$dvalue["short_name"].")"; ?></option>
+                                        <?php }?>
+                                    </select>
                                 </div>
                             </div>
                             <div class="mb-3">

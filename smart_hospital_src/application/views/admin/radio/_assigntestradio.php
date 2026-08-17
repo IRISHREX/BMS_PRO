@@ -28,7 +28,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <input type="hidden" name="total_rows[]" value="1">
                             <input type="hidden" name="inserted_id_1" value="0">
                             <select class="form-control form-control-sm test_name select2" name="test_name_1" id="1">
-                                <option value="<?php echo set_value('test_name_id'); ?>"><?php echo $this->lang->line('select'); ?></option>
+                                <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 <?php foreach ($testlist as $dkey => $dvalue) { ?>
                                     <option value="<?php echo $dvalue["id"]; ?>"><?php echo $dvalue["test_name"] . " (" . $dvalue["short_name"] . ")"; ?></option>
                                 <?php } ?>
@@ -114,7 +114,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <label>Status</label>
                             <select name="status" id="status" class="form-control">
                                 <?php
-                                $statuses = ['Paid', 'Unpaid'];
+                                $statuses = ['Paid', 'Cancelled', 'Refund'];
                                 foreach ($statuses as $status) {
                                     echo "<option value='$status'>$status</option>";
                                 }
@@ -189,7 +189,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         </div>
                         <div class="col-6">
                             <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('cheque_date'); ?> <small class="req">*</small></label>
-                            <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date no-past-date" data-min-date="today">
+                            <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date">
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('attach_document'); ?></label>

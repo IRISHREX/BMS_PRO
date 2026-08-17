@@ -563,7 +563,7 @@ foreach ($testlist as $dkey => $testlist_value) {
         
         total_rows=total_rows+1;
         var template=$("#testpatho-template").html();
-        var div = "<td><input type='hidden' name='total_rows[]' value='" + total_rows + "'><input type='hidden' name='inserted_id_" + total_rows + "' value='0'><select class='form-control form-control-sm test_name select2' name='test_name_" + total_rows + "'><option value='<?php echo set_value('test_name_id'); ?>'><?php echo $this->lang->line('select') ?></option>" + template + "</select></td><td><input type='text' name='reportday_" + total_rows + "' id='reportday_" + total_rows + "' class='form-control form-control-sm text-end days' readonly></td><td><input type='text' name='reportdate_" + total_rows + "' id='reportdate_" + total_rows + "' class='form-control form-control-sm text-end report_date'></td><td><div class='input-group input-group-sm'><input type='text' name='taxpercent_" + total_rows + "' id='taxpercent_" + total_rows + "' class='form-control form-control-sm text-end taxpercent' autocomplete='off' readonly><span class='input-group-text'>%</span></div><input type='hidden' name='taxamount_" + total_rows + "' id='taxamount_" + total_rows + "' class='taxamount'></td><td class='text-end'><input type='text' name='amount_" + total_rows + "' id='amount_" + total_rows + "' class='form-control form-control-sm text-end amount' readonly></td>";
+        var div = "<td><input type='hidden' name='total_rows[]' value='" + total_rows + "'><input type='hidden' name='inserted_id_" + total_rows + "' value='0'><select class='form-control form-control-sm test_name select2' name='test_name_" + total_rows + "'><option value=''><?php echo $this->lang->line('select') ?></option>" + template + "</select></td><td><input type='text' name='reportday_" + total_rows + "' id='reportday_" + total_rows + "' class='form-control form-control-sm text-end days' readonly></td><td><input type='text' name='reportdate_" + total_rows + "' id='reportdate_" + total_rows + "' class='form-control form-control-sm text-end report_date'></td><td><div class='input-group input-group-sm'><input type='text' name='taxpercent_" + total_rows + "' id='taxpercent_" + total_rows + "' class='form-control form-control-sm text-end taxpercent' autocomplete='off' readonly><span class='input-group-text'>%</span></div><input type='hidden' name='taxamount_" + total_rows + "' id='taxamount_" + total_rows + "' class='taxamount'></td><td class='text-end'><input type='text' name='amount_" + total_rows + "' id='amount_" + total_rows + "' class='form-control form-control-sm text-end amount' readonly></td>";
         var row = "<tr id='row" + total_rows + "'>" + div + "<td class='text-center align-middle'><button type='button' data-row-id='" + total_rows + "' class='btn btn-sm btn-outline-danger delete_rows'><i class='fa fa-remove'></i></button></td></tr>";
         $('#tableID').append(row);
         updateDate();
@@ -1329,27 +1329,17 @@ $('#addpatient_id').on('select2:select', function (e) {
             beforeSend: function(){
             },          
             success: function (data) {
-                $('.modal-body',payment_modal).html(data.page);
-                if(action_type === 'refund') {
-                    payment_modal.find('.sh-card-header-title').text('<?php echo $this->lang->line('refund') ?: 'Refund'; ?>');
-                    var typeSelect = $('select[name="action_type"]', payment_modal);
-                    typeSelect.html('<option value="refund" selected><?php echo $this->lang->line('refund') ?: 'Refund'; ?></option>');
-                    pathoToggleRefundStatus(typeSelect[0], payment_modal.find('form').attr('id'));
-                    if (data.refund_balance !== undefined) {
-                        payment_modal.find('#amount').val(data.refund_balance);
-                    }
-                } else {
-                    payment_modal.find('.sh-card-header-title').text('<?php echo $this->lang->line('add_payment'); ?>');
-                    var typeSelect = $('select[name="action_type"]', payment_modal);
-                    typeSelect.html('<option value="payment" selected><?php echo $this->lang->line('payment'); ?></option>');
-                    pathoToggleRefundStatus(typeSelect[0], payment_modal.find('form').attr('id'));
-                }
-                payment_modal.removeClass('modal_loading');  
+         
+           $('.modal-body',payment_modal).html(data.page);
+            if(action_type === 'refund') {
+                $('select[name="action_type"]', payment_modal).val('refund').trigger('change');
+            }
+            payment_modal.removeClass('modal_loading');  
             },
-            error: function () {
-                payment_modal.removeClass('modal_loading'); 
+             error: function () {
+             payment_modal.removeClass('modal_loading'); 
             },  complete: function(){
-                payment_modal.removeClass('modal_loading'); 
+             payment_modal.removeClass('modal_loading'); 
             }
         });
     }

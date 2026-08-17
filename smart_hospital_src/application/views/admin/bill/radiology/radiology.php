@@ -21,10 +21,12 @@ $genderList = $this->customlib->getGender();
                             <tr>
                                 <th><?php echo $this->lang->line('bill_no'); ?></th>
                                 <th><?php echo $this->lang->line('case_id'); ?></th>
-                                <th><?php echo $this->lang->line('reporting_date'); ?></th> 
+                                <th><?php echo $this->lang->line('bill_date'); ?></th> 
                                 <th><?php echo $this->lang->line('patient_name'); ?></th>
-								<th ><?php echo $this->lang->line('generated_by'); ?></th>
+								<th><?php echo $this->lang->line('generated_by'); ?></th>
                                 <th><?php echo $this->lang->line('reference_doctor'); ?></th>
+                                <th>Referral Person Name</th>
+                                <th>Status</th>
                                 <?php
                                 if (!empty($fields)) {
                                         foreach ($fields as $fields_key => $fields_value) {
@@ -34,12 +36,13 @@ $genderList = $this->customlib->getGender();
                                         } 
                                     }
                                 ?>
-								<th><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?></th>
-                                <th><?php echo $this->lang->line('discount') . ' (' . $currency_symbol . ')'; ?></th>
-                                <th><?php echo $this->lang->line('tax') . ' (' . $currency_symbol . ')'; ?></th>
-                                <th><?php echo $this->lang->line('net_amount') . ' (' . $currency_symbol . ')'; ?></th>
-                                <th><?php echo $this->lang->line('paid_amount'). ' (' . $currency_symbol . ')'; ?></th>
+								<th class="text-end"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?></th>
+                                <th class="text-end"><?php echo $this->lang->line('discount') . ' (' . $currency_symbol . ')'; ?></th>
+                                <th class="text-end"><?php echo $this->lang->line('tax') . ' (' . $currency_symbol . ')'; ?></th>
+                                <th class="text-end"><?php echo $this->lang->line('net_amount') . ' (' . $currency_symbol . ')'; ?></th>
+                                <th class="text-end"><?php echo $this->lang->line('paid_amount'). ' (' . $currency_symbol . ')'; ?></th>
                                 <th class="noExport text-end"><?php echo $this->lang->line('balance_amount'). ' (' . $currency_symbol . ')'; ?></th>
+                                <th class="noExport text-end"><?php echo $this->lang->line('action'); ?></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -1008,33 +1011,64 @@ function getPrescriptionData(modal_prescription_){
 </script>
     <script type="text/javascript">
 
-   $(document).on('click','.add_payment',function(){  
+    $(document).on('click','.add_payment',function(){  
             var record_id=$(this).data('recordId'); 
-            var $add_btn= $(this);  
             var payment_modal=$('#addPaymentModal');
             payment_modal.addClass('modal_loading'); 
             shModal(payment_modal[0]).show(); 
-            getPayments(record_id);
+            getPayments(record_id, 'payment');
     });
 
-   function getPayments(record_id){
-         var payment_modal=$('#addPaymentModal');
+    $(document).on('click','.partial_refund',function(){  
+            var record_id=$(this).data('recordId'); 
+            var payment_modal=$('#addPaymentModal');
+            payment_modal.addClass('modal_loading'); 
+            shModal(payment_modal[0]).show(); 
+            getPayments(record_id, 'refund');
+    });
+
+    function radioToggleRefundStatus(sel, formId) {
+        var isRefund = (sel && sel.value === 'refund');
+        var form = $('#' + formId);
+        form.attr('action', isRefund
+            ? '<?php echo site_url('admin/radio/partial_refund'); ?>'
+            : '<?php echo site_url('admin/radio/partialbill'); ?>'
+        );
+        form.find('.radio_appt_status_wrap').toggle(isRefund);
+        form.find('[name="appointment_status"]').prop('disabled', !isRefund);
+    }
+
+    function getPayments(record_id, action_type = 'payment'){
+        var payment_modal=$('#addPaymentModal');
         $.ajax({
-            url: '<?php echo base_url() ?>admin/bill/getRadiologyTransactions',
+            url: '<?php echo base_url() ?>admin/radio/getRadiologyTransaction',
             type: "POST",
             data: {'id': record_id},
             dataType:"JSON",
             beforeSend: function(){
             },          
             success: function (data) {
-         
-           $('.modal-body',payment_modal).html(data.page);
-            payment_modal.removeClass('modal_loading');  
+                $('.modal-body',payment_modal).html(data.page);
+                if(action_type === 'refund') {
+                    payment_modal.find('.sh-card-header-title').text('<?php echo $this->lang->line('refund') ?: 'Refund'; ?>');
+                    var typeSelect = $('select[name="action_type"]', payment_modal);
+                    typeSelect.html('<option value="refund" selected><?php echo $this->lang->line('refund') ?: 'Refund'; ?></option>');
+                    radioToggleRefundStatus(typeSelect[0], payment_modal.find('form').attr('id'));
+                    if (data.refund_balance !== undefined) {
+                        payment_modal.find('#amount').val(data.refund_balance);
+                    }
+                } else {
+                    payment_modal.find('.sh-card-header-title').text('<?php echo $this->lang->line('add_payment'); ?>');
+                    var typeSelect = $('select[name="action_type"]', payment_modal);
+                    typeSelect.html('<option value="payment" selected><?php echo $this->lang->line('payment'); ?></option>');
+                    radioToggleRefundStatus(typeSelect[0], payment_modal.find('form').attr('id'));
+                }
+                payment_modal.removeClass('modal_loading');  
             },
-             error: function () {
-             payment_modal.removeClass('modal_loading'); 
+            error: function () {
+                payment_modal.removeClass('modal_loading'); 
             },  complete: function(){
-             payment_modal.removeClass('modal_loading'); 
+                payment_modal.removeClass('modal_loading'); 
             }
         });
     }
