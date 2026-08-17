@@ -114,7 +114,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <label>Status</label>
                             <select name="status" id="status" class="form-control">
                                 <?php
-                                $statuses = ['Paid', 'Cancelled', 'Refund'];
+                                $statuses = ['Paid', 'Unpaid'];
                                 foreach ($statuses as $status) {
                                     echo "<option value='$status'>$status</option>";
                                 }
@@ -191,7 +191,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         </div>
                         <div class="col-6">
                             <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('cheque_date'); ?> <small class="req">*</small></label>
-                            <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date">
+                            <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date no-past-date" data-min-date="today">
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('attach_document'); ?></label>

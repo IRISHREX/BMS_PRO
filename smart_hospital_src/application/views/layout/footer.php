@@ -451,6 +451,12 @@ $(document).ready(function () {
             calendar: true, decades: true, year: true, month: true, date: true,
             clock: false, hours: false, minutes: false, seconds: false
         };
+        if (el.dataset.minDate === 'today' || el.classList.contains('future-date') || el.classList.contains('no-past-date') || el.classList.contains('disable-past')) {
+            var todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            cfg.restrictions = cfg.restrictions || {};
+            cfg.restrictions.minDate = new tempusDominus.DateTime(todayStart);
+        }
         el[initFlag] = new tempusDominus.TempusDominus(el, cfg);
         attachDpChangeBridge(el);
     }
@@ -464,6 +470,12 @@ $(document).ready(function () {
             clock: true, hours: true, minutes: true, seconds: false
         };
         cfg.localization.hourCycle = tdHourCycle;
+        if (el.dataset.minDate === 'today' || el.classList.contains('future-date') || el.classList.contains('no-past-date') || el.classList.contains('disable-past')) {
+            var todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            cfg.restrictions = cfg.restrictions || {};
+            cfg.restrictions.minDate = new tempusDominus.DateTime(todayStart);
+        }
         el[initFlag] = new tempusDominus.TempusDominus(el, cfg);
         attachDpChangeBridge(el);
     }

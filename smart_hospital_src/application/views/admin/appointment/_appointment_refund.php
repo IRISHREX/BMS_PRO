@@ -63,7 +63,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label><?php echo $this->lang->line('date'); ?></label><small class="req"> *</small>
-                                <input type="text" name="payment_date" id="ref_payment_date" value="<?php echo date($this->customlib->getHospitalDateFormat()); ?>" class="form-control date" autocomplete="off" required>
+                                <input type="text" name="payment_date" id="ref_payment_date" value="<?php echo date($this->customlib->getHospitalDateFormat()); ?>" class="form-control date no-past-date" data-min-date="today" autocomplete="off" required>
                                 <span class="text-danger" id="ref_date_error"></span>
                             </div>
                         </div>

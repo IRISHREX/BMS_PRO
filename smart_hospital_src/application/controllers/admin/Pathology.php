@@ -522,29 +522,36 @@ class Pathology extends Admin_Controller
                 $prev_reports_array = $prev_reports;
             }
 
-            foreach ($total_rows as $row_key => $row_value) {
-                $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
-                if ($test_report_id == 0) {
-                    $report = array(
-                        'pathology_bill_id' => 0,
-                        'patient_id'        => $patient_id,
-                        'pathology_id'      => $this->input->post('test_name_' . $row_value, TRUE),
-                        'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
-                        'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
-                    );
-                    $insert_array[] = $report;
-                } else if ($test_report_id > 0) {
-                    $report = array(
-                        'id'             => $test_report_id,
-                        'patient_id'     => $patient_id,
-                        'pathology_id'   => $this->input->post('test_name_' . $row_value, TRUE),
-                        'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
-                        'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
-                        'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
-                    );
-                    $prev_reports_update_array[] = $test_report_id;
-                    $update_array[]              = $report;
+            if (!empty($total_rows)) {
+                $total_rows = array_unique($total_rows);
+                foreach ($total_rows as $row_key => $row_value) {
+                    $test_name_val = $this->input->post('test_name_' . $row_value, TRUE);
+                    if (empty($test_name_val)) {
+                        continue;
+                    }
+                    $test_report_id = $this->input->post('inserted_id_' . $row_value, TRUE);
+                    if ($test_report_id == 0) {
+                        $report = array(
+                            'pathology_bill_id' => 0,
+                            'patient_id'        => $patient_id,
+                            'pathology_id'      => $test_name_val,
+                            'tax_percentage'    => $this->input->post('taxpercent_' . $row_value, TRUE),
+                            'reporting_date'    => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'apply_charge'      => $this->input->post('amount_' . $row_value, TRUE),
+                        );
+                        $insert_array[] = $report;
+                    } else if ($test_report_id > 0) {
+                        $report = array(
+                            'id'             => $test_report_id,
+                            'patient_id'     => $patient_id,
+                            'pathology_id'   => $test_name_val,
+                            'tax_percentage' => $this->input->post('taxpercent_' . $row_value, TRUE),
+                            'reporting_date' => $this->customlib->dateFormatToYYYYMMDD($this->input->post('reportdate_' . $row_value, TRUE)),
+                            'apply_charge'   => $this->input->post('amount_' . $row_value, TRUE),
+                        );
+                        $prev_reports_update_array[] = $test_report_id;
+                        $update_array[]              = $report;
+                    }
                 }
             }
 
@@ -1471,12 +1478,21 @@ class Pathology extends Admin_Controller
 
                 $action = "<div class='btn-group action-btn-inner'><button type='button' class='btn btn-default btn-xs dropdown-toggle' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-v'></i></button><ul class='dropdown-menu dropdown-menu-end'>";
                 $action .= "<li><a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item view_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i> " . $this->lang->line('view_reports') . "</a></li>";
+                if ($this->rbac->hasPrivilege('pathology_bill', 'can_view')) {
+                    $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item print_bill' data-bs-toggle='tooltip' title='" . $this->lang->line('print_bill') . "' ><i class='fa fa-print'></i> " . $this->lang->line('print_bill') . "</a></li>";
+                }
                 if ($this->rbac->hasPrivilege('pathology_partial_payment', 'can_view')) {
                     $action .= "<li><a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' data-record-caseid='" . $value->case_reference_id . "' class='dropdown-item add_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i> " . $this->lang->line('add_view_payments') . "</a></li>";
                     // Add Refund Option
                     if ($value->paid_amount > 0) {
                         $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' data-record-caseid='" . $value->case_reference_id . "' class='dropdown-item partial_refund' data-bs-toggle='tooltip' title='" . $this->lang->line('refund') . "' ><i class='fa fa-reply'></i> " . $this->lang->line('refund') . "</a></li>";
                     }
+                }
+                if ($this->rbac->hasPrivilege('pathology_bill', 'can_edit')) {
+                    $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item edit_pathology' data-bs-toggle='tooltip' title='" . $this->lang->line('edit') . "' ><i class='fa fa-pencil'></i> " . $this->lang->line('edit') . "</a></li>";
+                }
+                if ($this->rbac->hasPrivilege('pathology_bill', 'can_delete')) {
+                    $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item delete_pathology' data-bs-toggle='tooltip' title='" . $this->lang->line('delete') . "' ><i class='fa fa-trash'></i> " . $this->lang->line('delete') . "</a></li>";
                 }
                 if ($value->case_reference_id > 0) {
                     $case_id = $value->case_reference_id;
@@ -2017,7 +2033,9 @@ class Pathology extends Admin_Controller
         $data['pathology_total_payment'] = $this->transaction_model->pathologyTotalPayments($pathology_billing_id)->total_paid;
  
         $page = $this->load->view("admin/pathology/_getPathologyTransaction", $data, true);
-        echo json_encode(array('status' => 1, 'page' => $page));
+        $total_deposit = isset($pathology_billing->total_deposit) ? (float)$pathology_billing->total_deposit : (float)($data['pathology_total_payment'] ?? 0);
+        $refund_balance = max(0, $total_deposit);
+        echo json_encode(array('status' => 1, 'page' => $page, 'refund_balance' => $refund_balance, 'paid_amount' => $total_deposit));
     }
 
     public function partialbill()
