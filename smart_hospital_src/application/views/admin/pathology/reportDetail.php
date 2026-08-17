@@ -45,6 +45,7 @@ $genderList = $this->customlib->getGender();
                                 <th class="text-end"><?php echo $this->lang->line('net_amount') . ' (' . $currency_symbol . ')'; ?></th>
                                 <th class="text-end"><?php echo $this->lang->line('paid_amount'). ' (' . $currency_symbol . ')'; ?></th>
                                 <th class="noExport text-end"><?php echo $this->lang->line('balance_amount'). ' (' . $currency_symbol . ')'; ?></th>
+                                <th class="noExport text-end"><?php echo $this->lang->line('action'); ?></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -1297,10 +1298,29 @@ $('#addpatient_id').on('select2:select', function (e) {
             var payment_modal=$('#addPaymentModal');
             payment_modal.addClass('modal_loading');               
             shModal(payment_modal[0]).show(); 
-            getPayments(record_id);
+            getPayments(record_id, 'payment');
     });
 
-   function getPayments(record_id){
+   $(document).on('click','.partial_refund',function(){  
+            var record_id=$(this).data('recordId'); 
+            var payment_modal=$('#addPaymentModal');
+            payment_modal.addClass('modal_loading');               
+            shModal(payment_modal[0]).show(); 
+            getPayments(record_id, 'refund');
+    });
+
+    function pathoToggleRefundStatus(sel, formId) {
+        var isRefund = sel.value === 'refund';
+        var form = $('#' + formId);
+        form.attr('action', isRefund
+            ? '<?php echo site_url('admin/pathology/partial_refund'); ?>'
+            : '<?php echo site_url('admin/pathology/partialbill'); ?>'
+        );
+        form.find('.patho_appt_status_wrap').toggle(isRefund);
+        form.find('[name="appointment_status"]').prop('disabled', !isRefund);
+    }
+
+   function getPayments(record_id, action_type = 'payment'){
          var payment_modal=$('#addPaymentModal');
         $.ajax({
             url: '<?php echo base_url() ?>admin/pathology/getPathologyTransaction',
@@ -1312,6 +1332,9 @@ $('#addpatient_id').on('select2:select', function (e) {
             success: function (data) {
          
            $('.modal-body',payment_modal).html(data.page);
+            if(action_type === 'refund') {
+                $('select[name="action_type"]', payment_modal).val('refund').trigger('change');
+            }
             payment_modal.removeClass('modal_loading');  
             },
              error: function () {

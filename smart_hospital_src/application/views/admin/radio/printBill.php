@@ -130,6 +130,14 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         </tr>
                         <?php
                         } ?>
+                        <?php if (!empty($result["refund_amount"])) {
+                                ?>
+                        <tr>
+                            <th><?php echo $this->lang->line("refund_amount"); ?></th>
+                            <td class="text-end"><?php echo $result["refund_amount"]; ?></td>
+                        </tr>
+                        <?php
+                        } ?>
                         <tr>
                             <th><?php echo $this->lang->line("balance_amount"); ?></th>
                             <td class="text-end"><?php echo $result["net_amount"] - $result["total_deposit"] ; ?></td>

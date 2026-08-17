@@ -1580,18 +1580,22 @@ class Radio extends Admin_Controller
                 $row            = array();
                 $balance_amount = ($value->net_amount) - ($value->paid_amount);
                 //====================================
-                $action = "<div class='rowoptionview rowview-btn-top'>";
+                $action = "<div class='btn-group action-btn-inner'><button type='button' class='btn btn-default btn-xs dropdown-toggle' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-v'></i></button><ul class='dropdown-menu dropdown-menu-end'>";
 
-                $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-default btn-xs view_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i></a>";
+                $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item view_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i> " . $this->lang->line('view_reports') . "</a></li>";
                 if ($this->rbac->hasPrivilege('radiology_partial_payment', 'can_view')) {
-                    $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-default btn-xs add_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i></a>";
+                    $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item add_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i> " . $this->lang->line('add_view_payments') . "</a></li>";
+                    // Add Refund Option
+                    if ($value->paid_amount > 0) {
+                        $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item partial_refund' data-bs-toggle='tooltip' title='" . $this->lang->line('refund') . "' ><i class='fa fa-reply'></i> " . $this->lang->line('refund') . "</a></li>";
+                    }
                 }
                 if ($value->case_reference_id > 0) {
                     $case_id = $value->case_reference_id;
                 } else {
                     $case_id = '';
                 }
-                $action .= "</div>";
+                $action .= "</ul></div>";
 
                 //==============================
                 $row[] = $this->customlib->getSessionPrefixByType('radiology_billing') . $value->id;
@@ -1601,7 +1605,23 @@ class Radio extends Admin_Controller
                 $row[] = composeStaffNameByString($value->generated_byname, $value->generated_bysurname, $value->generated_byemployee_id);
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
                 $row[] = $value->referral_person_name ? $value->referral_person_name : "";
-                $row[] = $value->status ? $value->status : "";
+                // Display status badge
+                $billing_status = $value->status ?? '';
+                if ($billing_status === 'refunded_approved') {
+                    $status_html = "<span class='badge' style='background:#17a2b8;color:#fff;'>Refunded &amp; Approved</span>";
+                } elseif ($billing_status === 'refunded_cancelled') {
+                    $status_html = "<span class='badge' style='background:#dc3545;color:#fff;'>Refunded &amp; Cancelled</span>";
+                } else {
+                    // Determine if paid or unpaid based on net_amount vs paid_amount
+                    if ($value->paid_amount >= $value->net_amount && $value->net_amount > 0) {
+                        $status_html = "<span class='badge' style='background:#28a745;color:#fff;'>Paid</span>";
+                    } elseif ($value->paid_amount > 0) {
+                        $status_html = "<span class='badge' style='background:#fd7e14;color:#fff;'>Partial</span>";
+                    } else {
+                        $status_html = "<span class='badge' style='background:#6c757d;color:#fff;'>Unpaid</span>";
+                    }
+                }
+                $row[] = $status_html;
                 //====================
                 if (!empty($fields)) {
                     foreach ($fields as $fields_key => $fields_value) {
@@ -1627,7 +1647,8 @@ class Radio extends Admin_Controller
 				} 
                 $row[] = $value->net_amount;
                 $row[] = $value->paid_amount;
-                $row[] = number_format($balance_amount, 2) . $action;
+                $row[] = number_format($balance_amount, 2);
+                $row[] = $action;
 
                 $dt_data[] = $row;
             }
@@ -2342,6 +2363,20 @@ class Radio extends Admin_Controller
             }
 
             $this->transaction_model->add($payment_array);
+            
+            $this->db->set('net_amount', "net_amount - $amount_refunding", FALSE);
+            $this->db->set('total', "total - $amount_refunding", FALSE);
+            
+            // Save appointment status based on dropdown selection
+            $appointment_status = $this->input->post('appointment_status', TRUE);
+            if ($appointment_status === 'cancelled') {
+                $this->db->set('status', 'refunded_cancelled');
+            } else {
+                $this->db->set('status', 'refunded_approved');
+            }
+            
+            $this->db->where('id', $radiology_billing_id);
+            $this->db->update('radiology_billing');
             
             $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
         }

@@ -33,6 +33,39 @@ class Appointment_model extends MY_Model
 
     }
 
+    //========================================================================================
+    /**
+     * Returns the next available serial number (position) for a given doctor on a given date.
+     * Resets to 1 each calendar day per doctor.
+     */
+    public function getNextQueuePosition($doctor_id, $date)
+    {
+        // Count existing queue entries for this doctor on this date
+        $sql = "SELECT IFNULL(MAX(position), 0) + 1 AS next_position
+                FROM appointment_queue
+                WHERE staff_id = ? AND date = ?";
+        $query = $this->db->query($sql, array($doctor_id, $date));
+        $row   = $query->row();
+        return $row ? (int)$row->next_position : 1;
+    }
+
+    //========================================================================================
+    /**
+     * Insert a row into appointment_queue assigning the serial number for this appointment.
+     */
+    public function addToQueue($appointment_id, $doctor_id, $shift_id, $date)
+    {
+        $position = $this->getNextQueuePosition($doctor_id, $date);
+        $this->db->insert('appointment_queue', array(
+            'appointment_id' => $appointment_id,
+            'staff_id'       => $doctor_id,
+            'position'       => $position,
+            'shift_id'       => $shift_id ? $shift_id : null,
+            'date'           => $date,
+        ));
+        return $position;
+    }
+
     //=========================================================================================
     public function searchFullText()
     {
@@ -515,11 +548,40 @@ class Appointment_model extends MY_Model
         if (empty($appointment_id)) {
             return;
         }
-        $this->db->where('appointment_id', $appointment_id);
-        $this->db->update('appointment_payment', $data);
+        $exists = $this->db->where('appointment_id', $appointment_id)->get('appointment_payment')->row();
+        if ($exists) {
+            $this->db->where('appointment_id', $appointment_id);
+            $this->db->update('appointment_payment', $data);
+        } else {
+            $insert_payment = $data;
+            $insert_payment['appointment_id'] = $appointment_id;
+            if (!isset($insert_payment['date'])) {
+                $insert_payment['date'] = date("Y-m-d H:i:s");
+            }
+            if (!isset($insert_payment['payment_type'])) {
+                $insert_payment['payment_type'] = 'Offline';
+            }
+            $this->db->insert('appointment_payment', $insert_payment);
+        }
 
-		$transaction_data['amount'] = $data['paid_amount'];
-		$this->db->update("transactions", $transaction_data, array("appointment_id" => $appointment_id));
+        if (isset($data['paid_amount'])) {
+            $payment_tx = $this->db->where('appointment_id', $appointment_id)->where('type', 'payment')->get('transactions')->row();
+            if ($payment_tx) {
+                $this->db->where('id', $payment_tx->id)->update("transactions", array('amount' => $data['paid_amount']));
+            } else if ((float)$data['paid_amount'] > 0) {
+                $apt = $this->getDetails($appointment_id);
+                $this->db->insert("transactions", array(
+                    'amount'         => $data['paid_amount'],
+                    'patient_id'     => !empty($apt['patient_id']) ? $apt['patient_id'] : 0,
+                    'section'        => 'Appointment',
+                    'type'           => 'payment',
+                    'appointment_id' => $appointment_id,
+                    'payment_mode'   => 'Offline',
+                    'payment_date'   => date('Y-m-d H:i:s'),
+                    'received_by'    => $this->customlib->getLoggedInUserID(),
+                ));
+            }
+        }
     }
 	
 	public function updateappointmentpatientcharges($data, $opd_id = null)

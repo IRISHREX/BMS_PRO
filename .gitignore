@@ -35,3 +35,7 @@ smart_hospital_src/backup/temp_uploaded/*
 node_modules/
 npm-debug.log
 .env
+
+# Archive / Zip files
+*.zip
+smart_hospital.zip

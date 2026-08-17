@@ -170,6 +170,12 @@ $tax_amt   = 0;
                             <td colspan="4"><?php echo $this->lang->line('paid_amount'); ?></td>
                             <td><?php echo $currency_symbol . amountFormat($result->total_deposit); ?></td>
                         </tr>
+                        <?php if (isset($result->refund_amount) && $result->refund_amount > 0) { ?>
+                        <tr>
+                            <td colspan="4"><?php echo $this->lang->line('refund_amount'); ?></td>
+                            <td><?php echo $currency_symbol . amountFormat($result->refund_amount); ?></td>
+                        </tr>
+                        <?php } ?>
                         <tr class="sh-row-total">
                             <td colspan="4"><?php echo $this->lang->line('balance'); ?></td>
                             <td><?php echo $currency_symbol . amountFormat($total_due); ?></td>

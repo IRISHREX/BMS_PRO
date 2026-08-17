@@ -208,9 +208,16 @@ $has_payment_perm = $this->rbac->hasPrivilege('radiology_billing_payment', 'can_
                     <div class="row g-2">
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold mb-1"><?php echo $this->lang->line('type'); ?><small class="req"> *</small></label>
-                            <select class="form-control form-select-sm" name="action_type" onchange="$('#<?php echo $form_id; ?>').attr('action', this.value === 'refund' ? '<?php echo site_url('admin/radio/partial_refund'); ?>' : '<?php echo site_url('admin/radio/partialbill'); ?>')">
+                            <select class="form-control form-select-sm" id="radio_action_type" name="action_type" onchange="radioToggleRefundStatus(this, '<?php echo $form_id; ?>')">
                                 <option value="payment"><?php echo $this->lang->line('payment'); ?></option>
                                 <option value="refund"><?php echo $this->lang->line('refund'); ?></option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6 radio_appt_status_wrap" style="display:none;">
+                            <label class="form-label small fw-semibold mb-1">Appointment Status<small class="req"> *</small></label>
+                            <select class="form-control form-select-sm" name="appointment_status" id="radio_appointment_status">
+                                <option value="approved">Approved (Keep Active)</option>
+                                <option value="cancelled">Cancelled</option>
                             </select>
                         </div>
                         <div class="col-sm-6">

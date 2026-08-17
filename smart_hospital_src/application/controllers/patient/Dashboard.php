@@ -1327,6 +1327,14 @@ class dashboard extends Patient_Controller
             ];
 
             $insert_id = $this->appointment_model->add($appointment);
+
+            // Auto-assign serial number per day per doctor
+            if ($insert_id) {
+                $doctor_id         = $this->input->post("doctor", true);
+                $appoint_date_only = date('Y-m-d', strtotime($appointment['date']));
+                $this->appointment_model->addToQueue($insert_id, $doctor_id, null, $appoint_date_only);
+            }
+
             $custom_field_post = $this->input->post(
                 "custom_fields[appointment]",
                 true,

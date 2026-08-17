@@ -234,6 +234,10 @@ class Appointment extends Admin_Controller
                 } catch (Exception $e) {
                     log_message('error', 'SaaS no_of_appointment quota increment failed (appointment add): ' . $e->getMessage());
                 }
+
+                // Auto-assign serial number per day per doctor (starts at 1 each day per doctor)
+                $appoint_date_only = date('Y-m-d', strtotime($date_appoint));
+                $this->appointment_model->addToQueue($insert_id, $doctor, $doctor_shift_time_id, $appoint_date_only);
             }
 
             if ($this->input->post('amount', TRUE) == 0) {
@@ -699,8 +703,18 @@ class Appointment extends Admin_Controller
 
                 $row = array();
                 //====================================
+                $paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+                $refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
+                $net_paid      = max(0, $paid_amount - $refund_amount);
+                $std_amount    = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 0);
+
+                $is_full_refund = ($refund_amount > 0 && ($paid_amount > 0 ? ($refund_amount >= $paid_amount) : ($std_amount > 0 ? ($refund_amount >= $std_amount) : true))) || ($value->appointment_status == 'full_refunded');
+
                 $label = "";
-                if ($value->appointment_status == "approved") {
+                if ($is_full_refund) {
+                    $label  = "class='badge bg-danger text-white'";
+                    $status = "Full Refund";
+                } else if ($value->appointment_status == "approved") {
                     $label  = "class='badge bg-success text-white'";
                     $status = $this->lang->line('approved');
                 } else if ($value->appointment_status == "pending") {
@@ -719,51 +733,46 @@ class Appointment extends Admin_Controller
                     $label  = "class='badge bg-secondary text-white'";
                     $status = ucwords(str_replace('_', ' ', $value->appointment_status));
                 }
-		
-				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
-				$refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
-				$net_paid      = max(0, $paid_amount - $refund_amount);
 
-				$action = "<div class='sh-action-dropdown dropdown text-end'>";
-				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
-				$action .= "<i class='fa fa-ellipsis-v'></i>";
-				$action .= "</button>";
-				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
-				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
-				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
+                $action = "<div class='sh-action-dropdown dropdown text-end'>";
+                $action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
+                $action .= "<i class='fa fa-ellipsis-v'></i>";
+                $action .= "</button>";
+                $action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
+                $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
+                $action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
 
-				if ($value->appointment_status == 'pending') {
-					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
-					}
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-					$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
-				} else {
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved'])) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-				}
+                if ($value->appointment_status == 'pending') {
+                    if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+                        $action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+                    }
+                    if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+                        $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+                    }
+                    $action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
+                } else {
+                    if ($this->rbac->hasPrivilege('reschedule', 'can_view') && in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved'])) {
+                        $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+                    }
+                }
 
-				$std_amount = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 100.00);
-				$eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
-				$eff_net    = max(0, $eff_paid - $refund_amount);
+                $eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+                $eff_net    = max(0, $eff_paid - $refund_amount);
 
-				if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled'])) {
-					if ($eff_net > 0) {
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
-					} else {
-						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
-					}
-				}
+                if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled', 'cancel', 'full_refunded'])) {
+                    if ($eff_net > 0 && !$is_full_refund) {
+                        $action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+                    } else if ($refund_amount > 0 || $is_full_refund) {
+                        $action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+                    }
+                }
 
-				$action .= "</ul>";
-				$action .= "</div>";
-				
+                $action .= "</ul>";
+                $action .= "</div>";
+                
                 $first_action = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>";
                 $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $this->customlib->getSessionPrefixByType('appointment') . $value->id . "</a>";
-				
+                
                 if (!empty($value->live_consult)) {
                     $live_consult = $this->lang->line(strtolower($value->live_consult));
                 } else {
@@ -800,9 +809,12 @@ class Appointment extends Admin_Controller
                     }
                 }
                 //====================
-				$row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
-                $row[]     = "<small " . $label . ">" . $status . "</small>";
+                $row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
+                $row[] = "<small " . $label . ">" . $status . "</small>";
                 $standard_amount = (float)($value->standard_amount ?? 0);
+                if ($standard_amount <= 0 && isset($value->appointment_amount)) {
+                    $standard_amount = (float)$value->appointment_amount;
+                }
                 $discount_perc   = (float)($value->discount_percentage ?? 0);
                 $tax_perc        = (float)($value->tax ?? 0);
                 $dicount_amt     = ($standard_amount * $discount_perc) / 100;
@@ -810,13 +822,17 @@ class Appointment extends Admin_Controller
                 $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
                 $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
                 $row[]           = amountFormat($net_amount_calc);
-                $display_paid = amountFormat($net_paid);
+                $row[]           = amountFormat($paid_amount);
+                // Refunded (Yes/No)
                 if ($refund_amount > 0) {
-                    $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
+                    $row[] = "<span class='badge bg-warning text-dark'>" . $this->lang->line('yes') . "</span>";
+                } else {
+                    $row[] = "<span class='badge bg-secondary text-white'>" . $this->lang->line('no') . "</span>";
                 }
-                $row[]     = $display_paid;
-                $row[]     = $action;
-                $dt_data[] = $row;
+                // Refund Amount
+                $row[]           = amountFormat($refund_amount);
+                $row[]           = $action;
+                $dt_data[]       = $row;
             }
         }
         $json_data = array(
@@ -840,68 +856,76 @@ class Appointment extends Admin_Controller
 
                 $row = array();
                 //====================================
+                $paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+                $refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
+                $net_paid      = max(0, $paid_amount - $refund_amount);
+                $std_amount    = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 0);
+
+                $is_full_refund = ($refund_amount > 0 && ($paid_amount > 0 ? ($refund_amount >= $paid_amount) : ($std_amount > 0 ? ($refund_amount >= $std_amount) : true))) || ($value->appointment_status == 'full_refunded');
+
                 $label = "";
-                if ($value->appointment_status == "approved") {
+                if ($is_full_refund) {
+                    $label  = "class='badge bg-danger text-white'";
+                    $status = "Full Refund";
+                } else if ($value->appointment_status == "approved") {
                     $label  = "class='badge bg-success text-white'";
-                    $status = $this->customlib->getSessionPrefixByType('appointment') . $value->id;
+                    $status = $this->lang->line('approved');
                 } else if ($value->appointment_status == "pending") {
                     $label  = "class='badge bg-warning text-dark'";
-                    $status = $this->lang->line($value->appointment_status);
+                    $status = $this->lang->line('pending');
                 } else if ($value->appointment_status == "cancel") {
                     $label  = "class='badge bg-danger text-white'";
-                    $status = $this->lang->line($value->appointment_status);
-                } else if ($value->appointment_status == "partially_refunded") {
+                    $status = $this->lang->line('cancel');
+                } else if ($value->appointment_status == "partially_refunded" || $value->appointment_status == "partially_refunded_approved") {
                     $label  = "class='badge bg-info text-white'";
-                    $status = $this->lang->line($value->appointment_status);
-                } else if ($value->appointment_status == "full_refunded") {
+                    $status = "Partially Refunded (Approved)";
+                } else if ($value->appointment_status == "partially_refunded_cancelled") {
+                    $label  = "class='badge bg-danger text-white'";
+                    $status = "Partially Refunded (Cancelled)";
+                } else {
                     $label  = "class='badge bg-secondary text-white'";
-                    $status = $this->lang->line($value->appointment_status);
+                    $status = ucwords(str_replace('_', ' ', $value->appointment_status));
                 }
-				
-				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
-				$refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
-				$net_paid      = max(0, $paid_amount - $refund_amount);
 
-				$action = "<div class='sh-action-dropdown dropdown text-end'>";
-				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
-				$action .= "<i class='fa fa-ellipsis-v'></i>";
-				$action .= "</button>";
-				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
-				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
-				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
+                $action = "<div class='sh-action-dropdown dropdown text-end'>";
+                $action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
+                $action .= "<i class='fa fa-ellipsis-v'></i>";
+                $action .= "</button>";
+                $action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
+                $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
+                $action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
 
-				if ($value->appointment_status == 'pending') {
-					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
-					}
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-					$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
-				} else {
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && $value->appointment_status == 'approved') {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-				}
+                if ($value->appointment_status == 'pending') {
+                    if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+                        $action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+                    }
+                    if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+                        $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+                    }
+                    $action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
+                } else {
+                    if ($this->rbac->hasPrivilege('reschedule', 'can_view') && in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved'])) {
+                        $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+                    }
+                }
 
-				$std_amount = isset($value->standard_amount) ? (float)$value->standard_amount : 0;
-				$eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
-				$eff_net    = max(0, $eff_paid - $refund_amount);
+                $eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+                $eff_net    = max(0, $eff_paid - $refund_amount);
 
-				if (in_array($value->appointment_status, ['approved', 'partially_refunded'])) {
-					if ($eff_net > 0 || $eff_paid == 0) {
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
-					} else {
-						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
-					}
-				}
+                if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled', 'cancel', 'full_refunded'])) {
+                    if ($eff_net > 0 && !$is_full_refund) {
+                        $action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+                    } else if ($refund_amount > 0 || $is_full_refund) {
+                        $action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+                    }
+                }
 
-				$action .= "</ul>";
-				$action .= "</div>";
-				
+                $action .= "</ul>";
+                $action .= "</div>";
+                
                 $first_action = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>";
-                $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $status . "</a>";
-				
+                $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $this->customlib->getSessionPrefixByType('appointment') . $value->id . "</a>";
+                
                 if (!empty($value->live_consult)) {
                     $live_consult = $this->lang->line(strtolower($value->live_consult));
                 } else {
@@ -938,10 +962,12 @@ class Appointment extends Admin_Controller
                     }
                 }
                 //====================
-				$row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
-
-                $row[]     = "<small " . $label . ">" . $this->lang->line($value->appointment_status) . "</small>";
+                $row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
+                $row[] = "<small " . $label . ">" . $status . "</small>";
                 $standard_amount = (float)($value->standard_amount ?? 0);
+                if ($standard_amount <= 0 && isset($value->appointment_amount)) {
+                    $standard_amount = (float)$value->appointment_amount;
+                }
                 $discount_perc   = (float)($value->discount_percentage ?? 0);
                 $tax_perc        = (float)($value->tax ?? 0);
                 $dicount_amt     = ($standard_amount * $discount_perc) / 100;
@@ -949,13 +975,17 @@ class Appointment extends Admin_Controller
                 $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
                 $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
                 $row[]           = amountFormat($net_amount_calc);
-                $display_paid = amountFormat($net_paid);
+                $row[]           = amountFormat($paid_amount);
+                // Refunded (Yes/No)
                 if ($refund_amount > 0) {
-                    $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
+                    $row[] = "<span class='badge bg-warning text-dark'>" . $this->lang->line('yes') . "</span>";
+                } else {
+                    $row[] = "<span class='badge bg-secondary text-white'>" . $this->lang->line('no') . "</span>";
                 }
-                $row[]     = $display_paid;
-                $row[]     = $action;
-                $dt_data[] = $row;
+                // Refund Amount
+                $row[]           = amountFormat($refund_amount);
+                $row[]           = $action;
+                $dt_data[]       = $row;
             }
         }
         $json_data = array(
@@ -980,68 +1010,76 @@ class Appointment extends Admin_Controller
 
                 $row = array();
                 //====================================
+                $paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+                $refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
+                $net_paid      = max(0, $paid_amount - $refund_amount);
+                $std_amount    = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 0);
+
+                $is_full_refund = ($refund_amount > 0 && ($paid_amount > 0 ? ($refund_amount >= $paid_amount) : ($std_amount > 0 ? ($refund_amount >= $std_amount) : true))) || ($value->appointment_status == 'full_refunded');
+
                 $label = "";
-                if ($value->appointment_status == "approved") {
+                if ($is_full_refund) {
+                    $label  = "class='badge bg-danger text-white'";
+                    $status = "Full Refund";
+                } else if ($value->appointment_status == "approved") {
                     $label  = "class='badge bg-success text-white'";
-                    $status = $this->customlib->getSessionPrefixByType('appointment') . $value->id;
+                    $status = $this->lang->line('approved');
                 } else if ($value->appointment_status == "pending") {
                     $label  = "class='badge bg-warning text-dark'";
-                    $status = $this->lang->line($value->appointment_status);
+                    $status = $this->lang->line('pending');
                 } else if ($value->appointment_status == "cancel") {
                     $label  = "class='badge bg-danger text-white'";
-                    $status = $this->lang->line($value->appointment_status);
-                } else if ($value->appointment_status == "partially_refunded") {
+                    $status = $this->lang->line('cancel');
+                } else if ($value->appointment_status == "partially_refunded" || $value->appointment_status == "partially_refunded_approved") {
                     $label  = "class='badge bg-info text-white'";
-                    $status = $this->lang->line($value->appointment_status);
-                } else if ($value->appointment_status == "full_refunded") {
+                    $status = "Partially Refunded (Approved)";
+                } else if ($value->appointment_status == "partially_refunded_cancelled") {
+                    $label  = "class='badge bg-danger text-white'";
+                    $status = "Partially Refunded (Cancelled)";
+                } else {
                     $label  = "class='badge bg-secondary text-white'";
-                    $status = $this->lang->line($value->appointment_status);
+                    $status = ucwords(str_replace('_', ' ', $value->appointment_status));
                 }
 
-				$paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
-				$refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
-				$net_paid      = max(0, $paid_amount - $refund_amount);
+                $action = "<div class='sh-action-dropdown dropdown text-end'>";
+                $action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
+                $action .= "<i class='fa fa-ellipsis-v'></i>";
+                $action .= "</button>";
+                $action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
+                $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
+                $action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
 
-				$action = "<div class='sh-action-dropdown dropdown text-end'>";
-				$action .= "<button class='btn btn-light btn-sm dropdown-toggle sh-action-btn' type='button' data-bs-toggle='dropdown' aria-expanded='false' title='" . $this->lang->line('action') . "'>";
-				$action .= "<i class='fa fa-ellipsis-v'></i>";
-				$action .= "</button>";
-				$action .= "<ul class='dropdown-menu dropdown-menu-end shadow-sm z-index-dropdown'>";
-				$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#viewModal' onclick='viewDetail(" . $value->id . ")'><i class='fa fa-reorder me-2'></i> " . $this->lang->line('show') . "</a></li>";
-				$action .= "<li><a href='#' class='dropdown-item' onclick='printAppointment(" . $value->id . ")'><i class='fa fa-print me-2'></i> " . $this->lang->line('print') . "</a></li>";
+                if ($value->appointment_status == 'pending') {
+                    if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
+                        $action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
+                    }
+                    if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
+                        $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+                    }
+                    $action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
+                } else {
+                    if ($this->rbac->hasPrivilege('reschedule', 'can_view') && in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved'])) {
+                        $action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
+                    }
+                }
 
-				if ($value->appointment_status == 'pending') {
-					if ($this->rbac->hasPrivilege('appointment_approve', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item text-success' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",2)'><i class='fa fa-check me-2'></i> " . $this->lang->line('approve_appointment') . "</a></li>";
-					}
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view')) {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-					$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='cancelAppointment(" . $value->id . ")'><i class='fa fa-times me-2'></i> " . $this->lang->line('cancel') . "</a></li>";
-				} else {
-					if ($this->rbac->hasPrivilege('reschedule', 'can_view') && $value->appointment_status == 'approved') {
-						$action .= "<li><a href='#' class='dropdown-item' data-bs-target='#rescheduleModal' onclick='viewreschedule(" . $value->id . ",1)'><i class='fa fa-calendar me-2'></i> " . $this->lang->line('reschedule') . "</a></li>";
-					}
-				}
+                $eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+                $eff_net    = max(0, $eff_paid - $refund_amount);
 
-				$std_amount = isset($value->standard_amount) ? (float)$value->standard_amount : 0;
-				$eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
-				$eff_net    = max(0, $eff_paid - $refund_amount);
+                if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled', 'cancel', 'full_refunded'])) {
+                    if ($eff_net > 0 && !$is_full_refund) {
+                        $action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
+                    } else if ($refund_amount > 0 || $is_full_refund) {
+                        $action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
+                    }
+                }
 
-				if (in_array($value->appointment_status, ['approved', 'partially_refunded'])) {
-					if ($eff_net > 0 || $eff_paid == 0) {
-						$action .= "<li><a href='#' class='dropdown-item text-danger' onclick='openAppointmentRefundModal(" . $value->id . ", " . $eff_paid . ", " . $refund_amount . ", " . $eff_net . ", " . (int)$value->pid . ")'><i class='fa fa-undo me-2'></i> " . $this->lang->line('refund') . "</a></li>";
-					} else {
-						$action .= "<li><a href='#' class='dropdown-item disabled text-muted'><i class='fa fa-undo me-2'></i> Refunded</a></li>";
-					}
-				}
-
-				$action .= "</ul>";
-				$action .= "</div>";
-				
+                $action .= "</ul>";
+                $action .= "</div>";
+                
                 $first_action = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>";
-                $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $status . "</a>";
-				
+                $appoint_no = "<a  href='" . base_url() . 'admin/patient/profile/' . $value->pid . "'  title=''>" . $this->customlib->getSessionPrefixByType('appointment') . $value->id . "</a>";
+                
                 if (!empty($value->live_consult)) {
                     $live_consult = $this->lang->line(strtolower($value->live_consult));
                 } else {
@@ -1078,10 +1116,12 @@ class Appointment extends Admin_Controller
                     }
                 }
                 //====================
-			    $row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
-
-                $row[]     = "<small " . $label . ">" . $this->lang->line($value->appointment_status) . "</small>";
+                $row[] = composeStaffNameByString($value->created_by_name, $value->created_by_surname, $value->created_by_employee_id);
+                $row[] = "<small " . $label . ">" . $status . "</small>";
                 $standard_amount = (float)($value->standard_amount ?? 0);
+                if ($standard_amount <= 0 && isset($value->appointment_amount)) {
+                    $standard_amount = (float)$value->appointment_amount;
+                }
                 $discount_perc   = (float)($value->discount_percentage ?? 0);
                 $tax_perc        = (float)($value->tax ?? 0);
                 $dicount_amt     = ($standard_amount * $discount_perc) / 100;
@@ -1089,13 +1129,17 @@ class Appointment extends Admin_Controller
                 $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
                 $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
                 $row[]           = amountFormat($net_amount_calc);
-                $display_paid = amountFormat($net_paid);
+                $row[]           = amountFormat($paid_amount);
+                // Refunded (Yes/No)
                 if ($refund_amount > 0) {
-                    $display_paid .= "<br/><small class='badge bg-info text-white' title='Refunded Amount'><i class='fa fa-undo me-1'></i>" . amountFormat($refund_amount) . "</small>";
+                    $row[] = "<span class='badge bg-warning text-dark'>" . $this->lang->line('yes') . "</span>";
+                } else {
+                    $row[] = "<span class='badge bg-secondary text-white'>" . $this->lang->line('no') . "</span>";
                 }
-                $row[]     = $display_paid;
-                $row[]     = $action;
-                $dt_data[] = $row;
+                // Refund Amount
+                $row[]           = amountFormat($refund_amount);
+                $row[]           = $action;
+                $dt_data[]       = $row;
             }
         }
         $json_data = array(
@@ -1314,7 +1358,15 @@ class Appointment extends Admin_Controller
         $cutom_fields_data             = get_custom_table_values($id, 'appointment');
         $result['field_data']          = $cutom_fields_data;
         $result['patients_gender']     = (isset($result['patients_gender'])) ? $this->lang->line(strtolower($result['patients_gender'])) : "";
-        $result['amount']              = $result['paid_amount'];
+        // 'amount' here is used by the Reschedule modal to pre-fill Doctor Fees.
+        $std_amt = (!empty($result['standard_amount']) && (float)$result['standard_amount'] > 0)
+            ? (float)$result['standard_amount']
+            : ((!empty($result['paid_amount']) && (float)$result['paid_amount'] > 0)
+                ? (float)$result['paid_amount']
+                : ((!empty($result['amount']) && (float)$result['amount'] > 0) ? (float)$result['amount'] : 0));
+        $result['standard_amount']     = $std_amt;
+        $result['amount']              = $std_amt;
+        $result['paid_amount']         = isset($result['paid_amount']) ? (float)$result['paid_amount'] : 0;
         $result['discount_percentage'] = $result['discount_percentage'];
         $result['payment_mode_type']   = $result['payment_mode'];//added
 
@@ -2246,139 +2298,125 @@ class Appointment extends Admin_Controller
             $appointment_payment = $this->appointment_model->getPaymentByAppointmentId($appointment_id);
             $charges             = !empty($appointment_payment) ? $this->charge_model->getChargeByChargeId($appointment_payment->charge_id) : null;
 
-            if (!empty($appointment_payment) && !empty($charges)):
-            $apply_charge        = $charges['standard_charge'] + ($charges['standard_charge'] * ($charges['percentage'] / 100));
-            
-            $opd_details         = array(
-                'patient_id'   => $appointment_details['patient_id'],
-                'generated_by' => $this->customlib->getStaffID(),
-            ); 
-                $consult      = $this->input->post('live_consult', TRUE);
-                //added
-                if ($consult == '') { 
-                    $consult = 'no';
-                }
-                //added
-                $visit_details = array(
-                    'appointment_date'  => $appointment_details['date'],
-                    'opd_details_id'    => 0,
-                    'cons_doctor'       => $appointment_details['doctor'],
-                    'generated_by'      => $this->customlib->getLoggedInUserID(),
-                    'patient_charge_id' => null,
-                    'transaction_id'    => $transaction_data->id,
-                    'can_delete'        => 'no',
-                    'live_consult'      => $consult,
+            $doctor_fees_r = $this->input->post('doctor_fees', TRUE);
+            $doctor_fees = ($doctor_fees_r !== null && $doctor_fees_r !== '') ? (float)$doctor_fees_r : 0;
+            $discount_percentage_r = $this->input->post('discount_percentage', TRUE);
+            $discount_percentage = (!empty($discount_percentage_r) && is_numeric($discount_percentage_r)) ? (float)$discount_percentage_r : 0;
 
-                );
-                $staff_data = $this->staff_model->getStaffByID($appointment_details['doctor']);
-                $staff_name = composeStaffName($staff_data);
-                $charge     = array(
-                    'opd_id'          => 0,
-                    'date'            => date('Y-m-d H:i:s'),
-                    'charge_id'       => $appointment_payment->charge_id,
-                    'qty'             => 1,
-                    'apply_charge'    => $charges['standard_charge'],
-                    'standard_charge' => $charges['standard_charge'],
-                    'amount'          => $appointment_payment->paid_amount,
-                    'created_at'      => date('Y-m-d H:i:s'),
-                    'note'            => null,
-                    'tax'             => $charges['percentage'],
-                );
+            $amount_paid      = $doctor_fees - calculatePercent($doctor_fees, $discount_percentage);
+            $appointment_fees = array(
+                'standard_amount'     => $doctor_fees,
+                'paid_amount'         => $amount_paid,
+                'discount_percentage' => $discount_percentage,
+            );
+            $this->appointment_model->updateappointmentpayment($appointment_id, $appointment_fees);
 
-                $doctor_fees = $this->input->post('doctor_fees', TRUE);
-                if ($doctor_fees == 0) {
-                    $discount_percentage = 0;
-                } else {
-                    $discount_percentage = $this->input->post('discount_percentage', TRUE);
+            if ($this->input->post('edit_appointment_status', TRUE) == "approved") {
+
+                $opdidbyappointmentid   =   $this->appointment_model->getopdidbyappointmentid($appointment_id);
+
+                $appointment_opd_details=[
+                    'standard_charge'       => $doctor_fees,
+                    'apply_charge'          => $doctor_fees,
+                    'amount'                => $amount_paid,
+                    'discount_percentage'   => $discount_percentage,
+                ];
+
+                if (!empty($opdidbyappointmentid) && !empty($opdidbyappointmentid->opd_id)) {
+                    $this->appointment_model->updateappointmentpatientcharges($appointment_opd_details, $opdidbyappointmentid->opd_id);
                 }
 
-                $amount_paid      = $doctor_fees - calculatePercent($doctor_fees, $discount_percentage);
-                $appointment_fees = array(
-                    'standard_amount'     => $doctor_fees,
-                    'paid_amount'         => $amount_paid,
-                    'discount_percentage' => $discount_percentage,
-                );
-                $this->appointment_model->updateappointmentpayment($appointment_id, $appointment_fees);
-
-                if ($this->input->post('edit_appointment_status', TRUE) == "approved") {
-
-                    $opdidbyappointmentid   =   $this->appointment_model->getopdidbyappointmentid($appointment_id);
-
-                    $appointment_opd_details=[
-                        'standard_charge'       => $doctor_fees,
-                        'apply_charge'          => $doctor_fees,
-                        'amount'                => $amount_paid,
-                        'discount_percentage'   => $discount_percentage,
-                    ];
-
-                    if (!empty($opdidbyappointmentid) && !empty($opdidbyappointmentid->opd_id)) {
-                        $this->appointment_model->updateappointmentpatientcharges($appointment_opd_details, $opdidbyappointmentid->opd_id);
+                if (empty($appointment_details['visit_details_id'])) {
+                    $consult = $this->input->post('live_consult', TRUE);
+                    if ($consult == '') {
+                        $consult = 'no';
                     }
+                    $opd_details = array(
+                        'patient_id'   => $appointment_details['patient_id'],
+                        'generated_by' => $this->customlib->getStaffID(),
+                    );
+                    $visit_details = array(
+                        'appointment_date'  => $appointment_details['date'],
+                        'opd_details_id'    => 0,
+                        'cons_doctor'       => $appointment_details['doctor'],
+                        'generated_by'      => $this->customlib->getLoggedInUserID(),
+                        'patient_charge_id' => null,
+                        'transaction_id'    => !empty($transaction_data) ? $transaction_data->id : 0,
+                        'can_delete'        => 'no',
+                        'live_consult'      => $consult,
+                    );
+                    $charge_id_val = !empty($appointment_payment) ? $appointment_payment->charge_id : 0;
+                    $std_chg       = !empty($charges) ? $charges['standard_charge'] : $doctor_fees;
+                    $tax_val       = !empty($charges) ? $charges['percentage'] : 0;
+                    $charge        = array(
+                        'opd_id'          => 0,
+                        'date'            => date('Y-m-d H:i:s'),
+                        'charge_id'       => $charge_id_val,
+                        'qty'             => 1,
+                        'apply_charge'    => $std_chg,
+                        'standard_charge' => $std_chg,
+                        'amount'          => $amount_paid,
+                        'created_at'      => date('Y-m-d H:i:s'),
+                        'note'            => null,
+                        'tax'             => $tax_val,
+                    );
 
-                }
-                 
-                if ($appointment_details['visit_details_id'] == '') {   
-                     
                     $opd_visit_id = $this->appointment_model->moveToOpd($opd_details, $visit_details, $charge, $appointment_id);
 
                     // SaaS: increment the OPD count usage by 1 (count-based resource: no_of_opd).
-                    // moveToOpd() created a new OPD visit from the approved appointment; mirror the
-                    // +1 done in normal OPD registration. Own try/catch so a quota-API hiccup does not abort.
                     try {
                         $this->saasvalidation->updateResouceQuota('no_of_opd', 1);
                     } catch (Exception $e) {
                         log_message('error', 'SaaS no_of_opd quota increment failed (appointment reschedule->opd): ' . $e->getMessage());
                     }
 
-                    $visit_detail = $this->patient_model->getVisitDetailByid($opd_visit_id['visit_details_id']);
-                    $setting_result   = $this->setting_model->getzoomsetting();
-                    $opdduration      = $setting_result->opd_duration;
-                    if ($consult == 'yes') {
-                        $api_type = 'global';
-                        $params   = array(
-                            'zoom_api_key'    => "",
-                            'zoom_api_secret' => "",
-                        );
+                    if (!empty($opd_visit_id['visit_details_id'])) {
+                        $visit_detail = $this->patient_model->getVisitDetailByid($opd_visit_id['visit_details_id']);
+                        $setting_result   = $this->setting_model->getzoomsetting();
+                        $opdduration      = !empty($setting_result) ? $setting_result->opd_duration : 0;
+                        if ($consult == 'yes' && !empty($visit_detail)) {
+                            $api_type = 'global';
+                            $params   = array(
+                                'zoom_api_key'    => "",
+                                'zoom_api_secret' => "",
+                            );
 
-                        $title = 'Online consult for ' . $this->customlib->getSessionPrefixByType('opd_no') . $visit_detail->opd_details_id . " Checkup ID " . $visit_detail->id;
-                        $this->load->library('zoom_api', $params);
-                        $insert_array = array(
-                            'staff_id'         => $appointment_details['doctor'],
-                            'visit_details_id' => $visit_detail->id,
-                            'title'            => $title,
-                            'date'             => $this->customlib->dateFormatToYYYYMMDDHis($this->input->post('appointment_date'), $this->time_format),
-                            'duration'         => $opdduration,
-                            'created_id'       => $this->customlib->getStaffID(),
-                            'password'         => random_string(),
-                            'api_type'         => $api_type,
-                            'host_video'       => 1,
-                            'client_video'     => 1,
-                            'purpose'          => 'consult',
-                            'timezone'         => $this->customlib->getTimeZone(),
-                        );
+                            $title = 'Online consult for ' . $this->customlib->getSessionPrefixByType('opd_no') . $visit_detail->opd_details_id . " Checkup ID " . $visit_detail->id;
+                            $this->load->library('zoom_api', $params);
+                            $insert_array = array(
+                                'staff_id'         => $appointment_details['doctor'],
+                                'visit_details_id' => $visit_detail->id,
+                                'title'            => $title,
+                                'date'             => $this->customlib->dateFormatToYYYYMMDDHis($this->input->post('appointment_date'), $this->time_format),
+                                'duration'         => $opdduration,
+                                'created_id'       => $this->customlib->getStaffID(),
+                                'password'         => random_string(),
+                                'api_type'         => $api_type,
+                                'host_video'       => 1,
+                                'client_video'     => 1,
+                                'purpose'          => 'consult',
+                                'timezone'         => $this->customlib->getTimeZone(),
+                            );
 
-                        $response = $this->zoom_api->createAMeeting($insert_array);
+                            $response = $this->zoom_api->createAMeeting($insert_array);
 
-                        if (!empty($response)) {
-                            if (isset($response->id)) {
-                                $insert_array['return_response'] = json_encode($response);
-                                $this->conference_model->add($insert_array);
+                            if (!empty($response)) {
+                                if (isset($response->id)) {
+                                    $insert_array['return_response'] = json_encode($response);
+                                    $this->conference_model->add($insert_array);
+                                }
                             }
                         }
                     }
                 }
-                else if ($this->input->post('edit_appointment_status', TRUE) == 'approved' && $saas_old_status != 'approved' && !empty($appointment_details['visit_details_id'])) {
-                    // SaaS: OPD already existed (e.g. created at add() time) so the moveToOpd
-                    // branch above didn't run/count it. Count once now on the first approval;
-                    // the old-status guard blocks double-counting on later re-saves.
+                else if ($saas_old_status != 'approved' && !empty($appointment_details['visit_details_id'])) {
                     try {
                         $this->saasvalidation->updateResouceQuota('no_of_opd', 1);
                     } catch (Exception $e) {
                         log_message('error', 'SaaS no_of_opd quota increment failed (appointment reschedule approve, existing opd): ' . $e->getMessage());
                     }
                 }
-
-            endif; /* end null guard: appointment_payment && charges */
+            }
 
             /* end status code */
             $custom_field_post = $this->input->post("custom_fields[appointment]");

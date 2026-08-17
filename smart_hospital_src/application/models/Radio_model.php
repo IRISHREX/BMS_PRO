@@ -170,16 +170,16 @@ class Radio_model extends MY_Model
             }
         }
         $this->datatables
-            ->select('radiology_billing.*,(SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id, (SELECT referral_person.name FROM referral_payment JOIN referral_person ON referral_person.id = referral_payment.referral_person_id WHERE referral_payment.billing_id = radiology_billing.id AND referral_payment.referral_type = 5 LIMIT 1) as referral_person_name' . $field_variable)
+            ->select('radiology_billing.*,(SELECT IFNULL(SUM(CASE WHEN transactions.type="payment" THEN transactions.amount WHEN transactions.type="refund" THEN -transactions.amount ELSE 0 END),0) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id,generated_by_staff.name as generated_byname,generated_by_staff.surname as generated_bysurname,generated_by_staff.employee_id as generated_byemployee_id, (SELECT referral_person.name FROM referral_payment JOIN referral_person ON referral_person.id = referral_payment.referral_person_id WHERE referral_payment.billing_id = radiology_billing.id AND referral_payment.referral_type = 5 LIMIT 1) as referral_person_name' . $field_variable)
             ->join('patients', 'patients.id = radiology_billing.patient_id', 'left')
             ->join('staff', 'staff.id = radiology_billing.doctor_id', 'left')
             ->join('staff as generated_by_staff', 'generated_by_staff.id = radiology_billing.generated_by', "left")
             ->searchable('radiology_billing.id,radiology_billing.case_reference_id,radiology_billing.date,patients.patient_name,radiology_billing.doctor_id,radiology_billing.note' . $custom_field_column . ',radiology_billing.net_amount,radiology_billing.discount,
-                (SELECT SUM(transactions.amount) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount')
+                (SELECT SUM(CASE WHEN transactions.type="payment" THEN transactions.amount WHEN transactions.type="refund" THEN -transactions.amount ELSE 0 END) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount')
           
 
             ->orderable(' radiology_billing.id, radiology_billing.case_reference_id,radiology_billing.date,patients.patient_name,generated_bysurname, radiology_billing.doctor_id, radiology_billing.note'.$custom_field_column.',radiology_billing.total,radiology_billing.discount, radiology_billing.tax,
-                radiology_billing.net_amount,(SELECT SUM(transactions.amount) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount,""')
+                radiology_billing.net_amount,(SELECT SUM(CASE WHEN transactions.type="payment" THEN transactions.amount WHEN transactions.type="refund" THEN -transactions.amount ELSE 0 END) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount,""')
 
             ->sort('radiology_billing.id', 'desc')
             ->from('radiology_billing');
@@ -190,7 +190,7 @@ class Radio_model extends MY_Model
     public function getradiologybillByCaseId($case_id)
     {
         $this->datatables
-            ->select('radiology_billing.*,sum(transactions.amount) as paid_amount,patients.patient_name,patients.id as patient_unique_id,staff.name,staff.surname,staff.employee_id')
+            ->select('radiology_billing.*,SUM(CASE WHEN transactions.type="payment" THEN transactions.amount WHEN transactions.type="refund" THEN -transactions.amount ELSE 0 END) as paid_amount,patients.patient_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id AND type="refund"),0) as refund_amount,patients.id as patient_unique_id,staff.name,staff.surname,staff.employee_id')
             ->join('patients', 'patients.id = radiology_billing.patient_id', 'left')
             ->join('transactions', 'transactions.radiology_billing_id = radiology_billing.id', 'left')
             ->join('staff', 'staff.id = radiology_billing.doctor_id', 'left')
@@ -212,7 +212,7 @@ class Radio_model extends MY_Model
 
     public function getradiologyByCaseId($case_id)
     {
-        $query = $this->db->select('radiology_billing.*,IFNULL((SELECT sum(transactions.amount) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id),0) as `amount_paid`,patients.patient_name,patients.id as patient_id')
+        $query = $this->db->select('radiology_billing.*,IFNULL((SELECT SUM(CASE WHEN transactions.type="payment" THEN transactions.amount WHEN transactions.type="refund" THEN -transactions.amount ELSE 0 END) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id),0) as `amount_paid`,patients.patient_name,patients.id as patient_id')
             ->join('patients', 'patients.id = radiology_billing.patient_id', 'left')
             ->where('radiology_billing.case_reference_id', $case_id)
             ->get('radiology_billing');
@@ -276,7 +276,7 @@ class Radio_model extends MY_Model
             }
         }
         $field_variable      = implode(',', $field_var_array);
-        $query = $this->db->select('radiology_billing.*,blood_bank_products.name as blood_group_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id),0) as total_deposit,patients.patient_name,patients.id as patient_unique_id,patients.as_of_date,patients.age, patients.month, patients.day,patients.gender,patients.dob,patients.blood_group,patients.mobileno,patients.email,patients.address,staff.employee_id,staff.name,staff.surname,staff.employee_id,transactions.payment_mode,transactions.amount,transactions.cheque_no,transactions.cheque_date,transactions.note as `transaction_note`,staff_roles.role_id as staff_roles_id,org.organisation_name,radiology_billing.insurance_validity,radiology_billing.insurance_id,' . $field_variable)
+        $query = $this->db->select('radiology_billing.*,blood_bank_products.name as blood_group_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id),0) as total_deposit,patients.patient_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id AND type="refund"),0) as refund_amount,patients.id as patient_unique_id,patients.as_of_date,patients.age, patients.month, patients.day,patients.gender,patients.dob,patients.blood_group,patients.mobileno,patients.email,patients.address,staff.employee_id,staff.name,staff.surname,staff.employee_id,transactions.payment_mode,transactions.amount,transactions.cheque_no,transactions.cheque_date,transactions.note as `transaction_note`,staff_roles.role_id as staff_roles_id,org.organisation_name,radiology_billing.insurance_validity,radiology_billing.insurance_id,' . $field_variable)
             ->join('patients', 'radiology_billing.patient_id = patients.id')
             ->join('blood_bank_products', 'blood_bank_products.id = patients.blood_bank_product_id', 'left')
             ->join('staff', 'staff.id = radiology_billing.generated_by')
@@ -697,7 +697,7 @@ class Radio_model extends MY_Model
 
     public function getradioBillDetails($id)
     {
-        $this->db->select('radiology_billing.*,sum(transactions.amount) as total_deposit,patients.patient_name,patients.patient_unique_id,patients.age,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address');
+        $this->db->select('radiology_billing.*,SUM(CASE WHEN transactions.type="payment" THEN transactions.amount WHEN transactions.type="refund" THEN -transactions.amount ELSE 0 END) as total_deposit,patients.patient_name,patients.patient_unique_id,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id AND type="refund"),0) as refund_amount,patients.age,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address');
         $this->db->where('radiology_billing.id', $id);
         $this->db->join('patients', 'patients.id = radiology_billing.patient_id', "left");
         $this->db->join('transactions', 'radiology_billing.id = transactions.radiology_billing_id', "left");
@@ -904,7 +904,7 @@ class Radio_model extends MY_Model
 
     public function getPatientRadiologyReportDetails($id)
     {
-        $query = $this->db->select('radiology_report.*,radio.test_name,radio.short_name,radio.report_days,radio.id as pid,radio.charge_id as charge_id,radiology_report.radiology_bill_id,radiology_billing.doctor_name,radiology_billing.case_reference_id,radiology_billing.patient_id,charges.charge_category_id,charges.name as `charge_name`,charges.standard_charge,patients.patient_name as `patient_name`,patients.id as patient_unique_id,patients.as_of_date,patients.age,patients.month,patients.day,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address,collection_specialist_staff.name as `collection_specialist_staff_name`,collection_specialist_staff.surname as `collection_specialist_staff_surname`,collection_specialist_staff.employee_id as `collection_specialist_staff_employee_id`,collection_specialist_staff.id as `collection_specialist_staff_id`')
+        $query = $this->db->select('radiology_report.*,radio.test_name,radio.short_name,radio.report_days,radio.id as pid,radio.charge_id as charge_id,radiology_report.radiology_bill_id,radiology_billing.doctor_name,radiology_billing.case_reference_id,radiology_billing.patient_id,charges.charge_category_id,charges.name as `charge_name`,charges.standard_charge,patients.patient_name as `patient_name`,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id AND type="refund"),0) as refund_amount,patients.id as patient_unique_id,patients.as_of_date,patients.age,patients.month,patients.day,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address,collection_specialist_staff.name as `collection_specialist_staff_name`,collection_specialist_staff.surname as `collection_specialist_staff_surname`,collection_specialist_staff.employee_id as `collection_specialist_staff_employee_id`,collection_specialist_staff.id as `collection_specialist_staff_id`')
             ->join('radiology_billing', 'radiology_report.radiology_bill_id = radiology_billing.id')
             ->join('patients', 'radiology_report.patient_id = patients.id')
             ->join('radio', 'radiology_report.radiology_id = radio.id')
@@ -948,7 +948,7 @@ class Radio_model extends MY_Model
 
         $field_variable = (empty($field_var_array)) ? "" : "," . implode(',', $field_var_array);
         $custom_field_column = (empty($custom_field_column_array)) ? "" : "," . implode(',', $custom_field_column_array);
-        $this->db->select('radiology_billing.*,sum(transactions.amount)as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id' . $field_variable);
+        $this->db->select('radiology_billing.*,SUM(CASE WHEN transactions.type="payment" THEN transactions.amount WHEN transactions.type="refund" THEN -transactions.amount ELSE 0 END)as paid_amount,patients.patient_name,patients.id as pid,staff.name,staff.surname,staff.employee_id' . $field_variable);
         $this->db->join('patients', 'patients.id = radiology_billing.patient_id', 'left');
         $this->db->join('staff', 'staff.id = radiology_billing.doctor_id', 'left');
         $this->db->join('transactions', 'transactions.radiology_billing_id = radiology_billing.id', 'left');
@@ -1091,7 +1091,7 @@ class Radio_model extends MY_Model
 
     public function printtestparameterdetail($id)
     {
-        $query = $this->db->select('radiology_report.*,radiology_report.id as test_id,radio.test_name,radio.short_name,radio.report_days,radio.id as pid,radio.charge_id as charge_id,radiology_report.radiology_bill_id,radiology_billing.doctor_name,radiology_billing.case_reference_id,radiology_billing.patient_id,charges.charge_category_id,charges.name as `charge_name`,charges.standard_charge,patients.patient_name as `patient_name`,patients.id as patient_unique_id,patients.age,patients.month,patients.day,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address,collection_specialist_staff.name as `collection_specialist_staff_name`,collection_specialist_staff.surname as `collection_specialist_staff_surname`,collection_specialist_staff.employee_id as `collection_specialist_staff_employee_id`,collection_specialist_staff.id as `collection_specialist_staff_id`')
+        $query = $this->db->select('radiology_report.*,radiology_report.id as test_id,radio.test_name,radio.short_name,radio.report_days,radio.id as pid,radio.charge_id as charge_id,radiology_report.radiology_bill_id,radiology_billing.doctor_name,radiology_billing.case_reference_id,radiology_billing.patient_id,charges.charge_category_id,charges.name as `charge_name`,charges.standard_charge,patients.patient_name as `patient_name`,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id AND type="refund"),0) as refund_amount,patients.id as patient_unique_id,patients.age,patients.month,patients.day,patients.gender,patients.blood_group,patients.mobileno,patients.email,patients.address,collection_specialist_staff.name as `collection_specialist_staff_name`,collection_specialist_staff.surname as `collection_specialist_staff_surname`,collection_specialist_staff.employee_id as `collection_specialist_staff_employee_id`,collection_specialist_staff.id as `collection_specialist_staff_id`')
             ->join('radiology_billing', 'radiology_report.radiology_bill_id = radiology_billing.id')
             ->join('patients', 'radiology_report.patient_id = patients.id')
             ->join('radio', 'radiology_report.radiology_id = radio.id')
