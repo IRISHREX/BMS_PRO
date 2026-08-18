@@ -716,26 +716,39 @@ class Radio extends Admin_Controller
             }
             if ($inserted) {
 
+                if ($radiology_billing_id > 0) {
+                    $this->referral_payment_model->deleteByBillId($inserted, 5);
+                }
                 $referral_person_id = $this->input->post('referral_person_id', TRUE);
                 if (!empty($referral_person_id)) {
-                    if ($radiology_billing_id > 0) {
-                        $this->referral_payment_model->deleteByBillId($inserted, 5);
-                    }
                     $percentage = $this->referral_payment_model->get_commission($referral_person_id, 5); // 5 = radiology
-                    if ($percentage) {
-                        $commission_amount = ($this->input->post('net_amount', TRUE) * $percentage) / 100;
-                        $payment = array(
-                            "referral_person_id" => $referral_person_id,
-                            "patient_id"         => $patient_id,
-                            "referral_type"      => 5,
-                            "billing_id"         => $inserted,
-                            "bill_amount"        => $this->input->post('net_amount', TRUE),
-                            "percentage"         => $percentage,
-                            "amount"             => $commission_amount,
-                            "date"               => date("Y-m-d H:i:s"),
-                        );
-                        $this->referral_payment_model->add($payment);
+                    $percentage = $percentage ? $percentage : 0;
+                    
+                    $is_fully_paid = false;
+                    $new_net = (float)$this->input->post('net_amount', TRUE);
+                    if ($radiology_billing_id > 0) {
+                        $existing_payments = $this->transaction_model->radiologyTotalPayments($radiology_billing_id);
+                        $prev_total_paid   = ($existing_payments && isset($existing_payments->total_paid)) ? (float)$existing_payments->total_paid : 0;
+                        $prev_total_refund = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+                        $net_paid          = max(0, round($prev_total_paid - $prev_total_refund, 2));
+                        $is_fully_paid     = ($net_paid >= $new_net);
+                    } else {
+                        $paid_amount       = (float)$this->input->post('amount', TRUE);
+                        $is_fully_paid     = ($paid_amount >= $new_net);
                     }
+
+                    $commission_amount = $is_fully_paid ? (($new_net * $percentage) / 100) : 0;
+                    $payment = array(
+                        "referral_person_id" => $referral_person_id,
+                        "patient_id"         => $patient_id,
+                        "referral_type"      => 5,
+                        "billing_id"         => $inserted,
+                        "bill_amount"        => $new_net,
+                        "percentage"         => $percentage,
+                        "amount"             => $commission_amount,
+                        "date"               => date("Y-m-d H:i:s"),
+                    );
+                    $this->referral_payment_model->add($payment);
                 }
 
                 $patient_name   = $this->notificationsetting_model->getpatientDetails($patient_id);
@@ -2378,6 +2391,23 @@ class Radio extends Admin_Controller
                 }
 
                 $this->transaction_model->add($payment_array);
+
+                // Update commission if fully paid
+                $total_refund = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+                $new_total_paid = $total_paid + $amount_paying;
+                $new_net_paid = max(0, round($new_total_paid - $total_refund, 2));
+                
+                if ($new_net_paid >= $net_amount) {
+                    $this->db->where('billing_id', $radiology_billing_id);
+                    $this->db->where('referral_type', 5);
+                    $referral_payment = $this->db->get('referral_payment')->row();
+                    if ($referral_payment) {
+                        $commission_amount = ($net_amount * $referral_payment->percentage) / 100;
+                        $this->db->where('id', $referral_payment->id);
+                        $this->db->update('referral_payment', array('amount' => $commission_amount));
+                    }
+                }
+
                 $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
             } else {
                 $array = array('status' => 'fail', 'error' => array('amount_invalid' => $this->lang->line('amount_should_not_be_greater_than_balance') . ' ' . amountFormat($net_amount - $total_paid)), 'message' => '');
@@ -2456,6 +2486,11 @@ class Radio extends Admin_Controller
             $this->db->set('status', $status);
             $this->db->where('id', $radiology_billing_id);
             $this->db->update('radiology_billing');
+
+            // Reset commission since bill is no longer fully paid
+            $this->db->where('billing_id', $radiology_billing_id);
+            $this->db->where('referral_type', 5);
+            $this->db->update('referral_payment', array('amount' => 0));
 
             $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
         }
