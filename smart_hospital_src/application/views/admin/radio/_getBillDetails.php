@@ -10,7 +10,16 @@ foreach ($result->radiology_report as $rv) {
     $amount  += $rv->apply_charge;
     $tax_amt += ($rv->tax_percentage > 0) ? (($rv->apply_charge - $d_amt) * $rv->tax_percentage / 100) : 0;
 }
-$total_due = ($amount - $result->discount) + $result->tax - $result->total_deposit;
+$base_net_amt     = ($amount - $result->discount) + $result->tax;
+$refund_amt       = (float)($result->refund_amount ?? 0);
+$gross_paid       = (float)$result->total_deposit + $refund_amt;
+$init_balance     = max(0, $base_net_amt - $gross_paid);
+$ref_to_balance   = min($refund_amt, $init_balance);
+$ref_to_paid      = max(0, $refund_amt - $ref_to_balance);
+$adjusted_net_amt = max(0, $base_net_amt - $refund_amt);
+$final_paid_amt   = max(0, $gross_paid - $ref_to_paid);
+$total_due        = max(0, $init_balance - $ref_to_balance);
+
 $amount    = 0; // reset for row-level loop below
 $tax_amt   = 0;
 ?>
@@ -54,34 +63,62 @@ $tax_amt   = 0;
                                 <td><?php echo ($result->gender ? $this->lang->line(strtolower($result->gender)) : '-'); ?></td>
                             </tr>
                             <tr>
-                                <th><?php echo $this->lang->line('case_id'); ?></th>
-                                <td><?php echo ($result->case_reference_id ?: '-'); ?></td>
+                                <th><?php echo $this->lang->line('blood_group'); ?></th>
+                                <td><?php echo ($result->blood_group_name ?: '-'); ?></td>
                             </tr>
-                            <?php if (!empty($prescription)) { ?>
                             <tr>
-                                <th><?php echo $this->lang->line('prescription_no'); ?></th>
-                                <td><?php echo $prescription; ?></td>
+                                <th><?php echo $this->lang->line('phone'); ?></th>
+                                <td><?php echo ($result->mobileno ?: '-'); ?></td>
                             </tr>
-                            <?php } ?>
+                            <tr>
+                                <th><?php echo $this->lang->line('email'); ?></th>
+                                <td><?php echo ($result->email ?: '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <th><?php echo $this->lang->line('address'); ?></th>
+                                <td><?php echo ($result->address ?: '-'); ?></td>
+                            </tr>
                         </table>
 
                         <table class="sh-print-info-table w-50" >
                             <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
                             <tr>
                                 <th><?php echo $this->lang->line('date'); ?></th>
-                                <td><?php echo ($result->date ? $this->customlib->YYYYMMDDHisTodateFormat($result->date, $this->customlib->getHospitalTimeFormat()) : '-'); ?></td>
+                                <td><?php echo $this->customlib->YYYYMMDDHisTodateFormat($result->date, $this->customlib->getHospitalTimeFormat()); ?></td>
                             </tr>
                             <tr>
-                                <th><?php echo $this->lang->line('paid_amount'); ?></th>
-                                <td><?php echo $currency_symbol . amountFormat($result->total_deposit); ?></td>
+                                <th><?php echo $this->lang->line('prescription_no'); ?></th>
+                                <td><?php echo ($prescription ?: '-'); ?></td>
+                            </tr>
+                            <?php if ($result->case_reference_id > 0) { ?>
+                            <tr>
+                                <th><?php echo $this->lang->line('case_id'); ?></th>
+                                <td><?php echo $result->case_reference_id; ?></td>
+                            </tr>
+                            <?php } ?>
+                            <tr>
+                                <th><?php echo $this->lang->line('reference_doctor'); ?></th>
+                                <td><?php echo ($result->doctor_name ?: '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <th><?php echo $this->lang->line('tpa'); ?></th>
+                                <td><?php echo ($result->organisation_name ?: '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <th><?php echo $this->lang->line('tpa_id'); ?></th>
+                                <td><?php echo ($result->insurance_id ?: '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <th><?php echo $this->lang->line('tpa_validity'); ?></th>
+                                <td><?php echo (!empty($result->insurance_validity) ? $this->customlib->YYYYMMDDTodateFormat($result->insurance_validity) : '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <th><?php echo $this->lang->line('note'); ?></th>
+                                <td><?php echo ($result->note ?: '-'); ?></td>
                             </tr>
                             <tr>
                                 <th><?php echo $this->lang->line('balance'); ?></th>
                                 <td><?php echo $currency_symbol . amountFormat($total_due); ?></td>
-                            </tr>
-                            <tr>
-                                <th><?php echo $this->lang->line('status'); ?></th>
-                                <td><?php echo ($total_due <= 0) ? $this->lang->line('paid') : $this->lang->line('due'); ?></td>
                             </tr>
                             <?php if (!empty($fields)) { foreach ($fields as $fields_key => $fields_value) {
                                 $display_field = $result->{"$fields_value->name"} ?? '';
@@ -110,7 +147,7 @@ $tax_amt   = 0;
                         <tr>
                             <th style="width:4%">#</th>
                             <th><?php echo $this->lang->line('test_name'); ?></th>
-                            <th style="width:22%" class="text-end"><?php echo $this->lang->line('date'); ?></th>
+                            <th style="width:22%" class="text-end"><?php echo $this->lang->line('report_date'); ?></th>
                             <th style="width:22%" class="text-end"><?php echo $this->lang->line('tax'); ?></th>
                             <th class="sh-col-20 sh-text-right"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?></th>
                         </tr>
@@ -164,11 +201,11 @@ $tax_amt   = 0;
                         </tr>
                         <tr>
                             <td colspan="4"><?php echo $this->lang->line('net_amount'); ?></td>
-                            <td><?php echo $currency_symbol . amountFormat(($amount - $result->discount) + $result->tax); ?></td>
+                            <td><?php echo $currency_symbol . amountFormat($adjusted_net_amt); ?></td>
                         </tr>
                         <tr>
                             <td colspan="4"><?php echo $this->lang->line('paid_amount'); ?></td>
-                            <td><?php echo $currency_symbol . amountFormat($result->total_deposit); ?></td>
+                            <td><?php echo $currency_symbol . amountFormat($final_paid_amt); ?></td>
                         </tr>
                         <?php if (isset($result->refund_amount) && $result->refund_amount > 0) { ?>
                         <tr>

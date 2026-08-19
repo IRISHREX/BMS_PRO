@@ -1535,8 +1535,20 @@ class Pathology extends Admin_Controller
         if (!empty($dt_response->data)) {   
             foreach ($dt_response->data as $key => $value) {
 
-                $row            = array();
-                $balance_amount = ($value->net_amount) - ($value->paid_amount);
+                $row             = array();
+                $orig_net_amount = (float)$value->net_amount;
+                $gross_paid      = isset($value->gross_paid) ? (float)$value->gross_paid : (float)$value->paid_amount;
+                $refund_amount   = isset($value->refund_amount) ? (float)$value->refund_amount : 0.0;
+
+                // Initial balance before refund
+                $initial_balance   = max(0, $orig_net_amount - $gross_paid);
+                // Refund is first deducted from balance till 0, then deducted from paid
+                $refund_to_balance = min($refund_amount, $initial_balance);
+                $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+                $adjusted_net      = max(0, $orig_net_amount - $refund_amount);
+                $final_paid        = max(0, $gross_paid - $refund_to_paid);
+                $final_balance     = max(0, $initial_balance - $refund_to_balance);
                 //====================================
 
                 $billing_status = $value->status ?? '';
@@ -1548,7 +1560,7 @@ class Pathology extends Admin_Controller
                 if ($this->rbac->hasPrivilege('pathology_partial_payment', 'can_view')) {
                     $action .= "<li><a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' data-record-caseid='" . $value->case_reference_id . "' class='dropdown-item add_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i> " . $this->lang->line('add_view_payments') . "</a></li>";
                     // Add Refund Option
-                    if ($value->paid_amount > 0 && $billing_status !== 'refunded_cancelled') {
+                    if ($final_paid > 0 && $billing_status !== 'refunded_cancelled') {
                         $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' data-record-caseid='" . $value->case_reference_id . "' class='dropdown-item partial_refund' data-bs-toggle='tooltip' title='" . $this->lang->line('refund') . "' ><i class='fa fa-reply'></i> " . $this->lang->line('refund') . "</a></li>";
                     }
                 }
@@ -1575,9 +1587,9 @@ class Pathology extends Admin_Controller
                 } elseif ($billing_status === 'refunded_cancelled') {
                     $status_html = "<span class='badge' style='background:#dc3545;color:#fff;'>Refunded &amp; Cancelled</span>";
                 } else {
-                    if ($value->paid_amount >= $value->net_amount && $value->net_amount > 0) {
+                    if ($final_paid >= $adjusted_net && $adjusted_net > 0) {
                         $status_html = "<span class='badge' style='background:#28a745;color:#fff;'>Paid</span>";
-                    } elseif ($value->paid_amount > 0) {
+                    } elseif ($final_paid > 0) {
                         $status_html = "<span class='badge' style='background:#fd7e14;color:#fff;'>Partial</span>";
                     } else {
                         $status_html = "<span class='badge' style='background:#6c757d;color:#fff;'>Unpaid</span>";
@@ -1617,9 +1629,9 @@ class Pathology extends Admin_Controller
                     } else {
                         $row[] = $value->tax . " (" . amountFormat(($value->tax * 100) / ($value->total - $discount_amt), 2) . "%)";
                     }
-                    $row[] = amountFormat($value->net_amount, 2);
-                    $row[] = amountFormat($value->paid_amount, 2);
-                    $row[] = amountFormat($balance_amount, 2);
+                    $row[] = amountFormat($adjusted_net, 2);
+                    $row[] = amountFormat($final_paid, 2);
+                    $row[] = amountFormat($final_balance, 2);
                 }
                 $row[]     = $action;
                 $dt_data[] = $row;

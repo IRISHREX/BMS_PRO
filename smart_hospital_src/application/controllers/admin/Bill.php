@@ -192,8 +192,20 @@ class Bill extends Admin_Controller
         if (!empty($dt_response->data)) {
             foreach ($dt_response->data as $key => $value) {
 
-                $row            = array();
-                $balance_amount = ($value->net_amount) - ($value->paid_amount);
+                $row             = array();
+                $orig_net_amount = (float)$value->net_amount;
+                $gross_paid      = isset($value->gross_paid) ? (float)$value->gross_paid : (float)$value->paid_amount;
+                $refund_amount   = isset($value->refund_amount) ? (float)$value->refund_amount : 0.0;
+
+                // Initial balance before refund
+                $initial_balance   = max(0, $orig_net_amount - $gross_paid);
+                // Refund is first deducted from balance till 0, then deducted from paid
+                $refund_to_balance = min($refund_amount, $initial_balance);
+                $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+                $adjusted_net      = max(0, $orig_net_amount - $refund_amount);
+                $final_paid        = max(0, $gross_paid - $refund_to_paid);
+                $final_balance     = max(0, $initial_balance - $refund_to_balance);
                 //====================================
 
                 $action = "<div class='rowoptionview rowview-mt-19'>";
@@ -201,7 +213,7 @@ class Bill extends Admin_Controller
                 $action .= "</div>";
                 $action = "<div class='rowoptionview rowview-mt-19'>";
                 $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm view_pathology_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i></a>";
-                if ($balance_amount > 0) {
+                if ($final_balance > 0) {
                     if ($this->rbac->hasPrivilege('pathology_billing_payment', 'can_view')) {
                         $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm add_pathology_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i></a>";
                     }
@@ -222,9 +234,9 @@ class Bill extends Admin_Controller
                 $row[] = amountFormat($value->total);
                 $row[] = $value->discount.' ('.$value->discount_percentage.'%)';
                 $row[] = $value->tax;
-                $row[] = amountFormat($value->net_amount);
-                $row[] = amountFormat($value->paid_amount);
-                $row[] = amountFormat($balance_amount) . $action;
+                $row[] = amountFormat($adjusted_net);
+                $row[] = amountFormat($final_paid);
+                $row[] = amountFormat($final_balance) . $action;
                 //====================
 
                 $dt_data[] = $row;
@@ -246,13 +258,25 @@ class Bill extends Admin_Controller
         $dt_data     = array();
         if (!empty($dt_response->data)) {
             foreach ($dt_response->data as $key => $value) {
-                $row            = array();
-                $balance_amount = ($value->net_amount) - ($value->paid_amount);
+                $row             = array();
+                $orig_net_amount = (float)$value->net_amount;
+                $gross_paid      = isset($value->gross_paid) ? (float)$value->gross_paid : (float)$value->paid_amount;
+                $refund_amount   = isset($value->refund_amount) ? (float)$value->refund_amount : 0.0;
+
+                // Initial balance before refund
+                $initial_balance   = max(0, $orig_net_amount - $gross_paid);
+                // Refund is first deducted from balance till 0, then deducted from paid
+                $refund_to_balance = min($refund_amount, $initial_balance);
+                $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+                $adjusted_net      = max(0, $orig_net_amount - $refund_amount);
+                $final_paid        = max(0, $gross_paid - $refund_to_paid);
+                $final_balance     = max(0, $initial_balance - $refund_to_balance);
                 //====================================
                 $action = "<div class='rowoptionview rowview-mt-19'>";
 
                 $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm view_radiodetail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i></a>";
-                if ($balance_amount > 0) {
+                if ($final_balance > 0) {
                     if ($this->rbac->hasPrivilege('radiology_billing_payment', 'can_view')) {
                         $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm add_radio_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i></a>";
                     }
@@ -269,9 +293,9 @@ class Bill extends Admin_Controller
                 $row[] = $value->discount." (".$value->discount_percentage." %)";
 				$tax_per = ($value->tax*100)/($value->total-$value->discount) ;
                 $row[] = $value->tax . " (".  amountFormat($tax_per) .'%)' ;
-                $row[] = amountFormat($value->net_amount);
-                $row[] = amountFormat($value->paid_amount);
-                $row[] = amountFormat($balance_amount) . $action;
+                $row[] = amountFormat($adjusted_net);
+                $row[] = amountFormat($final_paid);
+                $row[] = amountFormat($final_balance) . $action;
                 //====================
 
                 $dt_data[] = $row;
