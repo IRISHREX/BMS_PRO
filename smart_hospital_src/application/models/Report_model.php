@@ -543,8 +543,8 @@ class Report_model extends CI_Model
         radiology_billing.discount as discount,
         radiology_billing.tax as tax,
         radiology_billing.net_amount,
-        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id ) as paid_amount,
-        0 as refund_amount
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id and transactions.type='payment') as paid_amount,
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.radiology_billing_id=radiology_billing.id and transactions.type='refund') as refund_amount
         from radiology_billing 
         left join patients on patients.id=radiology_billing.patient_id
         left join staff on staff.id=radiology_billing.generated_by
@@ -564,8 +564,8 @@ class Report_model extends CI_Model
         pathology_billing.discount as discount,
         pathology_billing.tax as tax,
         pathology_billing.net_amount,
-        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.pathology_billing_id=pathology_billing.id ) as paid_amount,
-        0 as refund_amount
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.pathology_billing_id=pathology_billing.id and transactions.type='payment') as paid_amount,
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.pathology_billing_id=pathology_billing.id and transactions.type='refund') as refund_amount
         from pathology_billing
         left join patients on patients.id=pathology_billing.patient_id
         left join staff on staff.id=pathology_billing.generated_by
@@ -585,8 +585,8 @@ class Report_model extends CI_Model
         (blood_issue.amount*blood_issue.discount_percentage/100) as discount,
         (( blood_issue.amount - (blood_issue.amount*blood_issue.discount_percentage/100) )  * blood_issue.tax_percentage / 100 ) as tax,
         blood_issue.net_amount,
-        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id ) as paid_amount,
-        0 as refund_amount
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id and transactions.type='payment') as paid_amount,
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id and transactions.type='refund') as refund_amount
         from blood_issue
         left join patients on patients.id=blood_issue.patient_id
         left join staff on staff.id=blood_issue.generated_by
@@ -605,8 +605,8 @@ class Report_model extends CI_Model
         (blood_issue.amount*blood_issue.discount_percentage/100) as discount,
         (( blood_issue.amount - (blood_issue.amount*blood_issue.discount_percentage/100) )  * blood_issue.tax_percentage / 100 ) as tax,
         blood_issue.net_amount,
-        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id ) as paid_amount,
-        0 as refund_amount
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id and transactions.type='payment') as paid_amount,
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id and transactions.type='refund') as refund_amount
         from blood_issue
         left join patients on patients.id=blood_issue.patient_id
         left join staff on staff.id=blood_issue.generated_by
@@ -628,8 +628,8 @@ class Report_model extends CI_Model
         (blood_issue.amount*blood_issue.discount_percentage/100) as discount,
         (( blood_issue.amount - (blood_issue.amount*blood_issue.discount_percentage/100) )  * blood_issue.tax_percentage / 100 ) as tax,
         blood_issue.net_amount,
-        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id ) as paid_amount,
-        0 as refund_amount
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id and transactions.type='payment') as paid_amount,
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.blood_issue_id=blood_issue.id and transactions.type='refund') as refund_amount
         from blood_issue
         left join patients on patients.id=blood_issue.patient_id
         left join staff on staff.id=blood_issue.generated_by
@@ -673,8 +673,8 @@ class Report_model extends CI_Model
         (ambulance_call.amount*ambulance_call.discount_percentage/100) as discount,
         (( ambulance_call.amount - (ambulance_call.amount*ambulance_call.discount_percentage/100) )  * ambulance_call.tax_percentage / 100 ) as tax,
         ambulance_call.net_amount,
-        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.ambulance_call_id=ambulance_call.id ) as paid_amount,
-        0 as refund_amount
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.ambulance_call_id=ambulance_call.id and transactions.type='payment') as paid_amount,
+        (SELECT IFNULL(SUM(transactions.amount),0) from transactions WHERE transactions.ambulance_call_id=ambulance_call.id and transactions.type='refund') as refund_amount
         from ambulance_call
         left join patients on patients.id=ambulance_call.patient_id
         left join staff on staff.id=ambulance_call.generated_by  
@@ -701,9 +701,10 @@ class Report_model extends CI_Model
         WHERE  patient_charges.opd_id=opd_details.id ) as tax,
         (select sum(amount) as amount_charged  from patient_charges
         WHERE  patient_charges.opd_id=opd_details.id ) as net_amount,
-        (select sum(amount) as amount_paid  from transactions
-        WHERE  transactions.opd_id=opd_details.id ) as paid_amount,
-        0 as refund_amount
+        (select IFNULL(sum(amount),0) as amount_paid  from transactions
+        WHERE  transactions.opd_id=opd_details.id and transactions.type='payment') as paid_amount,
+        (select IFNULL(sum(amount),0) as refund_amount  from transactions
+        WHERE  transactions.opd_id=opd_details.id and transactions.type='refund') as refund_amount
         from opd_details
         left join patients on patients.id=opd_details.patient_id
         left join staff on staff.id=opd_details.generated_by
@@ -726,9 +727,10 @@ class Report_model extends CI_Model
         WHERE  patient_charges.ipd_id=ipd_details.id ) as tax,
         (select sum(amount) as amount_charged  from patient_charges 
         WHERE  patient_charges.ipd_id=ipd_details.id ) as net_amount,
-        (select sum(amount) as amount_paid  from transactions 
-        WHERE  transactions.ipd_id=ipd_details.id ) as paid_amount,
-        0 as refund_amount
+        (select IFNULL(sum(amount),0) as amount_paid  from transactions 
+        WHERE  transactions.ipd_id=ipd_details.id and transactions.type='payment') as paid_amount,
+        (select IFNULL(sum(amount),0) as refund_amount  from transactions 
+        WHERE  transactions.ipd_id=ipd_details.id and transactions.type='refund') as refund_amount
         from ipd_details
         left join patients on patients.id=ipd_details.patient_id
         left join staff as doc on doc.id=ipd_details.cons_doctor

@@ -201,7 +201,7 @@ class Appointment_model extends MY_Model
     
         $this->db->select('appointment.*,blood_bank_products.name as blood_group,appointment_payment.paid_amount,appointment_payment.standard_amount,appointment_payment.discount_percentage,appointment_payment.tax, appointment_queue.position as appointment_serial_no, `department`.`department_name`,appointment_payment.note as payment_note,visit_details.opd_details_id,transactions.received_by,transactions.id as transaction_id ,transactions.payment_mode,transactions.cheque_date , transactions.cheque_no, transactions.amount, transactions.attachment, appoint_priority.appoint_priority,staff.name,staff.surname,staff.employee_id,patients.mobileno as patient_mobileno,patients.email as patient_email,patients.patient_name as patients_name,patients.gender as patients_gender,patients.age,patients.day,patients.month,patients.as_of_date,global_shift.name as global_shift_name,doctor_shift_time.start_time,doctor_shift_time.end_time,doctor_global_shift.global_shift_id as shift_id,doctor_shift_time.id as slot_id,'.$field_variable); 
 
-        $this->db->join('transactions', 'appointment.id = transactions.appointment_id', "left");  
+        $this->db->join('transactions', 'appointment.id = transactions.appointment_id AND transactions.type = "payment"', "left");  
         $this->db->join('staff', 'appointment.doctor = staff.id', "left");
         $this->db->join('department', 'department.id = staff.department_id', "left");
         $this->db->join('appoint_priority', 'appoint_priority.id = appointment.priority', "left");

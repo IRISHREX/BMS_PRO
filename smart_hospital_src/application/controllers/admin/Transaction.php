@@ -100,24 +100,29 @@ class Transaction extends Admin_Controller
             $date_from = $this->customlib->dateFormatToYYYYMMDD($this->input->post('date_from'));
             $date_to   = $this->customlib->dateFormatToYYYYMMDD($this->input->post('date_to'));
 
-            $reportdata = $this->transaction_model->getTransactionBetweenDate($date_from, $date_to, 'payment');
+            $reportdata = $this->transaction_model->getTransactionBetweenDate($date_from, $date_to, 'all');
             $start_date = strtotime($date_from);
             $end_date   = strtotime($date_to);
             $date_array = array();
             for ($i = $start_date; $i <= $end_date; $i += 86400) {
-                $date_array[date('Y-m-d', $i)] = array('amount' => 0, 'online_transaction' => 0, 'offline_transaction' => 0, 'total_transaction' => 0);
+                $date_array[date('Y-m-d', $i)] = array('amount' => 0, 'refund_amount' => 0, 'online_transaction' => 0, 'offline_transaction' => 0, 'total_transaction' => 0);
             }
 
             if (!empty($reportdata)) {
                 foreach ($reportdata as $key => $value) {
+                    if ($value->type == 'payment') {
+                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount']            = $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount'] + $value->amount;
+                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] + 1;
 
-                    $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount']            = $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount'] + $value->amount;
-                    $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] + 1;
-
-                    if ($value->payment_mode == "Online") {
-                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['online_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['online_transaction'] + $value->amount;
-                    } else {
-                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['offline_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['offline_transaction'] + $value->amount;
+                        if ($value->payment_mode == "Online") {
+                            $date_array[date('Y-m-d', strtotime($value->payment_date))]['online_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['online_transaction'] + $value->amount;
+                        } else {
+                            $date_array[date('Y-m-d', strtotime($value->payment_date))]['offline_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['offline_transaction'] + $value->amount;
+                        }
+                    } elseif ($value->type == 'refund') {
+                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['refund_amount'] += $value->amount;
+                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount'] -= $value->amount;
+                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] += 1;
                     }
                 }
             }
@@ -129,6 +134,7 @@ class Transaction extends Admin_Controller
                 $row['total_transaction']   = $dt_value['total_transaction'];
                 $row['online_transaction']  = $dt_value['online_transaction'];
                 $row['offline_transaction'] = $dt_value['offline_transaction'];
+                $row['refund_amount']       = $dt_value['refund_amount'];
                 $row['amount']              = $dt_value['amount'];
                 $dt_data[]                  = $row;
             }
@@ -215,7 +221,7 @@ class Transaction extends Admin_Controller
         }
         $date          = $this->input->post('date');
         $data['title'] = 'title';
-        $result         = $this->transaction_model->getTransactionBetweenDate($date, $date, 'payment');
+        $result         = $this->transaction_model->getTransactionBetweenDate($date, $date, 'all');
         $data['result'] = $result;
         $page           = $this->load->view('admin/transaction/_gettransactionbydate', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));

@@ -111,7 +111,7 @@ if ((isset($patient_select)) && ($patient_select == $dvalue["id"])) {
                                               <div class="mb-3">
                                                   <label><?php echo $this->lang->line('date'); ?></label>
                                                   <small class="req"> *</small>
-                                                  <input type="text" id="date" name="date" class="form-control datetime">
+                                                  <input type="text" id="date" name="date" class="form-control datetime no-past-date" data-min-date="today">
                                                    <span class="text-danger"><?php echo form_error('date'); ?></span>
                                               </div>
                                         </div>
@@ -303,7 +303,7 @@ if ((isset($patient_select)) && ($patient_select == $dvalue["id"])) {
                         <div class="mb-3">
                         <label><?php echo $this->lang->line('date') ?></label>
                         <small class="req"> *</small>
-                        <input type="text" id="dates" name="date" class="form-control datetime" value="<?php echo set_value('dates'); ?>">
+                        <input type="text" id="dates" name="date" class="form-control datetime no-past-date" data-min-date="today" value="<?php echo set_value('dates'); ?>">
                         <span class="text-danger"><?php echo form_error('date'); ?></span>
                         </div>
                     </div>

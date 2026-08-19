@@ -820,9 +820,12 @@ class Appointment extends Admin_Controller
                 $dicount_amt     = ($standard_amount * $discount_perc) / 100;
                 $row[]           = amountFormat($standard_amount);
                 $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
-                $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $base_net        = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $net_amount_calc = max(0, $base_net - $refund_amount);
                 $row[]           = amountFormat($net_amount_calc);
-                $row[]           = amountFormat($paid_amount);
+
+                $eff_paid        = ($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0);
+                $row[]           = amountFormat(max(0, $eff_paid - $refund_amount));
                 // Refunded (Yes/No)
                 if ($refund_amount > 0) {
                     $row[] = "<span class='badge bg-warning text-dark'>" . $this->lang->line('yes') . "</span>";
@@ -973,9 +976,12 @@ class Appointment extends Admin_Controller
                 $dicount_amt     = ($standard_amount * $discount_perc) / 100;
                 $row[]           = amountFormat($standard_amount);
                 $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
-                $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $base_net        = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $net_amount_calc = max(0, $base_net - $refund_amount);
                 $row[]           = amountFormat($net_amount_calc);
-                $row[]           = amountFormat($paid_amount);
+
+                $eff_paid        = ($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0);
+                $row[]           = amountFormat(max(0, $eff_paid - $refund_amount));
                 // Refunded (Yes/No)
                 if ($refund_amount > 0) {
                     $row[] = "<span class='badge bg-warning text-dark'>" . $this->lang->line('yes') . "</span>";
@@ -1127,9 +1133,12 @@ class Appointment extends Admin_Controller
                 $dicount_amt     = ($standard_amount * $discount_perc) / 100;
                 $row[]           = amountFormat($standard_amount);
                 $row[]           = amountFormat($dicount_amt) . " (" . $discount_perc . " %)";
-                $net_amount_calc = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $base_net        = $standard_amount - $dicount_amt + (($standard_amount - $dicount_amt) * $tax_perc / 100);
+                $net_amount_calc = max(0, $base_net - $refund_amount);
                 $row[]           = amountFormat($net_amount_calc);
-                $row[]           = amountFormat($paid_amount);
+
+                $eff_paid        = ($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0);
+                $row[]           = amountFormat(max(0, $eff_paid - $refund_amount));
                 // Refunded (Yes/No)
                 if ($refund_amount > 0) {
                     $row[] = "<span class='badge bg-warning text-dark'>" . $this->lang->line('yes') . "</span>";
@@ -1185,6 +1194,32 @@ class Appointment extends Admin_Controller
                 echo json_encode($array);
                 return;
             }
+
+            // Ensure initial payment transaction and appointment_payment record exist and reflect $paid
+            $existing_pay_tx = $this->db->where('appointment_id', $appointment_id)->where('type', 'payment')->get('transactions')->row();
+            if ($existing_pay_tx) {
+                if ((float)$existing_pay_tx->amount <= 0) {
+                    $this->db->where('id', $existing_pay_tx->id)->update('transactions', array(
+                        'amount'     => $paid,
+                        'patient_id' => !empty($patient_id) ? $patient_id : $existing_pay_tx->patient_id,
+                    ));
+                }
+            } else {
+                $payment_section = $this->config->item('payment_section');
+                $apt_info = $this->appointment_model->getDetails($appointment_id);
+                $this->transaction_model->add(array(
+                    'appointment_id' => $appointment_id,
+                    'patient_id'     => !empty($patient_id) ? $patient_id : (!empty($apt_info['patient_id']) ? $apt_info['patient_id'] : 0),
+                    'section'        => $payment_section['appointment'] ?? 'Appointment',
+                    'amount'         => $paid,
+                    'type'           => 'payment',
+                    'payment_mode'   => 'Cash',
+                    'note'           => 'Appointment Fee',
+                    'payment_date'   => !empty($apt_info['date']) ? $apt_info['date'] : date('Y-m-d H:i:s'),
+                    'received_by'    => $this->customlib->getLoggedInUserID(),
+                ));
+            }
+            $this->appointment_model->updateappointmentpayment($appointment_id, array('paid_amount' => $paid));
 
             $data = array(
                 'appointment_id' => $appointment_id,

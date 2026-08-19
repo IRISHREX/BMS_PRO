@@ -22,7 +22,7 @@
                         <td><?php echo html_escape($this->customlib->YYYYmmddTodateformat($dt_value->payment_date)); ?></td>
                         <td><?php if ($dt_value->payment_mode) { echo $this->lang->line(strtolower($dt_value->payment_mode)); } ?></td>
                         <td><?php echo html_escape(composeStaffNameByString($dt_value->name, $dt_value->surname, $dt_value->employee_id)); ?></td>
-                        <td class="text-end"><?php echo amountFormat($dt_value->amount); ?></td>
+                        <td class="text-end"><?php echo ($dt_value->type == 'refund') ? '-' : ''; ?><?php echo amountFormat($dt_value->amount); ?></td>
                     </tr>
                     <?php } ?>
                 </tbody>

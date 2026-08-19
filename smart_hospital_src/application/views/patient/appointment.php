@@ -203,7 +203,7 @@ $_apt_qrcode     = './uploads/patient_id_card/qrcode/' . $id . '.png';
                                 <div class="row g-3">
                                     <div class="col-sm-4">
                                         <label class="form-label"><?php echo $this->lang->line('date'); ?> <small class="req">*</small></label>
-                                        <input type="text" id="dates" name="date" class="form-control date" value="<?php echo set_value('dates'); ?>">
+                                        <input type="text" id="dates" name="date" class="form-control date no-past-date" data-min-date="today" value="<?php echo set_value('dates'); ?>">
                                         <span class="text-danger"><?php echo form_error('date'); ?></span>
                                     </div>
                                     <div class="col-sm-4">

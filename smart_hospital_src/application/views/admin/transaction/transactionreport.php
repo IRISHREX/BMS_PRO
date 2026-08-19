@@ -49,6 +49,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <th><?php echo $this->lang->line('total_transaction'); ?></th>
                             <th class="text-end"><?php echo $this->lang->line('online') . '(' . $currency_symbol . ')'; ?></th>
                             <th class="text-end"><?php echo $this->lang->line('offline') . '(' . $currency_symbol . ')'; ?></th>
+                            <th class="text-end"><?php echo $this->lang->line('refund_amount') . '(' . $currency_symbol . ')'; ?></th>
                             <th class="text-end"><?php echo $this->lang->line('amount') . '(' . $currency_symbol . ')'; ?></th>
                             <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                         </tr>
@@ -60,6 +61,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <td><?php echo $dt_value['total_transaction']; ?></td>
                             <td class="text-end"><?php echo amountFormat($dt_value['online_transaction']); ?></td>
                             <td class="text-end"><?php echo amountFormat($dt_value['offline_transaction']); ?></td>
+                            <td class="text-end"><?php echo ($dt_value['refund_amount'] > 0 ? '-' : '') . amountFormat($dt_value['refund_amount']); ?></td>
                             <td class="text-end"><?php echo amountFormat($dt_value['amount']); ?></td>
                             <td class="text-end">
                                 <button type="button" class="btn btn-secondary btn-sm daily_collection" data-bs-toggle="tooltip" data-date="<?php echo $dt_value['date']; ?>" title="<?php echo $this->lang->line('view_collection'); ?>" autocomplete="off"><i class="fa fa-list"></i></button>

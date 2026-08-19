@@ -63,6 +63,7 @@ $genderList = $this->customlib->getGender();
                             <th class="text-end"><?php echo $this->lang->line('tax') . ' (' . $currency_symbol . ')'; ?></th>
                             <th class="text-end"><?php echo $this->lang->line('net_amount') . ' (' . $currency_symbol . ')'; ?></th>
                             <th class="text-end"><?php echo $this->lang->line('paid_amount') . ' (' . $currency_symbol . ')'; ?></th>
+                            <th class="text-end"><?php echo $this->lang->line('refund_amount') . ' (' . $currency_symbol . ')'; ?></th>
                             <th class="text-end"><?php echo $this->lang->line('balance_amount') . ' (' . $currency_symbol . ')'; ?></th>
                         </tr>
                     </thead>
@@ -74,6 +75,7 @@ $genderList = $this->customlib->getGender();
                             $tax                = 0;
                             $net_amount         = 0;
                             $paid_amount        = 0;
+                            $refund_amount      = 0;
                             $balance            = 0;
                             $discount_percentage = 0;
                             $tax_percentage     = 0;
@@ -91,13 +93,14 @@ $genderList = $this->customlib->getGender();
                                 $discount += $value['discount'];
                             ?></td>
                             <td class="text-end"><?php
-                                $tax_percentage = ((float)$value['total'] != 0) ? ((float)$value['tax'] * 100) / ((float)$value['total'] - (float)$value['discount']) : 0;
+                                $tax_percentage = (((float)$value['total'] - (float)$value['discount']) != 0) ? ((float)$value['tax'] * 100) / ((float)$value['total'] - (float)$value['discount']) : 0;
                                 echo amountFormat($value['tax']) . " (" . amountFormat($tax_percentage) . "%)";
                                 $tax += $value['tax'];
                             ?></td>
                             <td class="text-end"><?php echo amountFormat($value['net_amount']); $net_amount += $value['net_amount']; ?></td>
-                            <td class="text-end"><?php echo amountFormat($value['paid_amount'] - $value['refund_amount']); $paid_amount += $value['paid_amount'] - $value['refund_amount']; ?></td>
-                            <td class="text-end"><?php echo amountFormat($value['net_amount'] - $value['paid_amount']); $balance += ($value['net_amount'] - $value['paid_amount']); ?></td>
+                            <td class="text-end"><?php echo amountFormat($value['paid_amount']); $paid_amount += $value['paid_amount']; ?></td>
+                            <td class="text-end"><?php echo amountFormat($value['refund_amount']); $refund_amount += $value['refund_amount']; ?></td>
+                            <td class="text-end"><?php echo amountFormat($value['net_amount'] - $value['paid_amount'] + $value['refund_amount']); $balance += ($value['net_amount'] - $value['paid_amount'] + $value['refund_amount']); ?></td>
                         </tr>
                         <?php } ?>
                         <tr>
@@ -111,6 +114,7 @@ $genderList = $this->customlib->getGender();
                             <th class="text-end"><?php echo $currency_symbol . number_format($tax, 2, '.', ''); ?></th>
                             <th class="text-end"><?php echo $currency_symbol . number_format($net_amount, 2, '.', ''); ?></th>
                             <th class="text-end"><?php echo $currency_symbol . number_format($paid_amount, 2, '.', ''); ?></th>
+                            <th class="text-end"><?php echo $currency_symbol . number_format($refund_amount, 2, '.', ''); ?></th>
                             <th class="text-end"><?php echo $currency_symbol . number_format($balance, 2, '.', ''); ?></th>
                         </tr>
                         <?php } ?>

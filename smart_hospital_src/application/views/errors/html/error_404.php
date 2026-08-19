@@ -1,60 +1,93 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
-?><!DOCTYPE html>
+$base_url = config_item('base_url');
+?>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-        <title>404 Page Not Found</title>
-        <style type="text/css">
-
-            ::selection { background-color: #E13300; color: white; }
-            ::-moz-selection { background-color: #E13300; color: white; }
-
-            body {
-                background-color: #fff;
-                margin: 40px;
-                font: 13px/20px normal Helvetica, Arial, sans-serif;
-                color: #4F5155;
-            }
-            a {
-                color: #003399;
-                background-color: transparent;
-                font-weight: normal;
-            }
-            h1 {
-                color: #444;
-                background-color: transparent;
-                border-bottom: 1px solid #D0D0D0;
-                font-size: 19px;
-                font-weight: normal;
-                margin: 0 0 14px 0;
-                padding: 14px 15px 10px 15px;
-            }
-            code {
-                font-family: Consolas, Monaco, Courier New, Courier, monospace;
-                font-size: 12px;
-                background-color: #f9f9f9;
-                border: 1px solid #D0D0D0;
-                color: #002166;
-                display: block;
-                margin: 14px 0 14px 0;
-                padding: 12px 10px 12px 10px;
-            }
-            #container {
-                margin: 10px;
-                border: 1px solid #D0D0D0;
-                box-shadow: 0 0 8px #D0D0D0;
-            }
-            p {
-                margin: 12px 15px 12px 15px;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="container">
-            <h1><?php echo $heading; ?></h1>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>404 Page Not Found</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .fallback-container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            max-width: 500px;
+            width: 90%;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .fallback-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 5px;
+            background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+        }
+        .icon-container {
+            width: 80px; height: 80px;
+            background: #f0edff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px;
+            color: #6c5ce7;
+        }
+        .icon-container svg { width: 40px; height: 40px; }
+        h1 { font-size: 24px; font-weight: 700; color: #2d3436; margin-bottom: 16px; }
+        .message { font-size: 15px; color: #636e72; line-height: 1.6; margin-bottom: 32px; word-wrap: break-word; text-align: center; }
+        .message p { margin-bottom: 8px; }
+        .message p:last-child { margin-bottom: 0; }
+        .actions { display: flex; gap: 16px; justify-content: center; }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;
+            text-decoration: none; cursor: pointer; transition: all 0.2s ease; border: none;
+        }
+        .btn-primary {
+            background: #6c5ce7; color: white;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+        }
+        .btn-primary:hover {
+            background: #5f27cd; transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+        }
+        .btn-secondary { background: #dfe6e9; color: #2d3436; }
+        .btn-secondary:hover { background: #b2bec3; transform: translateY(-2px); }
+        @media (max-width: 480px) {
+            .actions { flex-direction: column; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="fallback-container">
+        <div class="icon-container">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+        <h1><?php echo $heading; ?></h1>
+        <div class="message">
             <?php echo $message; ?>
         </div>
-    </body>
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="window.history.back()">Go Back</button>
+            <a href="<?php echo $base_url; ?>" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+    </div>
+</body>
 </html>
