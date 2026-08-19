@@ -1,4 +1,4 @@
-# Operating System Files
+﻿# Operating System Files
 .DS_Store
 .DS_Store?
 ._*
@@ -27,7 +27,7 @@ smart_hospital_src/temp/*
 smart_hospital_src/backup/_tmp/*
 !smart_hospital_src/backup/_tmp/index.html
 
-# Database Backups & Temp Uploads (Keep schema dump if required)
+# Database Backups & Temp Uploads
 smart_hospital_src/backup/temp_uploaded/*
 !smart_hospital_src/backup/temp_uploaded/index.html
 
@@ -36,6 +36,13 @@ node_modules/
 npm-debug.log
 .env
 
+# Generated uploads & QR/Barcodes
+smart_hospital_src/uploads/patient_id_card/barcodes/*
+!smart_hospital_src/uploads/patient_id_card/barcodes/index.html
+smart_hospital_src/uploads/patient_id_card/qrcode/*
+!smart_hospital_src/uploads/patient_id_card/qrcode/index.html
+
 # Archive / Zip files
 *.zip
 smart_hospital.zip
+smart_hospital_src.zip
