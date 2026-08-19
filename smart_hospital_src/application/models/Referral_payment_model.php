@@ -37,59 +37,141 @@ class Referral_payment_model extends MY_Model
     {
         $net_amount  = 0;
         $paid_amount = 0;
+        $balance     = 0;
 
         if ($referral_type == 4) { // Pathology
-            $row = $this->db->select('net_amount')->where('id', $billing_id)->get('pathology_billing')->row_array();
-            $net_amount = $row ? (float)$row['net_amount'] : 0;
+            $row = $this->db->select('net_amount, status')->where('id', $billing_id)->get('pathology_billing')->row_array();
+            $orig_net       = $row ? (float)$row['net_amount'] : 0;
+            $billing_status = $row ? ($row['status'] ?? '') : '';
 
-            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+            $gross_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount ELSE 0 END),0) as gross_paid, IFNULL(SUM(CASE WHEN type="refund" THEN amount ELSE 0 END),0) as refund_amt')
                 ->where('pathology_billing_id', $billing_id)->get('transactions')->row_array();
-            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
-        } elseif ($referral_type == 5) { // Radiology
-            $row = $this->db->select('net_amount')->where('id', $billing_id)->get('radiology_billing')->row_array();
-            $net_amount = $row ? (float)$row['net_amount'] : 0;
+            $gross_paid    = $gross_row ? (float)$gross_row['gross_paid'] : 0;
+            $refund_amount = $gross_row ? (float)$gross_row['refund_amt'] : 0;
 
-            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+            if ($billing_status === 'refunded_cancelled') {
+                $adjusted_net = 0;
+                $final_paid   = 0;
+                $balance      = 0;
+            } else {
+                $initial_balance   = max(0, $orig_net - $gross_paid);
+                $refund_to_balance = min($refund_amount, $initial_balance);
+                $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+                $adjusted_net  = max(0, $orig_net - $refund_amount);
+                $final_paid    = max(0, $gross_paid - $refund_to_paid);
+                $balance       = max(0, $initial_balance - $refund_to_balance);
+            }
+            $net_amount  = $adjusted_net;
+            $paid_amount = $final_paid;
+        } elseif ($referral_type == 5) { // Radiology
+            $row = $this->db->select('net_amount, status')->where('id', $billing_id)->get('radiology_billing')->row_array();
+            $orig_net       = $row ? (float)$row['net_amount'] : 0;
+            $billing_status = $row ? ($row['status'] ?? '') : '';
+
+            $gross_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount ELSE 0 END),0) as gross_paid, IFNULL(SUM(CASE WHEN type="refund" THEN amount ELSE 0 END),0) as refund_amt')
                 ->where('radiology_billing_id', $billing_id)->get('transactions')->row_array();
-            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+            $gross_paid    = $gross_row ? (float)$gross_row['gross_paid'] : 0;
+            $refund_amount = $gross_row ? (float)$gross_row['refund_amt'] : 0;
+
+            if ($billing_status === 'refunded_cancelled') {
+                $adjusted_net = 0;
+                $final_paid   = 0;
+                $balance      = 0;
+            } else {
+                $initial_balance   = max(0, $orig_net - $gross_paid);
+                $refund_to_balance = min($refund_amount, $initial_balance);
+                $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+                $adjusted_net  = max(0, $orig_net - $refund_amount);
+                $final_paid    = max(0, $gross_paid - $refund_to_paid);
+                $balance       = max(0, $initial_balance - $refund_to_balance);
+            }
+            $net_amount  = $adjusted_net;
+            $paid_amount = $final_paid;
         } elseif ($referral_type == 3) { // Pharmacy
             $row = $this->db->select('net_amount')->where('id', $billing_id)->get('pharmacy_bill_basic')->row_array();
-            $net_amount = $row ? (float)$row['net_amount'] : 0;
+            $orig_net = $row ? (float)$row['net_amount'] : 0;
 
-            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+            $gross_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount ELSE 0 END),0) as gross_paid, IFNULL(SUM(CASE WHEN type="refund" THEN amount ELSE 0 END),0) as refund_amt')
                 ->where('pharmacy_bill_basic_id', $billing_id)->get('transactions')->row_array();
-            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+            $gross_paid    = $gross_row ? (float)$gross_row['gross_paid'] : 0;
+            $refund_amount = $gross_row ? (float)$gross_row['refund_amt'] : 0;
+
+            $initial_balance   = max(0, $orig_net - $gross_paid);
+            $refund_to_balance = min($refund_amount, $initial_balance);
+            $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+            $net_amount  = max(0, $orig_net - $refund_amount);
+            $paid_amount = max(0, $gross_paid - $refund_to_paid);
+            $balance     = max(0, $initial_balance - $refund_to_balance);
         } elseif ($referral_type == 6) { // Blood Bank
             $row = $this->db->select('net_amount')->where('id', $billing_id)->get('blood_issue')->row_array();
-            $net_amount = $row ? (float)$row['net_amount'] : 0;
+            $orig_net = $row ? (float)$row['net_amount'] : 0;
 
-            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+            $gross_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount ELSE 0 END),0) as gross_paid, IFNULL(SUM(CASE WHEN type="refund" THEN amount ELSE 0 END),0) as refund_amt')
                 ->where('blood_issue_id', $billing_id)->get('transactions')->row_array();
-            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+            $gross_paid    = $gross_row ? (float)$gross_row['gross_paid'] : 0;
+            $refund_amount = $gross_row ? (float)$gross_row['refund_amt'] : 0;
+
+            $initial_balance   = max(0, $orig_net - $gross_paid);
+            $refund_to_balance = min($refund_amount, $initial_balance);
+            $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+            $net_amount  = max(0, $orig_net - $refund_amount);
+            $paid_amount = max(0, $gross_paid - $refund_to_paid);
+            $balance     = max(0, $initial_balance - $refund_to_balance);
         } elseif ($referral_type == 7) { // Ambulance
             $row = $this->db->select('net_amount')->where('id', $billing_id)->get('ambulance_call')->row_array();
-            $net_amount = $row ? (float)$row['net_amount'] : 0;
+            $orig_net = $row ? (float)$row['net_amount'] : 0;
 
-            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+            $gross_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount ELSE 0 END),0) as gross_paid, IFNULL(SUM(CASE WHEN type="refund" THEN amount ELSE 0 END),0) as refund_amt')
                 ->where('ambulance_call_id', $billing_id)->get('transactions')->row_array();
-            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+            $gross_paid    = $gross_row ? (float)$gross_row['gross_paid'] : 0;
+            $refund_amount = $gross_row ? (float)$gross_row['refund_amt'] : 0;
+
+            $initial_balance   = max(0, $orig_net - $gross_paid);
+            $refund_to_balance = min($refund_amount, $initial_balance);
+            $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+            $net_amount  = max(0, $orig_net - $refund_amount);
+            $paid_amount = max(0, $gross_paid - $refund_to_paid);
+            $balance     = max(0, $initial_balance - $refund_to_balance);
         } elseif ($referral_type == 1) { // OPD
             $row = $this->db->select('IFNULL(SUM(apply_charge),0) as net_amt')->where('opd_id', $billing_id)->get('patient_charges')->row_array();
-            $net_amount = $row ? (float)$row['net_amt'] : 0;
+            $orig_net = $row ? (float)$row['net_amt'] : 0;
 
-            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+            $gross_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount ELSE 0 END),0) as gross_paid, IFNULL(SUM(CASE WHEN type="refund" THEN amount ELSE 0 END),0) as refund_amt')
                 ->where('opd_id', $billing_id)->get('transactions')->row_array();
-            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+            $gross_paid    = $gross_row ? (float)$gross_row['gross_paid'] : 0;
+            $refund_amount = $gross_row ? (float)$gross_row['refund_amt'] : 0;
+
+            $initial_balance   = max(0, $orig_net - $gross_paid);
+            $refund_to_balance = min($refund_amount, $initial_balance);
+            $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+            $net_amount  = max(0, $orig_net - $refund_amount);
+            $paid_amount = max(0, $gross_paid - $refund_to_paid);
+            $balance     = max(0, $initial_balance - $refund_to_balance);
         } elseif ($referral_type == 2) { // IPD
             $row = $this->db->select('IFNULL(SUM(apply_charge),0) as net_amt')->where('ipd_id', $billing_id)->get('patient_charges')->row_array();
-            $net_amount = $row ? (float)$row['net_amt'] : 0;
+            $orig_net = $row ? (float)$row['net_amt'] : 0;
 
-            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+            $gross_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount ELSE 0 END),0) as gross_paid, IFNULL(SUM(CASE WHEN type="refund" THEN amount ELSE 0 END),0) as refund_amt')
                 ->where('ipd_id', $billing_id)->get('transactions')->row_array();
-            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+            $gross_paid    = $gross_row ? (float)$gross_row['gross_paid'] : 0;
+            $refund_amount = $gross_row ? (float)$gross_row['refund_amt'] : 0;
+
+            $initial_balance   = max(0, $orig_net - $gross_paid);
+            $refund_to_balance = min($refund_amount, $initial_balance);
+            $refund_to_paid    = max(0, $refund_amount - $refund_to_balance);
+
+            $net_amount  = max(0, $orig_net - $refund_amount);
+            $paid_amount = max(0, $gross_paid - $refund_to_paid);
+            $balance     = max(0, $initial_balance - $refund_to_balance);
         }
 
-        $balance    = max(0, round($net_amount - $paid_amount, 2));
+        $balance    = max(0, round($balance, 2));
         $is_settled = ($net_amount > 0 && $balance <= 0.001);
 
         return array(
