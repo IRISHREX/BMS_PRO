@@ -80,10 +80,8 @@ if (!empty($payment)) {
                                 <td class="text-center">
                                     <?php if ($is_paid) { ?>
                                         <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa fa-check-circle me-1"></i> Paid</span>
-                                    <?php } elseif ($is_settled) { ?>
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa fa-clock-o me-1"></i> Unpaid (Eligible)</span>
                                     <?php } else { ?>
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" data-bs-toggle="tooltip" title="Patient Due: <?php echo amountFormat($due_balance); ?>"><i class="fa fa-hourglass-half me-1"></i> Unpaid (Due: <?php echo amountFormat($due_balance); ?>)</span>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa fa-clock-o me-1"></i> Unpaid</span>
                                     <?php } ?>
                                 </td>
                                 <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>

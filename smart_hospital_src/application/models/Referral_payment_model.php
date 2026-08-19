@@ -113,7 +113,12 @@ class Referral_payment_model extends MY_Model
 
         foreach ($payment as $key => $val) {
             $settlement = $this->get_bill_settlement($val['billing_id'], $val['referral_type']);
-            $payment[$key]['bill_net']     = $settlement['net_amount'];
+            $current_net = $settlement['net_amount'];
+            $current_commission = round(($current_net * (float)$val['percentage']) / 100, 2);
+
+            $payment[$key]['bill_amount']  = $current_net;
+            $payment[$key]['amount']       = $current_commission;
+            $payment[$key]['bill_net']     = $current_net;
             $payment[$key]['bill_paid']    = $settlement['paid_amount'];
             $payment[$key]['bill_balance'] = $settlement['balance'];
             $payment[$key]['is_settled']   = $settlement['is_settled'];
@@ -141,11 +146,16 @@ class Referral_payment_model extends MY_Model
             );
         }
 
+        $current_net = $settlement['net_amount'];
+        $current_commission = round(($current_net * (float)$payment['percentage']) / 100, 2);
+
         $data = array(
-            'id'        => $id,
-            'status'    => 'Paid',
-            'paid_date' => date('Y-m-d H:i:s'),
-            'paid_by'   => $staff_id ? $staff_id : $this->customlib->getLoggedInUserID(),
+            'id'          => $id,
+            'bill_amount' => $current_net,
+            'amount'      => $current_commission,
+            'status'      => 'Paid',
+            'paid_date'   => date('Y-m-d H:i:s'),
+            'paid_by'     => $staff_id ? $staff_id : $this->customlib->getLoggedInUserID(),
         );
 
         $this->update($data);
@@ -161,11 +171,15 @@ class Referral_payment_model extends MY_Model
         foreach ($unpaid as $row) {
             $settlement = $this->get_bill_settlement($row['billing_id'], $row['referral_type']);
             if ($settlement['is_settled']) {
+                $current_net = $settlement['net_amount'];
+                $current_commission = round(($current_net * (float)$row['percentage']) / 100, 2);
                 $data = array(
-                    'id'        => $row['id'],
-                    'status'    => 'Paid',
-                    'paid_date' => date('Y-m-d H:i:s'),
-                    'paid_by'   => $staff_id ? $staff_id : $this->customlib->getLoggedInUserID(),
+                    'id'          => $row['id'],
+                    'bill_amount' => $current_net,
+                    'amount'      => $current_commission,
+                    'status'      => 'Paid',
+                    'paid_date'   => date('Y-m-d H:i:s'),
+                    'paid_by'     => $staff_id ? $staff_id : $this->customlib->getLoggedInUserID(),
                 );
                 $this->update($data);
                 $paid_count++;
@@ -196,7 +210,12 @@ class Referral_payment_model extends MY_Model
 
         foreach ($list as $key => $val) {
             $settlement = $this->get_bill_settlement($val['billing_id'], $val['referral_type']);
-            $list[$key]['bill_net']     = $settlement['net_amount'];
+            $current_net = $settlement['net_amount'];
+            $current_commission = round(($current_net * (float)$val['percentage']) / 100, 2);
+
+            $list[$key]['bill_amount']  = $current_net;
+            $list[$key]['amount']       = $current_commission;
+            $list[$key]['bill_net']     = $current_net;
             $list[$key]['bill_paid']    = $settlement['paid_amount'];
             $list[$key]['bill_balance'] = $settlement['balance'];
             $list[$key]['is_settled']   = $settlement['is_settled'];
