@@ -72,7 +72,7 @@ if (!empty($payment)) {
                             <tr>
                                 <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
                                 <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
-                                <td><?php echo date('d.m.Y @ H:i:s', strtotime($value['date'])); ?></td>
+                                <td><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->customlib->getHospitalTimeFormat()); ?></td>
                                 <td class="text-end"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
                                 <td class="text-end"><?php echo amountFormat($value["bill_amount"]); ?></td>
                                 <td class="text-end"><?php echo html_escape($value["percentage"]); ?></td>

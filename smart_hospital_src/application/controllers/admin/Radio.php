@@ -467,7 +467,16 @@ class Radio extends Admin_Controller
         } else {
 
             $patient_id        = $this->input->post('patientid', TRUE);
-            $bill_date         = $this->customlib->dateFormatToYYYYMMDDHis($this->input->post('date', TRUE));
+            $date_input        = $this->input->post('date', TRUE);
+            if (!empty($date_input)) {
+                if (strpos($date_input, ':') === false) {
+                    $bill_date = $this->customlib->dateFormatToYYYYMMDD($date_input) . ' ' . date('H:i:s');
+                } else {
+                    $bill_date = $this->customlib->dateFormatToYYYYMMDDHis($date_input, $this->time_format);
+                }
+            } else {
+                $bill_date = date('Y-m-d H:i:s');
+            }
             $doctor_name       = $this->input->post('doctor_name', TRUE);
             $doctor_id         = $this->input->post('consultant_doctor', TRUE);
             $case_reference_id = $this->input->post('case_reference_id', TRUE);
@@ -752,7 +761,7 @@ class Radio extends Admin_Controller
                         "status"             => $status,
                         "paid_date"          => ($status === 'Paid') ? date("Y-m-d H:i:s") : NULL,
                         "paid_by"            => ($status === 'Paid') ? $this->customlib->getLoggedInUserID() : NULL,
-                        "date"               => date("Y-m-d H:i:s"),
+                        "date"               => $bill_date,
                     );
                     $this->referral_payment_model->add($payment);
                 }

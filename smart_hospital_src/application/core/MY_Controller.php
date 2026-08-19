@@ -65,6 +65,10 @@ class MY_Controller extends CI_Controller
         }
  
         $this->config->set_item('language', $language);
+        $hospital_tz = $this->customlib->getTimeZone();
+        if (!empty($hospital_tz)) {
+            @date_default_timezone_set($hospital_tz);
+        }
         $map = directory_map(APPPATH . "./language/" . $language . "/app_files");
         foreach ($map as $lang_key => $lang_value) {
             $lang_array[] = 'app_files/' . str_replace(".php", "", $lang_value);

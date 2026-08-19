@@ -47,6 +47,17 @@ class Referralpayment extends Admin_Controller
             );
             $data = array('status' => 'fail', 'error' => $msg, 'message' => '');
         } else {
+            $entry_date_post = $this->input->post("entry_date", TRUE);
+            if (!empty($entry_date_post)) {
+                if (strpos($entry_date_post, ':') === false) {
+                    $entry_date = $this->customlib->dateFormatToYYYYMMDD($entry_date_post) . ' ' . date('H:i:s');
+                } else {
+                    $entry_date = $this->customlib->dateFormatToYYYYMMDDHis($entry_date_post, $this->customlib->getHospitalTimeFormat());
+                }
+            } else {
+                $entry_date = date('Y-m-d H:i:s');
+            }
+
             $payment = array(
                 "referral_person_id" => $this->input->post("payee", TRUE),
                 "patient_id"         => $this->input->post("patient_id", TRUE),
@@ -56,7 +67,7 @@ class Referralpayment extends Admin_Controller
                 "percentage"         => $this->input->post("percentage", TRUE),
                 "amount"             => $this->input->post("commission_amount", TRUE),
                 "status"             => $this->input->post("status", TRUE) ? $this->input->post("status", TRUE) : 'Unpaid',
-                "date"               => $this->input->post("entry_date", TRUE) ? $this->customlib->dateFormatToYYYYMMDDHis($this->input->post("entry_date", TRUE), $this->customlib->getHospitalTimeFormat()) : (new DateTime('now', new DateTimeZone($this->customlib->getTimeZone() ? $this->customlib->getTimeZone() : 'UTC')))->format('Y-m-d H:i:s'),
+                "date"               => $entry_date,
             );
 
             $this->referral_payment_model->add($payment);
@@ -190,12 +201,23 @@ class Referralpayment extends Admin_Controller
             );
             $data = array('status' => 'fail', 'error' => $msg, 'message' => '');
         } else {
+            $edit_date_post = $this->input->post('edit_entry_date', TRUE);
+            if (!empty($edit_date_post)) {
+                if (strpos($edit_date_post, ':') === false) {
+                    $edit_date = $this->customlib->dateFormatToYYYYMMDD($edit_date_post) . ' ' . date('H:i:s');
+                } else {
+                    $edit_date = $this->customlib->dateFormatToYYYYMMDDHis($edit_date_post, $this->customlib->getHospitalTimeFormat());
+                }
+            } else {
+                $edit_date = date('Y-m-d H:i:s');
+            }
+
             $payment = array(
                 "id"         => $this->input->post('paymentid', TRUE),
                 "percentage" => $this->input->post('commission_percentage', TRUE),
                 "amount"     => $this->input->post('commission_amount', TRUE),
                 "status"     => $this->input->post('edit_status', TRUE) ? $this->input->post('edit_status', TRUE) : 'Unpaid',
-                "date"       => $this->input->post('edit_entry_date', TRUE) ? $this->customlib->dateFormatToYYYYMMDDHis($this->input->post('edit_entry_date', TRUE), $this->customlib->getHospitalTimeFormat()) : (new DateTime('now', new DateTimeZone($this->customlib->getTimeZone() ? $this->customlib->getTimeZone() : 'UTC')))->format('Y-m-d H:i:s'),
+                "date"       => $edit_date,
             );
 
             $this->referral_payment_model->update($payment);
