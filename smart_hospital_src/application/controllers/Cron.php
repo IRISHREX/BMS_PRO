@@ -2,7 +2,10 @@
 
 class Cron extends CI_Controller
 {
-    public function __construct()
+    public $cron_key;
+    private $setting_result;
+
+    public function __construct($key = "")
     {
         parent::__construct();
         $this->load->model('expmedicine_model');
@@ -11,17 +14,9 @@ class Cron extends CI_Controller
         $this->load->model('pharmacy_model');
         $this->load->model('setting_model');
         $this->load->model('staff_model');
-    }
+        $this->load->model('referral_payment_model');
 
-	public $cron_key;
-
-
-    private $setting_result;
-    public function __construct($key = "")
-    {
-        parent::__construct();
         $setting_result = $this->setting_model->getSetting();
-    
         $this->setting_result = $setting_result;
         $this->cron_key       = $setting_result->cron_secret_key;
         $this->set_timezone();
@@ -41,6 +36,8 @@ class Cron extends CI_Controller
             $this->outofStockMedicineNotification($key);
             $this->lowStockMedicineNotification($key);
             $this->messageQueue($key);
+            $this->referralAutoPay($key);
+            $this->referralReminderNotification($key);
         } else {
             echo "Invalid Key or Direct access is not allowed";
             return;
@@ -392,4 +389,50 @@ class Cron extends CI_Controller
             }
         }
     }
+
+    public function referralAutoPay($key = '')
+    {
+        if ($key != '' && $this->cron_key == $key) {
+            $settings = $this->referral_payment_model->get_referral_settings();
+            if (!empty($settings['referral_auto_pay'])) {
+                $this->referral_payment_model->pay_all_eligible();
+            }
+        }
+    }
+
+    public function referralReminderNotification($key = '')
+    {
+        if ($key != '' && $this->cron_key == $key) {
+            $settings = $this->referral_payment_model->get_referral_settings();
+            $target_time = isset($settings['referral_reminder_time']) ? substr($settings['referral_reminder_time'], 0, 5) : '09:00';
+            $current_time = date('H:i');
+
+            // Send reminder if time matches (within hour/minute window)
+            $unpaid = $this->referral_payment_model->get_unpaid_referrals();
+            if (!empty($unpaid)) {
+                $total_unpaid = count($unpaid);
+                $total_amount = 0;
+                foreach ($unpaid as $u) {
+                    $total_amount += (float)$u['amount'];
+                }
+
+                $roleresult = $this->staff_model->getStaffbyrole(7); // Super Admin
+                if (!empty($roleresult)) {
+                    $staff_roles = array(array('role_id' => 7, 'send_notification_id' => ''));
+                    $send_data = array(
+                        'message'         => "Daily Reminder: {$total_unpaid} unpaid referral commission(s) pending totaling " . number_format($total_amount, 2),
+                        'title'           => 'Unpaid Referral Payment Reminder',
+                        'date'            => date('Y-m-d'),
+                        'created_by'      => 'admin',
+                        'created_id'      => 0,
+                        'visible_staff'   => 'Yes',
+                        'visible_patient' => 'No',
+                        'publish_date'    => date('Y-m-d'),
+                    );
+                    $this->notification_model->insertBatch($send_data, $staff_roles);
+                }
+            }
+        }
+    }
 }
+

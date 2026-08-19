@@ -698,7 +698,10 @@ class Pathology extends Admin_Controller
                         $is_fully_paid     = ($paid_amount >= $new_net);
                     }
 
-                    $commission_amount = $is_fully_paid ? (($new_net * $percentage) / 100) : 0;
+                    $ref_settings      = $this->referral_payment_model->get_referral_settings();
+                    $auto_pay          = !empty($ref_settings['referral_auto_pay']);
+                    $status            = ($auto_pay && $is_fully_paid) ? 'Paid' : 'Unpaid';
+                    $commission_amount = round(($new_net * $percentage) / 100, 2);
                     $payment = array(
                         "referral_person_id" => $referral_person_id,
                         "patient_id"         => $patient_id,
@@ -707,6 +710,9 @@ class Pathology extends Admin_Controller
                         "bill_amount"        => $new_net,
                         "percentage"         => $percentage,
                         "amount"             => $commission_amount,
+                        "status"             => $status,
+                        "paid_date"          => ($status === 'Paid') ? date("Y-m-d H:i:s") : NULL,
+                        "paid_by"            => ($status === 'Paid') ? $this->customlib->getLoggedInUserID() : NULL,
                         "date"               => date("Y-m-d H:i:s"),
                     );
                     $this->referral_payment_model->add($payment);

@@ -86,6 +86,8 @@ class Referral extends Admin_Controller
         $data['type']     = $this->referral_category_model->get_type();
         $data['person']   = $this->referral_person_model->get_person();
         $data['payment']  = $this->referral_payment_model->get_payment();
+        $data['settings'] = $this->referral_payment_model->get_referral_settings();
+        $data['unpaid_list'] = $this->referral_payment_model->get_unpaid_referrals();
         $data['module'] = 'referral_payment';
         $this->load->view('layout/header', $data);
         $this->load->view('admin/referral/payment', $data);

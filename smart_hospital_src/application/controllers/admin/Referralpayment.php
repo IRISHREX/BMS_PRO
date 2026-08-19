@@ -55,7 +55,7 @@ class Referralpayment extends Admin_Controller
                 "bill_amount"        => $this->input->post("bill_amount", TRUE),
                 "percentage"         => $this->input->post("percentage", TRUE),
                 "amount"             => $this->input->post("commission_amount", TRUE),
-                "status"             => $this->input->post("status", TRUE) ? $this->input->post("status", TRUE) : 'Paid',
+                "status"             => $this->input->post("status", TRUE) ? $this->input->post("status", TRUE) : 'Unpaid',
                 "date"               => $this->input->post("entry_date", TRUE) ? $this->customlib->dateFormatToYYYYMMDDHis($this->input->post("entry_date", TRUE), $this->customlib->getHospitalTimeFormat()) : (new DateTime('now', new DateTimeZone($this->customlib->getTimeZone() ? $this->customlib->getTimeZone() : 'UTC')))->format('Y-m-d H:i:s'),
             );
 
@@ -78,6 +78,72 @@ class Referralpayment extends Admin_Controller
             $this->system_notification->send_system_notification('add_referral_payment', $event_data);
         }
         echo json_encode($data);
+    }
+
+    public function paySingle()
+    {
+        if (!$this->rbac->hasPrivilege('referral_payment', 'can_edit')) {
+            access_denied();
+        }
+        $id = $this->input->post('id', TRUE);
+        $result = $this->referral_payment_model->mark_as_paid($id);
+        echo json_encode($result);
+    }
+
+    public function payAll()
+    {
+        if (!$this->rbac->hasPrivilege('referral_payment', 'can_edit')) {
+            access_denied();
+        }
+        $result = $this->referral_payment_model->pay_all_eligible();
+        echo json_encode(array(
+            'status'  => true,
+            'message' => "Paid {$result['paid_count']} eligible referral(s). " . ($result['skipped_count'] > 0 ? "({$result['skipped_count']} skipped due to pending patient bill balance)." : ""),
+            'data'    => $result
+        ));
+    }
+
+    public function updateSettings()
+    {
+        if (!$this->rbac->hasPrivilege('referral_payment', 'can_edit')) {
+            access_denied();
+        }
+        $auto_pay = $this->input->post('referral_auto_pay', TRUE) ? 1 : 0;
+        $reminder_time = $this->input->post('referral_reminder_time', TRUE);
+        $reminder_time = $reminder_time ? $reminder_time : '09:00:00';
+
+        $this->referral_payment_model->update_referral_settings(array(
+            'referral_auto_pay'      => $auto_pay,
+            'referral_reminder_time' => $reminder_time,
+        ));
+
+        echo json_encode(array('status' => 'success', 'message' => $this->lang->line('success_message')));
+    }
+
+    public function sendReminder()
+    {
+        if (!$this->rbac->hasPrivilege('referral_payment', 'can_view')) {
+            access_denied();
+        }
+        $unpaid = $this->referral_payment_model->get_unpaid_referrals();
+        $total_unpaid = count($unpaid);
+        $total_amount = 0;
+        foreach ($unpaid as $u) {
+            $total_amount += (float)$u['amount'];
+        }
+
+        $event_data = array(
+            'total_unpaid_count'  => $total_unpaid,
+            'total_unpaid_amount' => number_format($total_amount, 2),
+            'date'                => date('Y-m-d H:i:s'),
+        );
+
+        $this->system_notification->send_system_notification('referral_payment_reminder', $event_data);
+
+        echo json_encode(array(
+            'status'  => 'success',
+            'message' => "Reminder sent! Found {$total_unpaid} unpaid referral(s) totaling " . number_format($total_amount, 2) . "."
+        ));
     }
 
     public function check_billid()
@@ -128,7 +194,7 @@ class Referralpayment extends Admin_Controller
                 "id"         => $this->input->post('paymentid', TRUE),
                 "percentage" => $this->input->post('commission_percentage', TRUE),
                 "amount"     => $this->input->post('commission_amount', TRUE),
-                "status"     => $this->input->post('edit_status', TRUE) ? $this->input->post('edit_status', TRUE) : 'Paid',
+                "status"     => $this->input->post('edit_status', TRUE) ? $this->input->post('edit_status', TRUE) : 'Unpaid',
                 "date"       => $this->input->post('edit_entry_date', TRUE) ? $this->customlib->dateFormatToYYYYMMDDHis($this->input->post('edit_entry_date', TRUE), $this->customlib->getHospitalTimeFormat()) : (new DateTime('now', new DateTimeZone($this->customlib->getTimeZone() ? $this->customlib->getTimeZone() : 'UTC')))->format('Y-m-d H:i:s'),
             );
 

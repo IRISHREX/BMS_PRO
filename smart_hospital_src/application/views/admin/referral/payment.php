@@ -1,88 +1,127 @@
 <?php 
 $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
+$auto_pay = isset($settings['referral_auto_pay']) ? (int)$settings['referral_auto_pay'] : 0;
+$reminder_time = isset($settings['referral_reminder_time']) ? $settings['referral_reminder_time'] : '09:00:00';
+$unpaid_count = 0;
+$eligible_count = 0;
+if (!empty($payment)) {
+    foreach ($payment as $p) {
+        if (strtolower($p['status']) !== 'paid') {
+            $unpaid_count++;
+            if (!empty($p['is_settled'])) {
+                $eligible_count++;
+            }
+        }
+    }
+}
 ?>
 <div class="row">
-            <div class="col-md-12">
-                <!-- general form elements -->
-                <div class="card">
-                    <div class="card-header ptbnull">
-                        <h3 class="card-title titlefix"><?php echo $this->lang->line('referral_payment_list'); ?></h3>
-                        <div class="d-flex gap-2 align-items-center flex-wrap float-end">
-                            <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_add')) { ?>
-                                <a data-bs-toggle="modal" data-bs-target="#myModal" class="btn btn-primary btn-sm addpayment"><i class="fa fa-plus"></i> <?php echo $this->lang->line('add_referral_payment'); ?></a>
-                            <?php } ?>
-
-							<?php if ($this->rbac->hasPrivilege('referral_person', 'can_view')) { ?>
-                                <a href="<?php echo site_url('admin/referral/person'); ?>" class="btn btn-primary btn-sm addpayment"><?php echo $this->lang->line('referral_person'); ?></a>
-							<?php } ?>
-                        </div>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header ptbnull">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h3 class="card-title titlefix"><?php echo $this->lang->line('referral_payment_list'); ?></h3>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) { ?>
+                            <button type="button" class="btn btn-success btn-sm" id="btnPayAll" data-eligible="<?php echo $eligible_count; ?>">
+                                <i class="fa fa-play me-1"></i> Pay All Eligible <?php if ($eligible_count > 0) { ?><span class="badge bg-white text-success ms-1"><?php echo $eligible_count; ?></span><?php } ?>
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm" id="btnSendReminder">
+                                <i class="fa fa-bell me-1"></i> Send Reminder <?php if ($unpaid_count > 0) { ?><span class="badge bg-info text-white ms-1"><?php echo $unpaid_count; ?></span><?php } ?>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalReferralSettings">
+                                <i class="fa fa-cog me-1"></i> Settings
+                            </button>
+                        <?php } ?>
+                        <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_add')) { ?>
+                            <a data-bs-toggle="modal" data-bs-target="#myModal" class="btn btn-primary btn-sm addpayment"><i class="fa fa-plus me-1"></i> <?php echo $this->lang->line('add_referral_payment'); ?></a>
+                        <?php } ?>
+                        <?php if ($this->rbac->hasPrivilege('referral_person', 'can_view')) { ?>
+                            <a href="<?php echo site_url('admin/referral/person'); ?>" class="btn btn-primary btn-sm"><?php echo $this->lang->line('referral_person'); ?></a>
+                        <?php } ?>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive mailbox-messages overflow-visible-lg">
-                        <div class="download_label"><?php echo $this->lang->line('referral_payment_list'); ?></div>
-                            <table class="table table-hover table-striped table-bordered example">
-                                <thead>
-                                    <tr>
-                                        <th><?php echo $this->lang->line('payee'); ?></th>
-                                        <th><?php echo $this->lang->line('patient_name'); ?></th>
-                                        <th><?php echo "Entry Date"; ?></th>
-                                        <th class="text-end"><?php echo $this->lang->line('bill_no'); ?></th>
-                                        <th class="text-end"><?php echo $this->lang->line('bill_amount').' ('. $currency_symbol .')'; ?></th>
-                                        <th class="text-end"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
-                                        <th class="text-end"><?php echo $this->lang->line('commission_amount').' ('. $currency_symbol .')'; ?></th>
-                                        <th class="text-end"><?php echo $this->lang->line('status'); ?></th>
-                                        <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
-                                        <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
-										<?php } ?>                                        
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php  
-                                        if (empty($payment)) {
-                                            ?>
-                                            <?php
-                                        } else {
-                                            foreach ($payment as $key => $value) {
-                                                ?>
-                                            <tr>
-                                                <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
-                                                <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
-                                                <td><?php echo date('d.m.Y @ H:i:s', strtotime($value['date'])); ?></td>
-                                                <td class="text-end"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
-                                                <td class="text-end"><?php echo amountFormat($value["bill_amount"]); ?></td>
-                                                <td class="text-end"><?php echo html_escape($value["percentage"]); ?></td>
-                                                <td class="text-end"><?php echo html_escape($value["amount"]); ?></td>
-                                                <td class="text-end">
-                                                    <?php
-                                                    $status = isset($value["status"]) ? $value["status"] : 'Paid';
-                                                    echo $this->lang->line(strtolower($status)) ? $this->lang->line(strtolower($status)) : ucfirst($status);
-                                                    ?>
-                                                </td>
-                                                <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
-                                                <td class="text-end noExport">
-                                                    <div class="d-inline-flex gap-1">
-                                                    <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) { ?>
-                                                        <a href="#" onclick="getRecord('<?php echo (int)$value['id'] ?>')" class="btn btn-sm btn-outline-primary" data-bs-target="#myModalEdit" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('edit'); ?>">
-                                                            <i class="fa fa-pencil"></i>
-                                                        </a>
-                                                    <?php } ?>
-                                                    <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_delete')) { ?>
-                                                        <a class="btn btn-sm btn-outline-danger sh-cursor-pointer" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('delete') ?>" onclick="delete_recordByIdReload('admin/referralpayment/delete/<?php echo (int)$value['id']; ?>', '<?php echo $this->lang->line('delete_confirm'); ?>')">
-                                                            <i class="fa fa-trash"></i>
-                                                        </a>
-                                                    <?php } ?>
-                                                    </div>
-                                                </td>
-                                                <?php } ?>
-                                            </tr>
-                                            <?php
-}
-}
-?>
-                                </tbody>
-                            </table><!-- /.table -->
-                        </div><!-- /.mail-box-messages -->
-                    </div><!-- /.card-body -->
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive mailbox-messages overflow-visible-lg">
+                    <div class="download_label"><?php echo $this->lang->line('referral_payment_list'); ?></div>
+                    <table class="table table-hover table-striped table-bordered example">
+                        <thead>
+                            <tr>
+                                <th><?php echo $this->lang->line('payee'); ?></th>
+                                <th><?php echo $this->lang->line('patient_name'); ?></th>
+                                <th>Entry Date</th>
+                                <th class="text-end"><?php echo $this->lang->line('bill_no'); ?></th>
+                                <th class="text-end"><?php echo $this->lang->line('bill_amount').' ('. $currency_symbol .')'; ?></th>
+                                <th class="text-end"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
+                                <th class="text-end"><?php echo $this->lang->line('commission_amount').' ('. $currency_symbol .')'; ?></th>
+                                <th class="text-center"><?php echo $this->lang->line('status'); ?></th>
+                                <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
+                                <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
+                                <?php } ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php  
+                            if (!empty($payment)) {
+                                foreach ($payment as $key => $value) {
+                                    $is_paid = (strtolower($value["status"]) === 'paid');
+                                    $is_settled = !empty($value['is_settled']);
+                                    $due_balance = isset($value['bill_balance']) ? (float)$value['bill_balance'] : 0;
+                            ?>
+                            <tr>
+                                <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
+                                <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
+                                <td><?php echo date('d.m.Y @ H:i:s', strtotime($value['date'])); ?></td>
+                                <td class="text-end"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
+                                <td class="text-end"><?php echo amountFormat($value["bill_amount"]); ?></td>
+                                <td class="text-end"><?php echo html_escape($value["percentage"]); ?></td>
+                                <td class="text-end fw-bold"><?php echo html_escape($value["amount"]); ?></td>
+                                <td class="text-center">
+                                    <?php if ($is_paid) { ?>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa fa-check-circle me-1"></i> Paid</span>
+                                    <?php } elseif ($is_settled) { ?>
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa fa-clock-o me-1"></i> Unpaid (Eligible)</span>
+                                    <?php } else { ?>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" data-bs-toggle="tooltip" title="Patient Due: <?php echo amountFormat($due_balance); ?>"><i class="fa fa-hourglass-half me-1"></i> Unpaid (Due: <?php echo amountFormat($due_balance); ?>)</span>
+                                    <?php } ?>
+                                </td>
+                                <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
+                                <td class="text-end noExport">
+                                    <div class="d-inline-flex gap-1 align-items-center">
+                                    <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) { ?>
+                                        <?php if (!$is_paid) { ?>
+                                            <?php if ($is_settled) { ?>
+                                                <button type="button" class="btn btn-sm btn-success btn-pay-single" data-id="<?php echo (int)$value['id']; ?>" data-payee="<?php echo html_escape($value['name']); ?>" data-amount="<?php echo html_escape($value['amount']); ?>" data-bs-toggle="tooltip" title="Pay Referral Commission Now">
+                                                    <i class="fa fa-play"></i>
+                                                </button>
+                                            <?php } else { ?>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary disabled" data-bs-toggle="tooltip" title="Cannot Pay: Patient bill has pending balance of <?php echo amountFormat($due_balance); ?>">
+                                                    <i class="fa fa-play text-muted"></i>
+                                                </button>
+                                            <?php } ?>
+                                        <?php } ?>
+                                        <a href="#" onclick="getRecord('<?php echo (int)$value['id'] ?>')" class="btn btn-sm btn-outline-primary" data-bs-target="#myModalEdit" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('edit'); ?>">
+                                            <i class="fa fa-pencil"></i>
+                                        </a>
+                                    <?php } ?>
+                                    <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_delete')) { ?>
+                                        <a class="btn btn-sm btn-outline-danger sh-cursor-pointer" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('delete') ?>" onclick="delete_recordByIdReload('admin/referralpayment/delete/<?php echo (int)$value['id']; ?>', '<?php echo $this->lang->line('delete_confirm'); ?>')">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    <?php } ?>
+                                    </div>
+                                </td>
+                                <?php } ?>
+                            </tr>
+                            <?php
+                                }
+                            }
+                            ?>
+                        </tbody>
+                    </table><!-- /.table -->
+                </div><!-- /.mail-box-messages -->
+            </div><!-- /.card-body -->
                 </div>
             </div><!--/.col (left) -->
             <!-- right column -->
@@ -230,8 +269,8 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                             <div class="col-12">
                                                 <label class="form-label form-label-sm"><?php echo $this->lang->line('status'); ?> <small class="req">*</small></label>
                                                 <select class="form-select form-select-sm" name="status" id="status">
+                                                    <option value="Unpaid" selected><?php echo $this->lang->line('unpaid'); ?></option>
                                                     <option value="Paid"><?php echo $this->lang->line('paid'); ?></option>
-                                                    <option value="Unpaid"><?php echo $this->lang->line('unpaid'); ?></option>
                                                 </select>
                                             </div>
                                             <div class="col-12">
@@ -304,9 +343,175 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
     </div>
 </div>
 
+<div class="modal fade sh-modal sh-modal-accent" id="modalReferralSettings" tabindex="-1" aria-labelledby="modalReferralSettingsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalReferralSettingsLabel"><i class="fa fa-cog me-1"></i> Referral Automation & Reminder Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formReferralSettings" method="post">
+                <div class="pup-scroll-area">
+                    <div class="modal-body">
+                        <div class="sh-form-card mb-3">
+                            <div class="sh-card-header">
+                                <span class="sh-card-header-title"><i class="fa fa-magic me-1"></i> Auto-Pay Configuration</span>
+                            </div>
+                            <div class="p-3">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="referral_auto_pay" name="referral_auto_pay" value="1" <?php echo ($auto_pay == 1) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label fw-bold" for="referral_auto_pay">Auto Pay Referral Commission when Patient Bill is Fully Settled</label>
+                                </div>
+                                <small class="text-muted d-block">When enabled, referral commissions are automatically marked as <b>Paid</b> immediately once the patient's bill balance reaches 0.00. When disabled, commissions remain <b>Unpaid</b> until manually approved via the Play / Pay All buttons.</small>
+                            </div>
+                        </div>
+
+                        <div class="sh-form-card">
+                            <div class="sh-card-header">
+                                <span class="sh-card-header-title"><i class="fa fa-bell me-1"></i> Daily Reminder Settings</span>
+                            </div>
+                            <div class="p-3">
+                                <label class="form-label form-label-sm fw-bold">Daily Reminder Scheduled Time</label>
+                                <input type="time" class="form-control form-control-sm" id="referral_reminder_time" name="referral_reminder_time" value="<?php echo html_escape($reminder_time); ?>">
+                                <small class="text-muted d-block mt-1">System sends a daily reminder notification containing all pending unpaid referrals at this time.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
+                    <button type="submit" id="btnSaveSettings" class="btn btn-info"><i class="fa fa-check-circle me-1"></i> <?php echo $this->lang->line('save'); ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     $(document).ready(function (e) {
         $('.select2').select2();
+
+        // Single Pay Action (Play button)
+        $(document).on('click', '.btn-pay-single', function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            var paymentId = $btn.data('id');
+            var payee = $btn.data('payee');
+            var amount = $btn.data('amount');
+
+            if (confirm("Are you sure you want to pay commission of " + amount + " to " + payee + "?")) {
+                $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+                $.ajax({
+                    url: '<?php echo base_url(); ?>admin/referralpayment/paySingle',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { id: paymentId },
+                    success: function(res) {
+                        if (res.status) {
+                            successMsg(res.message);
+                            window.location.reload(true);
+                        } else {
+                            errorMsg(res.message);
+                            $btn.prop('disabled', false).html('<i class="fa fa-play"></i>');
+                        }
+                    },
+                    error: function() {
+                        errorMsg("<?php echo $this->lang->line('fail'); ?>");
+                        $btn.prop('disabled', false).html('<i class="fa fa-play"></i>');
+                    }
+                });
+            }
+        });
+
+        // Pay All Eligible Action
+        $('#btnPayAll').on('click', function(e) {
+            e.preventDefault();
+            var eligibleCount = $(this).data('eligible');
+            if (eligibleCount <= 0) {
+                if (!confirm("No currently eligible referrals with 0 due balance detected. Attempt payout for any fully settled bills anyway?")) {
+                    return;
+                }
+            } else {
+                if (!confirm("Are you sure you want to pay all " + eligibleCount + " eligible referral commissions now?")) {
+                    return;
+                }
+            }
+
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Processing...');
+
+            $.ajax({
+                url: '<?php echo base_url(); ?>admin/referralpayment/payAll',
+                type: 'POST',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status) {
+                        successMsg(res.message);
+                        window.location.reload(true);
+                    } else {
+                        errorMsg(res.message || "Failed to process bulk payout.");
+                        $btn.prop('disabled', false).html('<i class="fa fa-play me-1"></i> Pay All Eligible');
+                    }
+                },
+                error: function() {
+                    errorMsg("<?php echo $this->lang->line('fail'); ?>");
+                    $btn.prop('disabled', false).html('<i class="fa fa-play me-1"></i> Pay All Eligible');
+                }
+            });
+        });
+
+        // Send Reminder Trigger
+        $('#btnSendReminder').on('click', function(e) {
+            e.preventDefault();
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Sending...');
+
+            $.ajax({
+                url: '<?php echo base_url(); ?>admin/referralpayment/sendReminder',
+                type: 'POST',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status === 'success') {
+                        successMsg(res.message);
+                    } else {
+                        errorMsg(res.message || "Failed to send reminder.");
+                    }
+                    $btn.prop('disabled', false).html('<i class="fa fa-bell me-1"></i> Send Reminder');
+                },
+                error: function() {
+                    errorMsg("<?php echo $this->lang->line('fail'); ?>");
+                    $btn.prop('disabled', false).html('<i class="fa fa-bell me-1"></i> Send Reminder');
+                }
+            });
+        });
+
+        // Save Automation & Reminder Settings
+        $('#formReferralSettings').on('submit', function(e) {
+            e.preventDefault();
+            var $btn = $('#btnSaveSettings');
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
+
+            $.ajax({
+                url: '<?php echo base_url(); ?>admin/referralpayment/updateSettings',
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status === 'success') {
+                        successMsg(res.message);
+                        shModal('modalReferralSettings').hide();
+                        window.location.reload(true);
+                    } else {
+                        errorMsg(res.message || "Failed to save settings.");
+                    }
+                    $btn.prop('disabled', false).html('<i class="fa fa-check-circle me-1"></i> <?php echo $this->lang->line("save"); ?>');
+                },
+                error: function() {
+                    errorMsg("<?php echo $this->lang->line('fail'); ?>");
+                    $btn.prop('disabled', false).html('<i class="fa fa-check-circle me-1"></i> <?php echo $this->lang->line("save"); ?>');
+                }
+            });
+        });
     });
 	
     $(document).ready(function (e) {

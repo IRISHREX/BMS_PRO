@@ -12,23 +12,211 @@ class Referral_payment_model extends MY_Model
         parent::__construct();
         try {
             if (!$this->db->field_exists('status', 'referral_payment')) {
-                $this->db->query("ALTER TABLE `referral_payment` ADD `status` varchar(20) DEFAULT 'Paid'");
+                $this->db->query("ALTER TABLE `referral_payment` ADD `status` varchar(20) NOT NULL DEFAULT 'Unpaid'");
+            } else {
+                $this->db->query("ALTER TABLE `referral_payment` MODIFY `status` varchar(20) NOT NULL DEFAULT 'Unpaid'");
+            }
+            if (!$this->db->field_exists('paid_date', 'referral_payment')) {
+                $this->db->query("ALTER TABLE `referral_payment` ADD `paid_date` datetime NULL DEFAULT NULL");
+            }
+            if (!$this->db->field_exists('paid_by', 'referral_payment')) {
+                $this->db->query("ALTER TABLE `referral_payment` ADD `paid_by` int(11) NULL DEFAULT NULL");
+            }
+            if (!$this->db->field_exists('referral_auto_pay', 'sch_settings')) {
+                $this->db->query("ALTER TABLE `sch_settings` ADD `referral_auto_pay` tinyint(1) NOT NULL DEFAULT 0");
+            }
+            if (!$this->db->field_exists('referral_reminder_time', 'sch_settings')) {
+                $this->db->query("ALTER TABLE `sch_settings` ADD `referral_reminder_time` time NOT NULL DEFAULT '09:00:00'");
             }
         } catch (Throwable $e) {
-            log_message('error', 'Referral_payment_model: Could not add status column: ' . $e->getMessage());
+            log_message('error', 'Referral_payment_model: DB migration error: ' . $e->getMessage());
         }
+    }
+
+    public function get_bill_settlement($billing_id, $referral_type)
+    {
+        $net_amount  = 0;
+        $paid_amount = 0;
+
+        if ($referral_type == 4) { // Pathology
+            $row = $this->db->select('net_amount')->where('id', $billing_id)->get('pathology_billing')->row_array();
+            $net_amount = $row ? (float)$row['net_amount'] : 0;
+
+            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+                ->where('pathology_billing_id', $billing_id)->get('transactions')->row_array();
+            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+        } elseif ($referral_type == 5) { // Radiology
+            $row = $this->db->select('net_amount')->where('id', $billing_id)->get('radiology_billing')->row_array();
+            $net_amount = $row ? (float)$row['net_amount'] : 0;
+
+            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+                ->where('radiology_billing_id', $billing_id)->get('transactions')->row_array();
+            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+        } elseif ($referral_type == 3) { // Pharmacy
+            $row = $this->db->select('net_amount')->where('id', $billing_id)->get('pharmacy_bill_basic')->row_array();
+            $net_amount = $row ? (float)$row['net_amount'] : 0;
+
+            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+                ->where('pharmacy_bill_basic_id', $billing_id)->get('transactions')->row_array();
+            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+        } elseif ($referral_type == 6) { // Blood Bank
+            $row = $this->db->select('net_amount')->where('id', $billing_id)->get('blood_issue')->row_array();
+            $net_amount = $row ? (float)$row['net_amount'] : 0;
+
+            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+                ->where('blood_issue_id', $billing_id)->get('transactions')->row_array();
+            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+        } elseif ($referral_type == 7) { // Ambulance
+            $row = $this->db->select('net_amount')->where('id', $billing_id)->get('ambulance_call')->row_array();
+            $net_amount = $row ? (float)$row['net_amount'] : 0;
+
+            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+                ->where('ambulance_call_id', $billing_id)->get('transactions')->row_array();
+            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+        } elseif ($referral_type == 1) { // OPD
+            $row = $this->db->select('IFNULL(SUM(apply_charge),0) as net_amt')->where('opd_id', $billing_id)->get('patient_charges')->row_array();
+            $net_amount = $row ? (float)$row['net_amt'] : 0;
+
+            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+                ->where('opd_id', $billing_id)->get('transactions')->row_array();
+            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+        } elseif ($referral_type == 2) { // IPD
+            $row = $this->db->select('IFNULL(SUM(apply_charge),0) as net_amt')->where('ipd_id', $billing_id)->get('patient_charges')->row_array();
+            $net_amount = $row ? (float)$row['net_amt'] : 0;
+
+            $paid_row = $this->db->select('IFNULL(SUM(CASE WHEN type="payment" THEN amount WHEN type="refund" THEN -amount ELSE 0 END),0) as paid_amt')
+                ->where('ipd_id', $billing_id)->get('transactions')->row_array();
+            $paid_amount = $paid_row ? (float)$paid_row['paid_amt'] : 0;
+        }
+
+        $balance    = max(0, round($net_amount - $paid_amount, 2));
+        $is_settled = ($net_amount > 0 && $balance <= 0.001);
+
+        return array(
+            'net_amount'  => $net_amount,
+            'paid_amount' => $paid_amount,
+            'balance'     => $balance,
+            'is_settled'  => $is_settled
+        );
     }
 
     public function get_payment()
     {
-        $this->db->select("payment.date as date, payment.billing_id,payment.id, person.name, patients.patient_name,patients.id as patient_id, type.name as type, payment.bill_amount, payment.percentage, payment.amount,prefixes.prefix");
+        $this->db->select("payment.date as date, payment.paid_date, payment.paid_by, payment.billing_id, payment.id, payment.status, payment.referral_type, person.name, person.contact, patients.patient_name, patients.id as patient_id, type.name as type, payment.bill_amount, payment.percentage, payment.amount, prefixes.prefix");
         $this->db->join("referral_type type", "type.id=payment.referral_type", "left");
         $this->db->join("prefixes", "type.prefixes_type=prefixes.type", "inner");
         $this->db->join("referral_person person", "person.id=payment.referral_person_id");
         $this->db->join("patients", "patients.id=payment.patient_id", "left");
+        $this->db->order_by("payment.id", "desc");
         $query   = $this->db->get("referral_payment payment");
         $payment = $query->result_array();
+
+        foreach ($payment as $key => $val) {
+            $settlement = $this->get_bill_settlement($val['billing_id'], $val['referral_type']);
+            $payment[$key]['bill_net']     = $settlement['net_amount'];
+            $payment[$key]['bill_paid']    = $settlement['paid_amount'];
+            $payment[$key]['bill_balance'] = $settlement['balance'];
+            $payment[$key]['is_settled']   = $settlement['is_settled'];
+        }
+
         return $payment;
+    }
+
+    public function mark_as_paid($id, $staff_id = null)
+    {
+        $payment = $this->get($id);
+        if (empty($payment)) {
+            return array('status' => false, 'message' => 'Record not found.');
+        }
+
+        if (strtolower($payment['status']) === 'paid') {
+            return array('status' => false, 'message' => 'Referral commission is already paid.');
+        }
+
+        $settlement = $this->get_bill_settlement($payment['billing_id'], $payment['referral_type']);
+        if (!$settlement['is_settled']) {
+            return array(
+                'status'  => false,
+                'message' => 'Cannot mark as paid. Patient bill is not fully settled yet (Due Balance: ' . number_format($settlement['balance'], 2) . ').'
+            );
+        }
+
+        $data = array(
+            'id'        => $id,
+            'status'    => 'Paid',
+            'paid_date' => date('Y-m-d H:i:s'),
+            'paid_by'   => $staff_id ? $staff_id : $this->customlib->getLoggedInUserID(),
+        );
+
+        $this->update($data);
+        return array('status' => true, 'message' => 'Referral commission marked as Paid successfully.');
+    }
+
+    public function pay_all_eligible($staff_id = null)
+    {
+        $unpaid = $this->db->where('status !=', 'Paid')->or_where('status IS NULL', null, false)->get('referral_payment')->result_array();
+        $paid_count    = 0;
+        $skipped_count = 0;
+
+        foreach ($unpaid as $row) {
+            $settlement = $this->get_bill_settlement($row['billing_id'], $row['referral_type']);
+            if ($settlement['is_settled']) {
+                $data = array(
+                    'id'        => $row['id'],
+                    'status'    => 'Paid',
+                    'paid_date' => date('Y-m-d H:i:s'),
+                    'paid_by'   => $staff_id ? $staff_id : $this->customlib->getLoggedInUserID(),
+                );
+                $this->update($data);
+                $paid_count++;
+            } else {
+                $skipped_count++;
+            }
+        }
+
+        return array(
+            'paid_count'    => $paid_count,
+            'skipped_count' => $skipped_count,
+            'total_unpaid'  => count($unpaid),
+        );
+    }
+
+    public function get_unpaid_referrals()
+    {
+        $this->db->select("payment.date as date, payment.billing_id, payment.id, payment.status, payment.referral_type, person.name, person.contact, patients.patient_name, patients.id as patient_id, type.name as type, payment.bill_amount, payment.percentage, payment.amount, prefixes.prefix");
+        $this->db->join("referral_type type", "type.id=payment.referral_type", "left");
+        $this->db->join("prefixes", "type.prefixes_type=prefixes.type", "inner");
+        $this->db->join("referral_person person", "person.id=payment.referral_person_id");
+        $this->db->join("patients", "patients.id=payment.patient_id", "left");
+        $this->db->where("payment.status !=", "Paid");
+        $this->db->or_where("payment.status IS NULL", null, false);
+        $this->db->order_by("payment.id", "desc");
+        $query = $this->db->get("referral_payment payment");
+        $list  = $query->result_array();
+
+        foreach ($list as $key => $val) {
+            $settlement = $this->get_bill_settlement($val['billing_id'], $val['referral_type']);
+            $list[$key]['bill_net']     = $settlement['net_amount'];
+            $list[$key]['bill_paid']    = $settlement['paid_amount'];
+            $list[$key]['bill_balance'] = $settlement['balance'];
+            $list[$key]['is_settled']   = $settlement['is_settled'];
+        }
+
+        return $list;
+    }
+
+    public function get_referral_settings()
+    {
+        $row = $this->db->select('referral_auto_pay, referral_reminder_time')->get('sch_settings')->row_array();
+        return array(
+            'referral_auto_pay'       => isset($row['referral_auto_pay']) ? (int)$row['referral_auto_pay'] : 0,
+            'referral_reminder_time' => isset($row['referral_reminder_time']) ? $row['referral_reminder_time'] : '09:00:00',
+        );
+    }
+
+    public function update_referral_settings($data)
+    {
+        return $this->db->update('sch_settings', $data);
     }
  
     public function add($payment)
