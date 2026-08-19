@@ -45,7 +45,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <span class="text-danger"><?php echo form_error('reportday[]'); ?></span>
                         </td>
                         <td>
-                            <input type="text" name="reportdate_<?php echo $total_rows; ?>" id="reportdate_<?php echo $total_rows; ?>" value="<?php echo $this->customlib->YYYYMMDDTodateFormat($report_value->reporting_date); ?>" class="form-control form-control-sm text-end report_date">
+                            <input type="text" name="reportdate_<?php echo $total_rows; ?>" id="reportdate_<?php echo $total_rows; ?>" value="<?php echo $this->customlib->YYYYMMDDTodateFormat($report_value->reporting_date); ?>" class="form-control form-control-sm text-end report_date date no-past-date" data-min-date="today">
                             <span class="text-danger"><?php echo form_error('reportdate[]'); ?></span>
                         </td>
                         <td>

@@ -451,7 +451,7 @@ $(document).ready(function () {
             calendar: true, decades: true, year: true, month: true, date: true,
             clock: false, hours: false, minutes: false, seconds: false
         };
-        if (el.dataset.minDate === 'today' || el.classList.contains('no-past-date') || el.classList.contains('disable-past') || el.classList.contains('future-date')) {
+        if (el.dataset.minDate === 'today' || el.classList.contains('no-past-date') || el.classList.contains('disable-past') || el.classList.contains('future-date') || el.classList.contains('report_date')) {
             var todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
             cfg.restrictions = { minDate: new tempusDominus.DateTime(todayStart) };
@@ -469,7 +469,7 @@ $(document).ready(function () {
             clock: true, hours: true, minutes: true, seconds: false
         };
         cfg.localization.hourCycle = tdHourCycle;
-        if (el.dataset.minDate === 'today' || el.classList.contains('no-past-date') || el.classList.contains('disable-past') || el.classList.contains('future-date')) {
+        if (el.dataset.minDate === 'today' || el.classList.contains('no-past-date') || el.classList.contains('disable-past') || el.classList.contains('future-date') || el.classList.contains('report_date') || el.id === 'txtDate10') {
             var todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
             cfg.restrictions = { minDate: new tempusDominus.DateTime(todayStart) };
@@ -508,7 +508,7 @@ $(document).ready(function () {
     }
 
     // Initialize on existing elements (page load)
-    document.querySelectorAll('input.date').forEach(initDatePicker);
+    document.querySelectorAll('input.date, input.report_date').forEach(initDatePicker);
     document.querySelectorAll('input.datetime').forEach(initDateTimePicker);
     document.querySelectorAll('input.timepicker').forEach(initTimePicker);
     document.querySelectorAll('input.daterange').forEach(initDateRangePicker);
@@ -517,7 +517,7 @@ $(document).ready(function () {
     document.body.addEventListener('focusin', function (e) {
         var t = e.target;
         if (!(t instanceof HTMLInputElement)) return;
-        if (t.classList.contains('date'))            initDatePicker(t);
+        if (t.classList.contains('date') || t.classList.contains('report_date')) initDatePicker(t);
         else if (t.classList.contains('datetime'))   initDateTimePicker(t);
         else if (t.classList.contains('timepicker')) initTimePicker(t);
         else if (t.classList.contains('daterange'))  initDateRangePicker(t);
@@ -537,7 +537,7 @@ $(document).ready(function () {
                 ? document.querySelector(elOrSelector) : elOrSelector;
             if (!el) return null;
             if (!el[initFlag]) {
-                if (el.classList.contains('date'))            initDatePicker(el);
+                if (el.classList.contains('date') || el.classList.contains('report_date')) initDatePicker(el);
                 else if (el.classList.contains('datetime'))   initDateTimePicker(el);
                 else if (el.classList.contains('timepicker')) initTimePicker(el);
                 else if (el.classList.contains('daterange'))  initDateRangePicker(el);

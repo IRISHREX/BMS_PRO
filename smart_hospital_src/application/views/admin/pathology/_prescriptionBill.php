@@ -46,7 +46,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <span class="text-danger"><?php echo form_error('reportday[]'); ?></span>
                         </td>
                         <td>
-                            <input type="text" name="reportdate_<?php echo $counter; ?>" id="reportdate_<?php echo $counter; ?>" value="<?php echo ($date == "") ? "" : $this->customlib->strtotimeToDateFormat($date + ($test_value->report_days * 86400)); ?>" class="form-control form-control-sm text-end report_date">
+                            <input type="text" name="reportdate_<?php echo $counter; ?>" id="reportdate_<?php echo $counter; ?>" value="<?php echo ($date == "") ? "" : $this->customlib->strtotimeToDateFormat($date + ($test_value->report_days * 86400)); ?>" class="form-control form-control-sm text-end report_date date no-past-date" data-min-date="today">
                             <span class="text-danger"><?php echo form_error('reportdate[]'); ?></span>
                         </td>
                         <td>
@@ -131,7 +131,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <span class="text-danger"><?php echo form_error('reportday[]'); ?></span>
                         </td>
                         <td>
-                            <input type="text" name="reportdate_1" id="reportdate_1" class="form-control form-control-sm text-end report_date">
+                            <input type="text" name="reportdate_1" id="reportdate_1" class="form-control form-control-sm text-end report_date date no-past-date" data-min-date="today">
                             <span class="text-danger"><?php echo form_error('reportdate[]'); ?></span>
                         </td>
                         <td>
