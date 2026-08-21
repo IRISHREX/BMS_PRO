@@ -15,9 +15,28 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         <?php echo $this->customlib->getCSRF(); ?>
                         <div class="col-sm-6 col-md-3">
                             <div class="mb-3">
-                                <label><?php echo $this->lang->line('date'); ?></label>
-                                <input id="date" name="date" type="text" class="form-control date" value="" />
-                                <span class="text-danger" id="error_date_from"><?php echo form_error('collect_staff'); ?></span>
+                                <label><?php echo $this->lang->line('search_type'); ?></label><small class="req"> *</small>
+                                <select class="form-control" name="search_type" id="search_type_select" onchange="showdate(this.value)">
+                                    <option value=""><?php echo $this->lang->line('select') ?></option>
+                                    <?php foreach ($searchlist as $key => $search) { ?>
+                                        <option value="<?php echo $key ?>" <?php if ((isset($search_type)) && ($search_type == $key)) { echo "selected"; } ?>><?php echo $search ?></option>
+                                    <?php } ?>
+                                </select>
+                                <span class="text-danger" id="error_search_type"><?php echo form_error('search_type'); ?></span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3 d-none" id="fromdate">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('date_from'); ?></label><small class="req"> *</small>
+                                <input id="date_from" name="date_from" type="text" class="form-control date" value="<?php echo set_value('date_from', date($this->customlib->getHospitalDateFormat())); ?>" />
+                                <span class="text-danger"><?php echo form_error('date_from'); ?></span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3 d-none" id="todate">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('date_to'); ?></label><small class="req"> *</small>
+                                <input id="date_to" name="date_to" type="text" class="form-control date" value="<?php echo set_value('date_to', date($this->customlib->getHospitalDateFormat())); ?>" />
+                                <span class="text-danger"><?php echo form_error('date_to'); ?></span>
                             </div>
                         </div>
                         <div class="col-sm-6 col-md-3">
@@ -29,7 +48,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                         <option value="<?php echo (int)$value->person_id ?>"><?php echo html_escape($value->name) ?></option>
                                     <?php } ?>
                                 </select>
-                                <span class="text-danger" id="error_payee"><?php echo form_error('search_type'); ?></span>
+                                <span class="text-danger" id="error_payee"></span>
                             </div>
                         </div>
                         <div class="col-sm-6 col-md-3">
@@ -41,7 +60,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                         <option value="<?php echo $value["id"] ?>"><?php echo $this->lang->line($value["name"]); ?></option>
                                     <?php } ?>
                                 </select>
-                                <span class="text-danger" id="error_patient_type"><?php echo form_error('collect_staff'); ?></span>
+                                <span class="text-danger" id="error_patient_type"></span>
                             </div>
                         </div>
                         <div class="col-sm-6 col-md-3">
@@ -54,6 +73,17 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                     <?php } ?>
                                 </select>
                                 <span class="text-danger" id="error_patient"></span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('status'); ?></label>
+                                <select class="form-control select2 w-100" name="status" id="status">
+                                    <option value=""><?php echo $this->lang->line('all') ?: 'All'; ?></option>
+                                    <option value="paid"><?php echo $this->lang->line('paid') ?: 'Paid'; ?></option>
+                                    <option value="unpaid"><?php echo $this->lang->line('unpaid') ?: 'Unpaid'; ?></option>
+                                </select>
+                                <span class="text-danger" id="error_status"></span>
                             </div>
                         </div>
                         <div class="col-sm-6 col-md-auto d-flex align-items-end ps-md-3 pe-md-3 ms-auto">
@@ -76,6 +106,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <th><?php echo $this->lang->line('patient_name'); ?></th>
                             <th><?php echo $this->lang->line('date'); ?></th>
                             <th><?php echo $this->lang->line('bill_no'); ?></th>
+                            <th><?php echo $this->lang->line('status'); ?></th>
                             <th class="text-end" width="15%"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
                             <th class="text-end" width="15%"><?php echo $this->lang->line('bill_amount') . ' (' . $currency_symbol . ')'; ?></th>
                             <th class="text-end" width="15%"><?php echo $this->lang->line('commission_amount') . ' (' . $currency_symbol . ')'; ?></th>
@@ -88,6 +119,18 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
         </div>
     </div>
 </div>
+
+<script type="text/javascript">
+    function showdate(value) {
+        if (value == 'period') {
+            $('#fromdate').removeClass('d-none');
+            $('#todate').removeClass('d-none');
+        } else {
+            $('#fromdate').addClass('d-none');
+            $('#todate').addClass('d-none');
+        }
+    }
+</script>
 
 <script>
 (function ($) {
@@ -112,9 +155,11 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             $('#error_' + key).html(value);
                         });
                     } else {
+                        $("#error_search_type").html('');
                         $("#error_payee").html('');
                         $("#error_patient_type").html('');
                         $("#error_patient").html('');
+                        $("#error_status").html('');
                         initDatatable('allajaxlist', 'admin/referral/referral_report/', data.param, [], 100, [
                             { "sWidth": "15%", "aTargets": [-1, -2, -3], 'sClass': 'dt-body-right' }
                         ]);

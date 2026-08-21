@@ -6,7 +6,7 @@ if (!defined('BASEPATH')) {
 class Referral extends Admin_Controller
 {
 	public $time_format;
-
+	public $search_type;
 
     public function __construct()
     {
@@ -23,6 +23,8 @@ class Referral extends Admin_Controller
         $this->load->library('datatables');
         $this->load->helper('custom');
         $this->time_format = $this->customlib->getHospitalTimeFormat();
+        $this->config->load("payroll");
+        $this->search_type = $this->config->item('search_type');
     }
 
     public function category()
@@ -104,10 +106,12 @@ class Referral extends Admin_Controller
         $this->session->set_userdata('sub_menu', 'reports/finance');
         $this->session->set_userdata('subsub_menu', 'reports/referral/report');
 
-        $data["patients"] = $this->patient_model->getPatientListall();
-        $data['type']     = $this->referral_category_model->get_type();
-        $data['person']   = $this->referral_person_model->get_person();
-        $data['module'] = 'referral_payment';
+        $data["searchlist"]  = $this->search_type;
+        $data['search_data'] = '';
+        $data["patients"]    = $this->patient_model->getPatientListall();
+        $data['type']        = $this->referral_category_model->get_type();
+        $data['person']      = $this->referral_person_model->get_person();
+        $data['module']      = 'referral_payment';
         $this->load->view('layout/header', $data);
         $this->load->view('admin/referral/report', $data);
         $this->load->view('layout/footer', $data);
@@ -115,26 +119,53 @@ class Referral extends Admin_Controller
 
     public function checkvalidation()
     {
-        $param = array(
-            'payee'         => $this->input->post('payee', TRUE),
-            'patient_type'  => $this->input->post('patient_type', TRUE),
-            'patient'       => $this->input->post('patient', TRUE),
-            'date'          => $this->input->post('date', TRUE),
-        );
+        $this->form_validation->set_rules('search_type', $this->lang->line('search_type'), 'trim|required|xss_clean');
+        if ($this->form_validation->run() == false) {
+            $msg = array(
+                'search_type' => form_error('search_type'),
+            );
+            $json_array = array('status' => 'fail', 'error' => $msg, 'message' => '');
+        } else {
+            $param = array(
+                'search_type'   => $this->input->post('search_type', TRUE),
+                'payee'         => $this->input->post('payee', TRUE),
+                'patient_type'  => $this->input->post('patient_type', TRUE),
+                'patient'       => $this->input->post('patient', TRUE),
+                'status'        => $this->input->post('status', TRUE),
+                'date_from'     => $this->input->post('date_from', TRUE),
+                'date_to'       => $this->input->post('date_to', TRUE),
+            );
 
-        $json_array = array('status' => 'success', 'error' => '', 'param' => $param, 'message' => $this->lang->line('success_message'));
+            $json_array = array('status' => 'success', 'error' => '', 'param' => $param, 'message' => $this->lang->line('success_message'));
+        }
         echo json_encode($json_array);
     }
 
     public function referral_report()
     {
+        $search_type  = $this->input->post('search_type', TRUE);
         $payee        = $this->input->post('payee', TRUE);
         $patient_type = $this->input->post('patient_type', TRUE);
         $patient      = $this->input->post('patient', TRUE);
+        $status       = $this->input->post('status', TRUE);
+        $date_from    = $this->input->post('date_from', TRUE);
+        $date_to      = $this->input->post('date_to', TRUE);
 
-        $date = $this->customlib->dateFormatToYYYYMMDD($this->input->post('date', TRUE));       
-        
-        $reportdata   = $this->report_model->referralRecord($payee, $patient_type, $patient, $date);    
+        $start_date = '';
+        $end_date   = '';
+
+        if ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (isset($search_type) && $search_type != '') {
+                $dates      = $this->customlib->get_betweendate($search_type);
+                $start_date = $dates['from_date'];
+                $end_date   = $dates['to_date'];
+            }
+        }
+
+        $reportdata      = $this->report_model->referralRecord($payee, $patient_type, $patient, $start_date, $end_date, $status);
         $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
         
         $reportdata   = json_decode($reportdata);
@@ -147,11 +178,19 @@ class Referral extends Admin_Controller
                 $total_bill += $value->bill_amount;
                 $total_amount += $value->amount;
 
+                $is_paid = (isset($value->status) && strtolower($value->status) === 'paid');
+                if ($is_paid) {
+                    $status_badge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa fa-check-circle me-1"></i> Paid</span>';
+                } else {
+                    $status_badge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa fa-clock-o me-1"></i> Unpaid</span>';
+                }
+
                 $row       = array();
                 $row[]     = $value->name;
                 $row[]     = composePatientName($value->patient_name, $value->patient_id);
                 $row[]     = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->customlib->getHospitalTimeFormat());  
-                $row[]     = $value->prefix . $value->billing_id;                
+                $row[]     = $value->prefix . $value->billing_id;
+                $row[]     = $status_badge;
                 $row[]     = $value->percentage;
                 $row[]     = $value->bill_amount;
                 $row[]     = $value->amount;
@@ -159,6 +198,7 @@ class Referral extends Admin_Controller
             }
 
             $footer_row   = array();
+            $footer_row[] = "";
             $footer_row[] = "";
             $footer_row[] = "";
             $footer_row[] = "";

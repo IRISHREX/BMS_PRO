@@ -180,7 +180,7 @@ class Report_model extends CI_Model
         return $this->datatables->generate('json');
     }
 
-    public function referralRecord($payee, $patient_type, $patient, $date)
+    public function referralRecord($payee, $patient_type, $patient, $start_date = '', $end_date = '', $status = '')
     {
         $search = "";
 
@@ -196,15 +196,21 @@ class Report_model extends CI_Model
             $search .= " and patients.id=" . $patient;
         }
 
-        if ($date != '') {
-            $search .= " and date_format(payment.date,'%Y-%m-%d ') ='" . $date . "' ";
+        if ($status != '' && strtolower($status) !== 'all') {
+            $search .= " and LOWER(payment.status) = '" . strtolower($this->db->escape_str($status)) . "'";
         }
 
-        $sql = "SELECT `payment`.`billing_id`, `payment`.`id`, `person`.`name`, `patients`.`patient_name`, `patients`.`id` as `patient_id`, `type`.`name` as `type`, `payment`.`bill_amount`, `payment`.`percentage`, `payment`.`amount`, `prefixes`.`prefix`, payment.date FROM `referral_payment` `payment` LEFT JOIN `referral_type` `type` ON `type`.`id`=`payment`.`referral_type` INNER JOIN `prefixes` ON `type`.`prefixes_type`=`prefixes`.`type` JOIN `referral_person` `person` ON `person`.`id`=`payment`.`referral_person_id` LEFT JOIN `patients` ON `patients`.`id`=`payment`.`patient_id` where `payment`.`status`='Paid' " . $search;
+        if ($start_date != '' && $end_date != '') {
+            $search .= " and date_format(payment.date,'%Y-%m-%d') >= '" . $start_date . "' and date_format(payment.date,'%Y-%m-%d') <= '" . $end_date . "'";
+        } elseif ($start_date != '') {
+            $search .= " and date_format(payment.date,'%Y-%m-%d') = '" . $start_date . "'";
+        }
+
+        $sql = "SELECT `payment`.`billing_id`, `payment`.`id`, `payment`.`status`, `person`.`name`, `patients`.`patient_name`, `patients`.`id` as `patient_id`, `type`.`name` as `type`, `payment`.`bill_amount`, `payment`.`percentage`, `payment`.`amount`, `prefixes`.`prefix`, payment.date FROM `referral_payment` `payment` LEFT JOIN `referral_type` `type` ON `type`.`id`=`payment`.`referral_type` INNER JOIN `prefixes` ON `type`.`prefixes_type`=`prefixes`.`type` JOIN `referral_person` `person` ON `person`.`id`=`payment`.`referral_person_id` LEFT JOIN `patients` ON `patients`.`id`=`payment`.`patient_id` where 1=1 " . $search;
         $this->datatables->query($sql)
 
-            ->searchable('person.name,patient_name,date,billing_id,percentage,bill_amount,amount')
-            ->orderable('person.name,patient_name,date,billing_id,percentage,bill_amount,amount')
+            ->searchable('person.name,patient_name,date,billing_id,percentage,bill_amount,amount,payment.status')
+            ->orderable('person.name,patient_name,date,billing_id,percentage,bill_amount,amount,payment.status')
             ->query_where_enable(TRUE);
         return $this->datatables->generate('json');
     }
