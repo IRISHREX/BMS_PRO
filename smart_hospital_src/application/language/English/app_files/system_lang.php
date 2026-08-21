@@ -840,6 +840,7 @@ $lang["feature"] = "Feature";
 $lang["featured_image"] = "Featured Image";
 $lang["feb"] = "Feb";
 $lang["february"] = "February";
+$lang["fees"] = "Fees";
 $lang["fees_payment_details"] = "Fees Payment Details";
 $lang["female"] = "Female";
 $lang["field_belongs_to"] = "Field Belongs To";

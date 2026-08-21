@@ -1792,26 +1792,80 @@ class Appointment extends Admin_Controller
 
         $reportdata  = $this->report_model->appointmentRecord($start_date, $end_date, $search['collect_staff'], $shift, $priority, $appointment_type, $appointment_status);
         $reportdata  = json_decode($reportdata);
-        $dt_data     = array();
-        $paid_amount = 0;
-        $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
+        $dt_data           = array();
+        $total_net_amount  = 0;
+        $total_refund_sum  = 0;
+        $currency_symbol   = $this->customlib->getHospitalCurrencyFormat();
+
         if (!empty($reportdata->data)) {
             foreach ($reportdata->data as $key => $value) {
-                $paid_amount += $value->paid_amount;
+                $fees_amount    = (float)$value->standard_amount;
+                $discount_perc  = (float)$value->discount_percentage;
+                $discount_amt   = ($fees_amount * $discount_perc) / 100;
+                $refund_tx_amt  = (float)(isset($value->refund_amount) ? $value->refund_amount : 0);
 
-                if ($value->appointment_status == "approved") {
+                $is_refund_status = (in_array($value->appointment_status, ['full_refunded', 'fully_refunded', 'partially_refunded', 'partially_refunded_cancelled']) || strpos($value->appointment_status, 'refund') !== false);
+
+                if ($refund_tx_amt > 0) {
+                    $refund_amt = $refund_tx_amt;
+                } else if ($is_refund_status) {
+                    $refund_amt = max(0, $fees_amount - $discount_amt);
+                } else {
+                    $refund_amt = 0;
+                }
+
+                $net_amount = max(0, $fees_amount - $discount_amt - $refund_amt);
+
+                $total_net_amount += $net_amount;
+                if ($is_refund_status || $refund_amt > 0) {
+                    $total_refund_sum += ($fees_amount - $net_amount);
+                }
+
+                $paid_amount    = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+                $payable_amount = max(0, $fees_amount - $discount_amt);
+                $is_full_refund = ($refund_amt > 0 && ($paid_amount > 0 ? ($refund_amt >= $paid_amount) : ($payable_amount > 0 ? ($refund_amt >= $payable_amount) : true))) || in_array($value->appointment_status, ['full_refunded', 'fully_refunded']);
+
+                if ($is_full_refund) {
+                    $label = "class='label label-danger'";
+                    $status_text = $this->lang->line('full_refund');
+                    if (empty($status_text)) {
+                        $status_text = "Full refund";
+                    }
+                } else if ($value->appointment_status == "approved") {
                     $label = "class='label label-success'";
+                    $status_text = $this->lang->line($value->appointment_status);
+                    if (empty($status_text)) {
+                        $status_text = ucwords(str_replace('_', ' ', $value->appointment_status));
+                    }
                 } else if ($value->appointment_status == "pending") {
                     $label = "class='label label-warning'";
+                    $status_text = $this->lang->line($value->appointment_status);
+                    if (empty($status_text)) {
+                        $status_text = ucwords(str_replace('_', ' ', $value->appointment_status));
+                    }
                 } else if ($value->appointment_status == "cancel") {
                     $label = "class='label label-danger'";
-                } else if ($value->appointment_status == "partially_refunded") {
+                    $status_text = $this->lang->line($value->appointment_status);
+                    if (empty($status_text)) {
+                        $status_text = ucwords(str_replace('_', ' ', $value->appointment_status));
+                    }
+                } else if ($value->appointment_status == "partially_refunded" || $value->appointment_status == "partially_refunded_approved" || ($refund_amt > 0 && $net_amount > 0)) {
                     $label = "class='label label-info'";
-                } else if ($value->appointment_status == "full_refunded") {
-                    $label = "class='label label-default'";
+                    $status_text = $this->lang->line('partially_refunded');
+                    if (empty($status_text)) {
+                        $status_text = "Partially Refunded";
+                    }
+                } else if ($value->appointment_status == "partially_refunded_cancelled") {
+                    $label = "class='label label-danger'";
+                    $status_text = "Partially Refunded (Cancelled)";
                 } else {
                     $label = "class=' '";
+                    $status_text = $this->lang->line($value->appointment_status);
+                    if (empty($status_text)) {
+                        $status_text = ucwords(str_replace('_', ' ', $value->appointment_status));
+                    }
                 }
+
                 $row = array();
 
                 $row[] = composePatientName($value->patient_name, $value->patient_id);
@@ -1833,16 +1887,11 @@ class Appointment extends Admin_Controller
                 //====================
                 $row[]     = $value->discount_percentage;
                 
-                $net_amount = (float)$value->standard_amount - ((float)$value->standard_amount * (float)$value->discount_percentage / 100);
-                $row[]     = number_format($net_amount, 2, '.', '');
+                $row[]     = number_format($fees_amount, 2, '.', '');
                 
-                if ($value->paid_amount) {
-                    $row[]     = $value->paid_amount;
-                } else {
-                    $row[]     = '0.00';
-                }
+                $row[]     = number_format($net_amount, 2, '.', '');
 
-                $row[]     = "<small " . $label . " >" . $this->lang->line($value->appointment_status) . "</small>";
+                $row[]     = "<small " . $label . " >" . $status_text . "</small>";
                 $dt_data[] = $row;
             }
             $footer_row   = array();
@@ -1857,8 +1906,9 @@ class Appointment extends Admin_Controller
                     $footer_row[] = "";
                 }
             }
-            $footer_row[] = "<b>" . $this->lang->line('total_amount') . "</b>" . ':';
-            $footer_row[] = "<b>" . $currency_symbol . (number_format($paid_amount, 2, '.', '')) . "<br/>";
+            $footer_row[] = "";
+            $footer_row[] = "<b>" . $this->lang->line('total_amount') . "</b>:<br/><b>Total Refunded:</b>";
+            $footer_row[] = "<b>" . $currency_symbol . (number_format($total_net_amount, 2, '.', '')) . "</b><br/><b>" . $currency_symbol . (number_format($total_refund_sum, 2, '.', '')) . "</b>";
             $footer_row[] = "";
             $dt_data[]    = $footer_row;
         }

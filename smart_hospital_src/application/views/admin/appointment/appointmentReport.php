@@ -142,6 +142,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                             ?> 
                                             <th class="text text-end"><?php echo $this->lang->line('discount').' (%)'; ?></th>
                                             <th class="text text-end"><?php echo $this->lang->line('fees').' ('.$currency_symbol.')'; ?></th>
+                                            <th class="text text-end"><?php echo $this->lang->line('amount').' ('.$currency_symbol.')'; ?></th>
                                             <th class="text text-end"><?php echo $this->lang->line('status'); ?></th>
                                         </tr>
                                     </thead>
@@ -194,6 +195,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                      $("#error_date_from").html('');
                      $("#error_date_to").html('');
                         initDatatable('allajaxlist', 'admin/appointment/appointmentreports/',data.param,[],100,[
+                            { "aTargets": [ -4 ] ,'sClass': 'dt-body-right'},
                             { "aTargets": [ -3 ] ,'sClass': 'dt-body-right'},
                             { "aTargets": [ -2 ] ,'sClass': 'dt-body-right'},
                             { "aTargets": [ -1 ] ,'sClass': 'dt-body-right', "bSortable": false}

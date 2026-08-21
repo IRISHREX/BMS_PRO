@@ -166,7 +166,7 @@ class Report_model extends CI_Model
 			 
         }
 
-        $sql = "select appointment.*,patients.mobileno,patients.email,patients.gender,appointment_payment.paid_amount,appointment_payment.discount_percentage,patients.patient_name,patients.id as `patient_id`,staff.name,staff.surname,staff.employee_id " . $field_variable . " from appointment 
+        $sql = "select appointment.*,appointment_payment.standard_amount,patients.mobileno,patients.email,patients.gender,appointment_payment.paid_amount,appointment_payment.discount_percentage,patients.patient_name,patients.id as `patient_id`,staff.name,staff.surname,staff.employee_id,IFNULL((SELECT SUM(amount) FROM transactions WHERE transactions.appointment_id = appointment.id AND transactions.type = 'refund'), 0) as refund_amount " . $field_variable . " from appointment 
 		join appointment_payment on appointment_payment.appointment_id = appointment.id
         JOIN patients on patients.id = appointment.patient_id		
         LEFT JOIN staff on staff.id = appointment.doctor " . $custom_join . " 
