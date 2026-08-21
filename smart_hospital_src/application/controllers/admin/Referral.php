@@ -84,13 +84,38 @@ class Referral extends Admin_Controller
         // Top-level page: clear any stale Setup>Referral sub_menu so it doesn't stay highlighted
         $this->session->set_userdata('sub_menu', '');
         $this->session->set_userdata('sub_sidebar_menu', '');
-        $data["patients"] = $this->patient_model->getPatientListall();
-        $data['type']     = $this->referral_category_model->get_type();
-        $data['person']   = $this->referral_person_model->get_person();
-        $data['payment']  = $this->referral_payment_model->get_payment();
-        $data['settings'] = $this->referral_payment_model->get_referral_settings();
+
+        $search_type = $this->input->post('search_type', TRUE);
+        $date_from   = $this->input->post('date_from', TRUE);
+        $date_to     = $this->input->post('date_to', TRUE);
+
+        $start_date  = '';
+        $end_date    = '';
+
+        if ($this->input->server('REQUEST_METHOD') == 'POST') {
+            if ($search_type == 'period') {
+                $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+                $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+            } else {
+                if (isset($search_type) && $search_type != '') {
+                    $dates      = $this->customlib->get_betweendate($search_type);
+                    $start_date = $dates['from_date'];
+                    $end_date   = $dates['to_date'];
+                }
+            }
+        }
+
+        $data["searchlist"]  = $this->search_type;
+        $data['search_type'] = $search_type;
+        $data['date_from']   = $date_from;
+        $data['date_to']     = $date_to;
+        $data["patients"]    = $this->patient_model->getPatientListall();
+        $data['type']        = $this->referral_category_model->get_type();
+        $data['person']      = $this->referral_person_model->get_person();
+        $data['payment']     = $this->referral_payment_model->get_payment($start_date, $end_date);
+        $data['settings']    = $this->referral_payment_model->get_referral_settings();
         $data['unpaid_list'] = $this->referral_payment_model->get_unpaid_referrals();
-        $data['module'] = 'referral_payment';
+        $data['module']      = 'referral_payment';
         $this->load->view('layout/header', $data);
         $this->load->view('admin/referral/payment', $data);
         $this->load->view('layout/footer', $data);

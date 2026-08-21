@@ -210,7 +210,7 @@ class Onlineappointment_model extends MY_Model
     public function getPatientOnline($doctor_id, $date, $shift, $isqueue = 0)
     {
         $query = $this->db
-            ->select("appointment.id as appointment_id,patients.id,patients.patient_name,patients.mobileno,patients.email,appointment.date,appointment.date,appointment.source")
+            ->select("appointment.id as appointment_id,patients.id,patients.patient_name,patients.mobileno,patients.email,appointment.date,appointment.source,appointment.appointment_status")
             ->join("patients", "appointment.patient_id=patients.id")
             ->where("appointment.appointment_status", "approved")
             ->where("appointment.doctor", $doctor_id)
@@ -227,7 +227,7 @@ class Onlineappointment_model extends MY_Model
     public function getPatientOffline($doctor_id, $date, $shift, $isqueue = 0)
     {
         $query = $this->db
-            ->select("appointment.id as appointment_id,patients.id,patients.patient_name,patients.mobileno,patients.email,appointment.date, appointment.source")
+            ->select("appointment.id as appointment_id,patients.id,patients.patient_name,patients.mobileno,patients.email,appointment.date, appointment.source,appointment.appointment_status")
             ->join("patients", "appointment.patient_id=patients.id")
             ->where("appointment.appointment_status", "approved")
             ->where("appointment.doctor", $doctor_id)
@@ -472,7 +472,7 @@ class Onlineappointment_model extends MY_Model
         }
 
         $query = $this->db
-            ->select("appointment_queue.id as queue_id, appointment_queue.position, appointment.id as appointment_id,patients.id as patient_unique_id,patients.patient_name,patients.mobileno,patients.email,appointment.date, appointment.source")
+            ->select("appointment_queue.id as queue_id, appointment_queue.position, appointment.id as appointment_id,patients.id as patient_unique_id,patients.patient_name,patients.mobileno,patients.email,appointment.date, appointment.source, appointment.appointment_status")
             ->join("appointment", "appointment.id=appointment_queue.appointment_id")
             ->join("patients", "appointment.patient_id=patients.id")
             ->where("appointment.doctor", $doctor_id)

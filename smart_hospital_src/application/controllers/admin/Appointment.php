@@ -793,11 +793,7 @@ class Appointment extends Admin_Controller
 
                 $row[] = $gender;
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
-                $row[] = $this->lang->line(strtolower($value->source));
                 $row[] = $value->priorityname;
-                if ($this->module_lib->hasActive('live_consultation')) {
-                    $row[] = $live_consult;
-                }
                 //====================
                 if (!empty($fields)) {
                     foreach ($fields as $fields_key => $fields_value) {
@@ -949,11 +945,7 @@ class Appointment extends Admin_Controller
 
                 $row[] = $gender;
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
-                $row[] = $this->lang->line(strtolower($value->source));
                 $row[] = $value->priorityname;
-                if ($this->module_lib->hasActive('live_consultation')) {
-                    $row[] = $live_consult;
-                }
                 //====================
                 if (!empty($fields)) {
                     foreach ($fields as $fields_key => $fields_value) {
@@ -1106,11 +1098,7 @@ class Appointment extends Admin_Controller
 
                 $row[] = $gender;
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
-                $row[] = $this->lang->line(strtolower($value->source));
                 $row[] = $value->priorityname;
-                if ($this->module_lib->hasActive('live_consultation')) {
-                    $row[] = $live_consult;
-                }
                 //====================
                 if (!empty($fields)) {
                     foreach ($fields as $fields_key => $fields_value) {

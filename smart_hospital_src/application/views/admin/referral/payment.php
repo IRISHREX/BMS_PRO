@@ -41,8 +41,45 @@ if (!empty($payment)) {
                         <?php } ?>
                     </div>
                 </div>
-            </div>
             <div class="card-body">
+                <form action="<?php echo site_url('admin/referral/payment'); ?>" method="post" id="search_form" class="mb-3">
+                    <div class="row">
+                        <?php echo $this->customlib->getCSRF(); ?>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('search_type'); ?></label>
+                                <select class="form-control" name="search_type" id="search_type_select" onchange="showdate(this.value)">
+                                    <option value=""><?php echo $this->lang->line('select') ?></option>
+                                    <?php if (isset($searchlist) && !empty($searchlist)) { ?>
+                                        <?php foreach ($searchlist as $key => $search) { ?>
+                                            <option value="<?php echo $key ?>" <?php if ((isset($search_type)) && ($search_type == $key)) { echo "selected"; } ?>><?php echo $search ?></option>
+                                        <?php } ?>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3 <?php if ((!isset($search_type)) || ($search_type != 'period')) { echo 'd-none'; } ?>" id="fromdate">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('date_from'); ?></label>
+                                <input id="date_from" name="date_from" type="text" class="form-control date" value="<?php echo set_value('date_from', isset($date_from) ? $date_from : date($this->customlib->getHospitalDateFormat())); ?>" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3 <?php if ((!isset($search_type)) || ($search_type != 'period')) { echo 'd-none'; } ?>" id="todate">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('date_to'); ?></label>
+                                <input id="date_to" name="date_to" type="text" class="form-control date" value="<?php echo set_value('date_to', isset($date_to) ? $date_to : date($this->customlib->getHospitalDateFormat())); ?>" />
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-auto d-flex align-items-end ps-md-3 pe-md-3">
+                            <div class="mb-3">
+                                <button type="submit" name="search" value="search_filter" class="btn btn-primary d-inline-flex align-items-center gap-1 py-2">
+                                    <i class="fa fa-search"></i>
+                                    <?php echo $this->lang->line('search'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
                 <div class="table-responsive mailbox-messages overflow-visible-lg">
                     <div class="download_label"><?php echo $this->lang->line('referral_payment_list'); ?></div>
                     <table class="table table-hover table-striped table-bordered example">
@@ -813,8 +850,14 @@ if (!empty($payment)) {
             }
         });
      });
-    function getPercentage(){
-   
+    function showdate(value) {
+        if (value == 'period') {
+            $('#fromdate').removeClass('d-none');
+            $('#todate').removeClass('d-none');
+        } else {
+            $('#fromdate').addClass('d-none');
+            $('#todate').addClass('d-none');
+        }
     }
 </script>
 

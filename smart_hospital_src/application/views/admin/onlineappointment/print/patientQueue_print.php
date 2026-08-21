@@ -43,6 +43,7 @@ $print_date = date($this->customlib->getHospitalDateFormat(true, false));
                         <th><?php echo $this->lang->line('date'); ?></th>
                         <th><?php echo $this->lang->line('time'); ?></th>
                         <th><?php echo $this->lang->line('source'); ?></th>
+                        <th><?php echo $this->lang->line('status'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -56,6 +57,9 @@ $print_date = date($this->customlib->getHospitalDateFormat(true, false));
                         <td><?php echo $r['date'] ? date('h:i A', strtotime($r['date'])) : ''; ?></td>
                         <td <?php if ($r['source'] == 'Online') echo 'class="source-online"'; ?>>
                             <?php echo $this->lang->line(strtolower($r['source'])); ?>
+                        </td>
+                        <td>
+                            <?php echo ucwords(str_replace('_', ' ', $r['appointment_status'] ?? '')); ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

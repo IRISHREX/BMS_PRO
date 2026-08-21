@@ -76,11 +76,23 @@
                                         <th><?php echo $this->lang->line('date'); ?></th>
                                         <th><?php echo $this->lang->line('time'); ?></th>
                                         <th><?php echo $this->lang->line('source'); ?></th>
+                                        <th><?php echo $this->lang->line('status'); ?></th>
                                     </tr>
                                 </thead>
                             <?php if (!empty($resultlist)) {?>
                                 <tbody class="row_position">
-                                <?php foreach ($resultlist as $result_key => $result_value) {?>
+                                <?php foreach ($resultlist as $result_key => $result_value) {
+                                    $app_status = isset($result_value["appointment_status"]) ? strtolower($result_value["appointment_status"]) : "";
+                                    if ($app_status == "approved") {
+                                        $status_badge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa fa-check-circle me-1"></i>' . $this->lang->line('approved') . '</span>';
+                                    } else if ($app_status == "pending") {
+                                        $status_badge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa fa-clock-o me-1"></i>' . $this->lang->line('pending') . '</span>';
+                                    } else if ($app_status == "cancel" || $app_status == "cancelled") {
+                                        $status_badge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="fa fa-times-circle me-1"></i>' . $this->lang->line('cancel') . '</span>';
+                                    } else {
+                                        $status_badge = '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">' . ucwords(str_replace('_', ' ', $result_value["appointment_status"] ?? '')) . '</span>';
+                                    }
+                                ?>
                                     <tr id="<?php echo $result_value["queue_id"]; ?>">
                                         <td><?php echo $result_value["position"]; ?></td>
                                         <td><?php echo $result_value["patient_name"]; ?> (<?php echo $result_value["patient_unique_id"]; ?>)</td>
@@ -89,13 +101,14 @@
                                         <td><?php echo date($this->customlib->getHospitalDateFormat(true, false), strtotime($result_value["date"])); ?></td>
                                         <td><?php echo $result_value["date"]?date("h:i A", strtotime($result_value["date"])):""; ?></td>
                                         <td <?php echo $result_value["source"] == "Online" ? "class='sh-text-red'" : ""; ?>><?php echo $this->lang->line(strtolower($result_value["source"])); ?></td>
+                                        <td><?php echo $status_badge; ?></td>
                                     </tr>
                                 <?php }?>
                                 </tbody>
                             <?php }else{
                                 ?>
                                     <tr>
-                                        <td colspan="7" class="text text-center text-danger"><?php echo $this->lang->line('no_record_found'); ?></td>
+                                        <td colspan="8" class="text text-center text-danger"><?php echo $this->lang->line('no_record_found'); ?></td>
                                     </tr>
                                 <?php
                             }

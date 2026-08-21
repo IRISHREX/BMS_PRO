@@ -43,11 +43,7 @@ $genderList      = $this->customlib->getGender_Patient();
                       <th width="90px"><?php echo $this->lang->line('phone'); ?></th>
                       <th width="80px"><?php echo $this->lang->line('gender'); ?></th>
                       <th><?php echo $this->lang->line('doctor'); ?></th>
-                      <th><?php echo $this->lang->line('source'); ?></th>
                       <th><?php echo $this->lang->line('priority'); ?></th>
-                      <?php if ($this->module_lib->hasActive('live_consultation')) { ?>
-                      <th><?php echo $this->lang->line('live_consultant'); ?></th>
-                      <?php } ?>
                       <?php
                         if (!empty($fields)) {
                         foreach ($fields as $fields_key => $fields_value) {
@@ -87,11 +83,7 @@ $genderList      = $this->customlib->getGender_Patient();
                       <th width="90px"><?php echo $this->lang->line('phone'); ?></th>
                       <th width="80px"><?php echo $this->lang->line('gender'); ?></th>
                       <th><?php echo $this->lang->line('doctor'); ?></th>
-                      <th><?php echo $this->lang->line('source'); ?></th>
                       <th><?php echo $this->lang->line('priority'); ?></th>
-                      <?php if ($this->module_lib->hasActive('live_consultation')) { ?>
-                      <th><?php echo $this->lang->line('live_consultant'); ?></th>
-                      <?php } ?>
                       <?php
                         if (!empty($fields)) {
                         foreach ($fields as $fields_key => $fields_value) {
@@ -131,11 +123,7 @@ $genderList      = $this->customlib->getGender_Patient();
                       <th width="90px"><?php echo $this->lang->line('phone'); ?></th>
                       <th width="80px"><?php echo $this->lang->line('gender'); ?></th>
                       <th><?php echo $this->lang->line('doctor'); ?></th>
-                      <th><?php echo $this->lang->line('source'); ?></th>
                       <th><?php echo $this->lang->line('priority'); ?></th>
-                      <?php if ($this->module_lib->hasActive('live_consultation')) { ?>
-                      <th><?php echo $this->lang->line('live_consultant'); ?></th>
-                      <?php } ?>
                       <?php
                         if (!empty($fields)) {
                         foreach ($fields as $fields_key => $fields_value) {
