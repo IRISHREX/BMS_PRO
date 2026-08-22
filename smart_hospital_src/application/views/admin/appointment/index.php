@@ -1168,45 +1168,44 @@ function delete_record(id) {
 
 $("#appointment_status").change(function(){
   var appointment_status = $('#appointment_status').val();
-      var doctor_id = $('#doctorid').val();    
-      if(appointment_status == 'approved'){
-        $.ajax({
-            url: baseurl+'admin/appointment/getDoctorFees/',
-            type: "POST",
-            data: {doctor_id: doctor_id},
-            dataType: 'json',
-            success: function (res) {
-              $("#doctor_fees").val(res.fees);
-              $("#charge_id").val(res.charge_id);
+  var doctor_id = $('#doctorid').val();    
+  if(appointment_status == 'approved'){
+    $.ajax({
+        url: baseurl+'admin/appointment/getDoctorFees/',
+        type: "POST",
+        data: {doctor_id: doctor_id},
+        dataType: 'json',
+        success: function (res) {
+          if (!$("#doctor_fees").val() || $("#doctor_fees").val() == '0') {
+            $("#doctor_fees").val(res.fees);
           }
-        });
-      }else{
-          $('#doctor_fees').val('0');
+          $("#charge_id").val(res.charge_id);
       }
+    });
+  }
 });
   
-  $("#edit_appointment_status").change(function(){
-
-      var edit_appointment_status = $('#edit_appointment_status').val();
-      var doctor_id = $('#rdoctor').val();
-      if(edit_appointment_status == 'approved'){
-        $.ajax({
-            url: baseurl+'admin/appointment/getDoctorFees/',
-            type: "POST",
-            data: {doctor_id: doctor_id},
-            dataType: 'json',
-            success: function (res) {
-              $("#rdoctor_fees_edit").val(res.fees);
-              $("#charge_id_edit").val(res.charge_id);
-              var rdiscount_percentage_hidden=$("#rdiscount_percentage_hidden").val();
-              $("#rdiscount_percentage").val(rdiscount_percentage_hidden);			  
+$("#edit_appointment_status").change(function(){
+  var edit_appointment_status = $('#edit_appointment_status').val();
+  var doctor_id = $('#rdoctor').val();
+  if(edit_appointment_status == 'approved'){
+    $.ajax({
+        url: baseurl+'admin/appointment/getDoctorFees/',
+        type: "POST",
+        data: {doctor_id: doctor_id},
+        dataType: 'json',
+        success: function (res) {
+          if (!$("#rdoctor_fees_edit").val() || $("#rdoctor_fees_edit").val() == '0') {
+            $("#rdoctor_fees_edit").val(res.fees);
           }
-        });
-      }else{
-          $('#rdoctor_fees_edit').val('0');
-          $('#rdiscount_percentage').val('0');
-
+          $("#charge_id_edit").val(res.charge_id);
+          var rdiscount_percentage_hidden=$("#rdiscount_percentage_hidden").val();
+          if (rdiscount_percentage_hidden) {
+            $("#rdiscount_percentage").val(rdiscount_percentage_hidden);
+          }
       }
+    });
+  }
 });
 
   function getDoctorFees(object){

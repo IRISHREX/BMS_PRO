@@ -184,6 +184,15 @@ class Appointment extends Admin_Controller
             $date_appoint = $this->customlib->dateFormatToYYYYMMDDHis($date, $this->time_format);
             $patient_id   = $this->input->post('patient_id', TRUE);
 
+            $appoint_time = strtotime($date_appoint);
+            $today_start  = strtotime(date('Y-m-d 00:00:00'));
+
+            if ($appoint_time < $today_start) {
+                $array = array('status' => 'fail', 'error' => array('date' => 'Appointment cannot be booked for a past date.'), 'message' => '');
+                echo json_encode($array);
+                return;
+            }
+
             if ($consult == '') {
                 $consult = 'no';
             }
@@ -205,7 +214,8 @@ class Appointment extends Admin_Controller
             $getDoctorShiftTimeId = $this->onlineappointment_model->getDoctorShiftTimeId($doctor, $this->input->post('global_shift', TRUE), $day);
             $doctor_shift_time_id = (!empty($getDoctorShiftTimeId) && isset($getDoctorShiftTimeId->id)) ? $getDoctorShiftTimeId->id : 0;
 
-            $app_status = $this->input->post('appointment_status', TRUE);
+            $post_amount = (float)$this->input->post('amount', TRUE);
+            $app_status  = $this->input->post('appointment_status', TRUE);
             if ($this->input->post('payment_mode', TRUE) === 'Pay Later') {
                 $app_status = 'pending';
             }
@@ -224,6 +234,7 @@ class Appointment extends Admin_Controller
                 'specialist'             => $specialist,
                 'doctor_global_shift_id' => $this->input->post('global_shift', TRUE),
                 'created_by'             => $this->customlib->getStaffID(),
+                'amount'                 => $post_amount,
             );
 
             $insert_id = $this->appointment_model->add($appointment);
@@ -240,7 +251,7 @@ class Appointment extends Admin_Controller
                 $this->appointment_model->addToQueue($insert_id, $doctor, $doctor_shift_time_id, $appoint_date_only);
             }
 
-            if ($this->input->post('amount', TRUE) == 0) {
+            if ($post_amount == 0) {
                 $discount_percentage = 0;
             } else {
                 if (empty($this->input->post('discount_percentage', TRUE))) {
@@ -257,11 +268,11 @@ class Appointment extends Admin_Controller
             $tax_percentage = (is_object($charge_details) && isset($charge_details->percentage) && $charge_details->percentage !== null) ? (float)$charge_details->percentage : 0;
             $std_charge     = (is_object($charge_details) && isset($charge_details->standard_charge) && $charge_details->standard_charge !== null) ? (float)$charge_details->standard_charge : 0;
 
-            $standard_amount = ($std_charge > 0) ? amountFormat($std_charge + ($std_charge * $tax_percentage / 100)) : "";
-            $post_amount     = (float)$this->input->post('amount', TRUE);
+            $calc_std_amt    = ($std_charge > 0) ? ($std_charge + ($std_charge * $tax_percentage / 100)) : $post_amount;
+            $standard_amount = ($calc_std_amt > 0) ? amountFormat($calc_std_amt) : amountFormat($post_amount);
             $amount_paid1    = $post_amount - calculatePercent($post_amount, $discount_percentage);
             $amount_paid     = $amount_paid1 + calculatePercent($amount_paid1, $tax_percentage);
-            if ($this->input->post('payment_mode', TRUE) === 'Pay Later') {
+            if ($app_status === 'pending' || $this->input->post('payment_mode', TRUE) === 'Pay Later') {
                 $amount_paid = 0.00;
             }
 
@@ -547,30 +558,48 @@ class Appointment extends Admin_Controller
             $charges             = $this->charge_model->getChargeByChargeId($appointment_payment->charge_id);
             $apply_charge        = $charges['standard_charge'] + ($charges['standard_charge'] * ($charges['percentage'] / 100));
             $patient_id_update   = $this->input->post('patient_id', TRUE);
-            $amount_update       = $this->input->post('amount', TRUE);
+            $amount_update       = (float)$this->input->post('amount', TRUE);
+            $app_status_update   = $this->input->post('appointment_status', TRUE);
+            if (empty($app_status_update)) {
+                $app_status_update = $appointment_details['appointment_status'] ?? 'pending';
+            }
+
+            $discount_percentage_update = (float)($this->input->post('discount_percentage', TRUE) ?? 0);
+            $tax_percentage_update      = (float)($charges['percentage'] ?? 0);
+
+            $amount_paid_calc1 = $amount_update - calculatePercent($amount_update, $discount_percentage_update);
+            $amount_paid_calc  = $amount_paid_calc1 + calculatePercent($amount_paid_calc1, $tax_percentage_update);
+
+            if ($app_status_update === 'pending') {
+                $amount_paid_calc = 0.00;
+            }
 
             $appointment = array(
-                'id'              => $id,
-                'patient_id'      => $patient_id_update,
-                'date'            => $this->customlib->dateFormatToYYYYMMDDHis($date, $this->time_format),
-                'priority'        => $this->input->post('priority', TRUE),
-                'doctor'          => $this->input->post('doctor', TRUE),
-                'message'         => $this->input->post('message', TRUE),
-                'global_shift_id' => $this->input->post('global_shift', TRUE),
-                'shift_id'        => $this->input->post('slot', TRUE),
-                'is_queue'        => 0,
-                'live_consult'    => $consult,
+                'id'                 => $id,
+                'patient_id'         => $patient_id_update,
+                'date'               => $this->customlib->dateFormatToYYYYMMDDHis($date, $this->time_format),
+                'priority'           => $this->input->post('priority', TRUE),
+                'doctor'             => $this->input->post('doctor', TRUE),
+                'message'            => $this->input->post('message', TRUE),
+                'global_shift_id'    => $this->input->post('global_shift', TRUE),
+                'shift_id'           => $this->input->post('slot', TRUE),
+                'is_queue'           => 0,
+                'live_consult'       => $consult,
+                'amount'             => $amount_update,
+                'appointment_status' => $app_status_update,
             );
             $payment_data = array(
-                'appointment_id' => $id,
-                'paid_amount'    => $amount_update,
-                'charge_id'      => $this->input->post('charge_id', TRUE),
-                'payment_type'   => 'Offline',
-                'date'           => date("Y-m-d H:i:s"),
+                'appointment_id'     => $id,
+                'standard_amount'    => amountFormat($amount_update),
+                'paid_amount'        => $amount_paid_calc,
+                'charge_id'          => $this->input->post('charge_id', TRUE),
+                'discount_percentage' => $discount_percentage_update,
+                'payment_type'       => 'Offline',
+                'date'               => date("Y-m-d H:i:s"),
             );
             $payment_section   = $this->config->item('payment_section');
             $transaction_array = array(
-                'amount'         => $amount_update,
+                'amount'         => $amount_paid_calc,
                 'patient_id'     => $patient_id_update,
                 'section'        => $payment_section['appointment'],
                 'type'           => 'payment',
@@ -579,7 +608,7 @@ class Appointment extends Admin_Controller
                 'payment_date'   => date('Y-m-d H:i:s'),
                 'received_by'    => $this->customlib->getLoggedInUserID(),
             );
-            $this->appointment_model->updateAppointment(array('id' => $id, 'amount' => $amount_paid), $payment_data, $transaction_array, array(), array(), array());
+            $this->appointment_model->updateAppointment($appointment, $payment_data, $transaction_array, array(), array(), array());
             $visit_data  = $this->patient_model->getVisitdataDetails($appointment_details['visit_details_id']);
             $opd_details = array(
                 'id'           => $visit_data['opdid'],
@@ -703,7 +732,7 @@ class Appointment extends Admin_Controller
 
                 $row = array();
                 //====================================
-                $paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+                $paid_amount   = (isset($value->paid_amount) && $value->appointment_status != 'pending') ? (float)$value->paid_amount : 0;
                 $refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
                 $net_paid      = max(0, $paid_amount - $refund_amount);
                 $std_amount    = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 0);
@@ -756,7 +785,7 @@ class Appointment extends Admin_Controller
                     }
                 }
 
-                $eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+                $eff_paid   = ($value->appointment_status == 'pending') ? 0 : (($paid_amount > 0) ? $paid_amount : $std_amount);
                 $eff_net    = max(0, $eff_paid - $refund_amount);
 
                 if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled', 'cancel', 'full_refunded'])) {
@@ -820,7 +849,7 @@ class Appointment extends Admin_Controller
                 $net_amount_calc = max(0, $base_net - $refund_amount);
                 $row[]           = amountFormat($net_amount_calc);
 
-                $eff_paid        = ($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0);
+                $eff_paid        = ($value->appointment_status == 'pending') ? 0 : (($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0));
                 $row[]           = amountFormat(max(0, $eff_paid - $refund_amount));
                 // Refunded (Yes/No)
                 if ($refund_amount > 0) {
@@ -855,7 +884,7 @@ class Appointment extends Admin_Controller
 
                 $row = array();
                 //====================================
-                $paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+                $paid_amount   = (isset($value->paid_amount) && $value->appointment_status != 'pending') ? (float)$value->paid_amount : 0;
                 $refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
                 $net_paid      = max(0, $paid_amount - $refund_amount);
                 $std_amount    = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 0);
@@ -908,7 +937,7 @@ class Appointment extends Admin_Controller
                     }
                 }
 
-                $eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+                $eff_paid   = ($value->appointment_status == 'pending') ? 0 : (($paid_amount > 0) ? $paid_amount : $std_amount);
                 $eff_net    = max(0, $eff_paid - $refund_amount);
 
                 if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled', 'cancel', 'full_refunded'])) {
@@ -972,7 +1001,7 @@ class Appointment extends Admin_Controller
                 $net_amount_calc = max(0, $base_net - $refund_amount);
                 $row[]           = amountFormat($net_amount_calc);
 
-                $eff_paid        = ($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0);
+                $eff_paid        = ($value->appointment_status == 'pending') ? 0 : (($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0));
                 $row[]           = amountFormat(max(0, $eff_paid - $refund_amount));
                 // Refunded (Yes/No)
                 if ($refund_amount > 0) {
@@ -1008,7 +1037,7 @@ class Appointment extends Admin_Controller
 
                 $row = array();
                 //====================================
-                $paid_amount   = isset($value->paid_amount) ? (float)$value->paid_amount : 0;
+                $paid_amount   = (isset($value->paid_amount) && $value->appointment_status != 'pending') ? (float)$value->paid_amount : 0;
                 $refund_amount = isset($value->refund_amount) ? (float)$value->refund_amount : 0;
                 $net_paid      = max(0, $paid_amount - $refund_amount);
                 $std_amount    = (isset($value->standard_amount) && (float)$value->standard_amount > 0) ? (float)$value->standard_amount : ((isset($value->appointment_amount) && (float)$value->appointment_amount > 0) ? (float)$value->appointment_amount : 0);
@@ -1061,7 +1090,7 @@ class Appointment extends Admin_Controller
                     }
                 }
 
-                $eff_paid   = ($paid_amount > 0) ? $paid_amount : $std_amount;
+                $eff_paid   = ($value->appointment_status == 'pending') ? 0 : (($paid_amount > 0) ? $paid_amount : $std_amount);
                 $eff_net    = max(0, $eff_paid - $refund_amount);
 
                 if (in_array($value->appointment_status, ['approved', 'partially_refunded', 'partially_refunded_approved', 'partially_refunded_cancelled', 'cancel', 'full_refunded'])) {
@@ -1125,7 +1154,7 @@ class Appointment extends Admin_Controller
                 $net_amount_calc = max(0, $base_net - $refund_amount);
                 $row[]           = amountFormat($net_amount_calc);
 
-                $eff_paid        = ($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0);
+                $eff_paid        = ($value->appointment_status == 'pending') ? 0 : (($paid_amount > 0) ? $paid_amount : (($refund_amount > 0) ? $base_net : 0));
                 $row[]           = amountFormat(max(0, $eff_paid - $refund_amount));
                 // Refunded (Yes/No)
                 if ($refund_amount > 0) {
@@ -2033,6 +2062,7 @@ class Appointment extends Admin_Controller
                 'live_consult'           => $this->input->post('live_consult', TRUE),
                 'appointment_status'     => $this->input->post('edit_appointment_status', TRUE),
                 'doctor_global_shift_id' => $rglobal_shift,
+                'amount'                 => $this->input->post('doctor_fees', TRUE),
             );
 
             $this->appointment_model->update($appointment);
@@ -2084,6 +2114,10 @@ class Appointment extends Admin_Controller
                 $amount_paid1 = $doctor_fees - calculatePercent($doctor_fees, $discount_percentage);
                 $amount_paid  = $amount_paid1 + calculatePercent($amount_paid1, $charges['percentage']);
 
+                if ($this->input->post('edit_appointment_status', TRUE) == 'pending') {
+                    $amount_paid = 0.00;
+                }
+
                 $appointment_fees = array(
                     'standard_amount'     => $doctor_fees,
                     'paid_amount'         => $amount_paid,
@@ -2091,6 +2125,7 @@ class Appointment extends Admin_Controller
                     'tax'                 => $charges['percentage'],
                 );
                 $this->appointment_model->updateappointmentpayment($appointment_id, $appointment_fees);
+                $this->db->where('appointment_id', $appointment_id)->where('type', 'payment')->update('transactions', array('amount' => $amount_paid));
 
                 if ($this->input->post('edit_appointment_status', TRUE) == "approved") {
 
@@ -2377,6 +2412,9 @@ class Appointment extends Admin_Controller
             $discount_percentage = (!empty($discount_percentage_r) && is_numeric($discount_percentage_r)) ? (float)$discount_percentage_r : 0;
 
             $amount_paid      = $doctor_fees - calculatePercent($doctor_fees, $discount_percentage);
+            if ($this->input->post('edit_appointment_status', TRUE) === 'pending' || $this->input->post('edit_payment_mode', TRUE) === 'Pay Later') {
+                $amount_paid = 0.00;
+            }
             $appointment_fees = array(
                 'standard_amount'     => $doctor_fees,
                 'paid_amount'         => $amount_paid,

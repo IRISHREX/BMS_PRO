@@ -345,7 +345,7 @@ class Transaction_model extends MY_Model
                    WHEN (blood_issue_id IS NOT NULL) THEN blood_issue_id       
                    WHEN (ambulance_call_id IS NOT NULL) THEN ambulance_call_id       
                 END AS reference,
-                section,transactions.opd_id as module_id,patients.patient_name,patients.id as `patient_id`,'opd' head,'opd_no' module_no,staff.name,staff.surname,staff.employee_id from transactions LEFT JOIN ipd_details on ipd_details.id = transactions.ipd_id LEFT JOIN patients on patients.id = transactions.patient_id LEFT JOIN opd_details on opd_details.id = transactions.opd_id LEFT JOIN pharmacy_bill_basic on pharmacy_bill_basic.id = transactions. pharmacy_bill_basic_id LEFT JOIN pathology_billing on pathology_billing.id = transactions.pathology_billing_id LEFT JOIN radiology_billing on radiology_billing.id = transactions.radiology_billing_id LEFT JOIN blood_issue on blood_issue.id = transactions.blood_issue_id LEFT JOIN appointment on appointment.id = transactions.appointment_id LEFT JOIN staff on staff.id = transactions.received_by where date_format(transactions.payment_date,'%Y-%m-%d') >='". $start_date."'and date_format(transactions.payment_date,'%Y-%m-%d') <= '".$end_date."' and  1=1 ".$condition." ";
+                 section,transactions.opd_id as module_id,patients.patient_name,patients.id as `patient_id`,'opd' head,'opd_no' module_no,staff.name,staff.surname,staff.employee_id from transactions LEFT JOIN ipd_details on ipd_details.id = transactions.ipd_id LEFT JOIN patients on patients.id = transactions.patient_id LEFT JOIN opd_details on opd_details.id = transactions.opd_id LEFT JOIN pharmacy_bill_basic on pharmacy_bill_basic.id = transactions. pharmacy_bill_basic_id LEFT JOIN pathology_billing on pathology_billing.id = transactions.pathology_billing_id LEFT JOIN radiology_billing on radiology_billing.id = transactions.radiology_billing_id LEFT JOIN blood_issue on blood_issue.id = transactions.blood_issue_id LEFT JOIN appointment on appointment.id = transactions.appointment_id LEFT JOIN staff on staff.id = transactions.received_by where date_format(transactions.payment_date,'%Y-%m-%d') >='". $start_date."'and date_format(transactions.payment_date,'%Y-%m-%d') <= '".$end_date."' and (transactions.appointment_id is null or appointment.appointment_status != 'pending') ".$condition." ";
                $this->datatables->query($sql)
               ->searchable('transactions.id,patients.patient_name,patients.id,reference,transactions.payment_date,staff.name,staff.surname,staff.employee_id,transactions.type,transactions.payment_mode,transactions.case_reference_id,opd_id,ipd_id,pharmacy_bill_basic_id,pathology_billing_id,radiology_billing_id,transactions.blood_donor_cycle_id,blood_issue_id,ambulance_call_id,transactions.amount')
               ->orderable('transactions.id,transactions.payment_date,patients.patient_name,reference,ward,staff.name,transactions.type,transactions.payment_mode,transactions.amount')
@@ -397,8 +397,10 @@ class Transaction_model extends MY_Model
             FROM transactions
             LEFT JOIN patients ON patients.id = transactions.patient_id
             LEFT JOIN staff    ON staff.id    = transactions.received_by
+            LEFT JOIN appointment ON appointment.id = transactions.appointment_id
             WHERE date_format(transactions.payment_date,'%Y-%m-%d') >= '" . $start_date . "'
               AND date_format(transactions.payment_date,'%Y-%m-%d') <= '" . $end_date . "'
+              AND (transactions.appointment_id IS NULL OR appointment.appointment_status != 'pending')
               " . $txn_cond;
 
         $part2 = "SELECT income.id,
@@ -462,7 +464,7 @@ class Transaction_model extends MY_Model
         
         $sql="select 
         CASE WHEN (appointment_id IS NOT NULL) THEN 'appointment' END AS ward,CASE WHEN (appointment_id IS NOT NULL) THEN appointment_id END AS reference,
-        transactions.id,transactions.type,transactions.payment_mode,transactions.section,'opd' head,'opd_no' module_no,transactions.appointment_id as module_id,transactions.payment_date,transactions.amount, patients.patient_name,patients.id as `patient_id`,staff.name,staff.surname,staff.employee_id from transactions LEFT JOIN appointment on appointment.id = transactions.appointment_id LEFT JOIN patients on patients.id = appointment.patient_id LEFT JOIN staff on staff.id = transactions.received_by where date_format(transactions.payment_date,'%Y-%m-%d') >='". $start_date."'and date_format(transactions.payment_date,'%Y-%m-%d') <= '".$end_date."' and transactions.appointment_id is not null and 1=1 ".$condition ;
+        transactions.id,transactions.type,transactions.payment_mode,transactions.section,'opd' head,'opd_no' module_no,transactions.appointment_id as module_id,transactions.payment_date,transactions.amount, patients.patient_name,patients.id as `patient_id`,staff.name,staff.surname,staff.employee_id from transactions LEFT JOIN appointment on appointment.id = transactions.appointment_id LEFT JOIN patients on patients.id = appointment.patient_id LEFT JOIN staff on staff.id = transactions.received_by where date_format(transactions.payment_date,'%Y-%m-%d') >='". $start_date."'and date_format(transactions.payment_date,'%Y-%m-%d') <= '".$end_date."' and transactions.appointment_id is not null and appointment.appointment_status != 'pending' ".$condition ;
              $this->datatables->query($sql) 
               ->searchable('transactions.id,transactions.payment_date,patients.patient_name,section,staff.name,type,payment_mode,amount')
               ->orderable('transactions.id,transactions.payment_date,patients.patient_name,null,section,staff.name,type,payment_mode,amount')
@@ -1147,6 +1149,11 @@ class Transaction_model extends MY_Model
         }
         
         $this->db->join('staff', 'staff.id = transactions.received_by','left');
+        $this->db->join('appointment', 'appointment.id = transactions.appointment_id', 'left');
+        $this->db->group_start();
+        $this->db->where('transactions.appointment_id IS NULL');
+        $this->db->or_where('appointment.appointment_status !=', 'pending');
+        $this->db->group_end();
         $this->db->where('DATE(payment_date) >=', $start_date);
         $this->db->where('DATE(payment_date) <=', $end_date);
         $query = $this->db->get();

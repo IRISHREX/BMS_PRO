@@ -2557,3 +2557,9 @@ $('#opd_icd10_group_filter').on('change', function() {
 <?php if ($this->input->get('action') === 'add'): ?>
 <script>$(function(){ shModal('myModal').show(); shCleanUrlParam('action'); });</script>
 <?php endif; ?>
+
+ <!-- //========opd tab js===== -->
+
+<?php if ($this->input->get('action') === 'add'): ?>
+<script>$(function(){ shModal('myModal').show(); shCleanUrlParam('action'); });</script>
+<?php endif; ?>

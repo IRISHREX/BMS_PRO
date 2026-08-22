@@ -116,6 +116,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                 <?php } ?>
                             </select>
                             <span class="text-danger"><?php echo form_error('referral_person_id'); ?></span>
+                        </div>
                     </div>
                     <div class="col-sm-12">
                         <div class="mb-3">
