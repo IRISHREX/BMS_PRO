@@ -136,9 +136,15 @@ if (!empty($payment)) {
                                                 </button>
                                             <?php } ?>
                                         <?php } ?>
-                                        <a href="#" onclick="getRecord('<?php echo (int)$value['id'] ?>')" class="btn btn-sm btn-outline-primary" data-bs-target="#myModalEdit" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('edit'); ?>">
-                                            <i class="fa fa-pencil"></i>
-                                        </a>
+                                        <?php if ($is_paid) { ?>
+                                            <a class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('edit'); ?>">
+                                                <i class="fa fa-pencil text-muted"></i>
+                                            </a>
+                                        <?php } else { ?>
+                                            <a href="#" onclick="getRecord('<?php echo (int)$value['id'] ?>')" class="btn btn-sm btn-outline-primary" data-bs-target="#myModalEdit" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('edit'); ?>">
+                                                <i class="fa fa-pencil"></i>
+                                            </a>
+                                        <?php } ?>
                                     <?php } ?>
                                     <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_delete')) { ?>
                                         <a class="btn btn-sm btn-outline-danger sh-cursor-pointer" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('delete') ?>" onclick="delete_recordByIdReload('admin/referralpayment/delete/<?php echo (int)$value['id']; ?>', '<?php echo $this->lang->line('delete_confirm'); ?>')">

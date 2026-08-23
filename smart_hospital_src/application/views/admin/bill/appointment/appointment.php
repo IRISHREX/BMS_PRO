@@ -251,7 +251,7 @@ $genderList      = $this->customlib->getGender_Patient();
                   </div>
                   <div class="col-sm-3">
                     <label class="form-label"><?php echo $this->lang->line('appointment_date'); ?></label><small class="req"> *</small>
-                    <input type="text" id="datetimepicker" name="date" class="form-control form-control-sm datetime no-past-date" data-min-date="today">
+                    <input type="text" id="datetimepicker" name="date" class="form-control form-control-sm date no-past-date" data-min-date="today">
                     <span class="text-danger"><?php echo form_error('date'); ?></span>
                   </div>
                   <div class="col-sm-3">
@@ -390,7 +390,7 @@ $genderList      = $this->customlib->getGender_Patient();
                 </div>
                 <div class="col-sm-3">
                   <label class="form-label"><?php echo $this->lang->line('appointment_date'); ?></label><small class="req"> *</small>
-                  <input type="text" id="rdates" name="appointment_date" class="form-control form-control-sm datetime no-past-date" data-min-date="today" value="<?php echo set_value('dates'); ?>">
+                  <input type="text" id="rdates" name="appointment_date" class="form-control form-control-sm date no-past-date" data-min-date="today" value="<?php echo set_value('dates'); ?>">
                   <span class="text-danger"><?php echo form_error('appointment_date'); ?></span>
                 </div>
                 <div class="col-sm-3">

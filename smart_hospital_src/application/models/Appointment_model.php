@@ -122,7 +122,7 @@ class Appointment_model extends MY_Model
 			$this->datatables->where('appointment.date >=',  $toDay );
 			$this->datatables->where('appointment.date <',  $nextDay );
 		}elseif($type == 2){
-			$this->datatables->where('appointment.date >',  $nextDay );
+			$this->datatables->where('appointment.date >=',  $nextDay );
 		}elseif($type == 3){
 			$this->datatables->where('appointment.date <',  $toDay );
 		}

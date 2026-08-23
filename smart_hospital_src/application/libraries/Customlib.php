@@ -1454,12 +1454,21 @@ class Customlib
 
         $format        = $this->getHospitalDateFormat();
         $date_formated = date_parse_from_format('Y-m-d', $date);
+        if (empty($date_formated['year'])) {
+            $date_formated = date_parse_from_format('Y-m-d H:i:s', $date);
+        }
+        if (empty($date_formated['year'])) {
+            $time = strtotime($date);
+            if ($time) {
+                $date_formated = ['year' => date('Y', $time), 'month' => date('m', $time), 'day' => date('d', $time)];
+            }
+        }
         $year          = $date_formated['year'];
         $month         = str_pad($date_formated['month'], 2, "0", STR_PAD_LEFT);
         $day           = str_pad($date_formated['day'], 2, "0", STR_PAD_LEFT);
-        $hour          = str_pad($date_formated['hour'], 2, "0", STR_PAD_LEFT);
-        $minute        = str_pad($date_formated['minute'], 2, "0", STR_PAD_LEFT);
-        $second        = str_pad($date_formated['second'], 2, "0", STR_PAD_LEFT);
+        $hour          = str_pad(isset($date_formated['hour']) ? $date_formated['hour'] : 0, 2, "0", STR_PAD_LEFT);
+        $minute        = str_pad(isset($date_formated['minute']) ? $date_formated['minute'] : 0, 2, "0", STR_PAD_LEFT);
+        $second        = str_pad(isset($date_formated['second']) ? $date_formated['second'] : 0, 2, "0", STR_PAD_LEFT);
 
         $format_date = "";
         if ($format == 'd-m-Y') {
@@ -1504,20 +1513,28 @@ class Customlib
         $is24h = ($twentyfour === '24-hour' || $twentyfour === true || $twentyfour === 1 || $twentyfour === '1');
         if ($is24h) {
             $date_formated = date_parse_from_format($format . ' G:i:s', $date); // 18:00:00 or 24:00:00
-
         } else {
             $date_formated = date_parse_from_format($format . ' g:i A', $date); // 01:50 AM or PM
-
         }
-        $year   = $date_formated['year'];
-        $month  = $date_formated['month'];
-        $day    = $date_formated['day'];
-        $hour   = $date_formated['hour'];
-        $minute = $date_formated['minute'];
-        $second = $date_formated['second'];
-        $date   = $year . "-" . $month . "-" . $day . " " . $hour . ":" . $minute . ":" . $second;
 
-        return strtotime($date);
+        $year   = !empty($date_formated['year']) ? $date_formated['year'] : false;
+        $month  = !empty($date_formated['month']) ? $date_formated['month'] : false;
+        $day    = !empty($date_formated['day']) ? $date_formated['day'] : false;
+
+        if ($year === false || $month === false || $day === false) {
+            $date_formated = date_parse_from_format($format, $date);
+            $year   = !empty($date_formated['year']) ? $date_formated['year'] : 0;
+            $month  = !empty($date_formated['month']) ? $date_formated['month'] : 0;
+            $day    = !empty($date_formated['day']) ? $date_formated['day'] : 0;
+        }
+
+        $hour   = !empty($date_formated['hour']) ? $date_formated['hour'] : 0;
+        $minute = !empty($date_formated['minute']) ? $date_formated['minute'] : 0;
+        $second = !empty($date_formated['second']) ? $date_formated['second'] : 0;
+
+        $date_str = sprintf('%04d-%02d-%02d %02d:%02d:%02d', $year, $month, $day, $hour, $minute, $second);
+
+        return strtotime($date_str);
     }
 
     public function dateyyyymmddToDateTimeformat($date, $format_two_four = true)

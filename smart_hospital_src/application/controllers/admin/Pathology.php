@@ -1644,7 +1644,7 @@ class Pathology extends Admin_Controller
                     } else {
                         $row[] = $value->tax . " (" . amountFormat(($value->tax * 100) / ($value->total - $discount_amt), 2) . "%)";
                     }
-                    $row[] = amountFormat($adjusted_net, 2);
+                    $row[] = amountFormat($orig_net_amount, 2);
                     $row[] = amountFormat($final_paid, 2);
                     $row[] = amountFormat($final_balance, 2);
                 }

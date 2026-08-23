@@ -201,6 +201,14 @@ class Referralpayment extends Admin_Controller
             );
             $data = array('status' => 'fail', 'error' => $msg, 'message' => '');
         } else {
+            $payment_id = $this->input->post('paymentid', TRUE);
+            $existing   = $this->referral_payment_model->get($payment_id);
+            if (!empty($existing) && strtolower($existing['status']) === 'paid') {
+                $data = array('status' => 'fail', 'error' => array('edit_status' => 'Paid referral payments cannot be edited.'), 'message' => '');
+                echo json_encode($data);
+                return;
+            }
+
             $edit_date_post = $this->input->post('edit_entry_date', TRUE);
             if (!empty($edit_date_post)) {
                 if (strpos($edit_date_post, ':') === false) {

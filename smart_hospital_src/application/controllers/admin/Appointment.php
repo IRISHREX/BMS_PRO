@@ -182,6 +182,14 @@ class Appointment extends Admin_Controller
             $staff_id     = $this->customlib->getLoggedInUserID();
             $date         = $this->input->post('date', TRUE);
             $date_appoint = $this->customlib->dateFormatToYYYYMMDDHis($date, $this->time_format);
+            $slot_id      = $this->input->post('slot', TRUE);
+            if (!empty($slot_id)) {
+                $slot_details = $this->onlineappointment_model->getShiftById($slot_id);
+                if (!empty($slot_details['start_time'])) {
+                    $appoint_date_only = date('Y-m-d', strtotime($date_appoint));
+                    $date_appoint = $appoint_date_only . ' ' . $slot_details['start_time'];
+                }
+            }
             $patient_id   = $this->input->post('patient_id', TRUE);
 
             $appoint_time = strtotime($date_appoint);
@@ -817,7 +825,7 @@ class Appointment extends Admin_Controller
                 //==============================
                 $row[] = $first_action . composePatientName($value->patient_name, $value->pid) . "</a>";
                 $row[] =  $appoint_no;
-                $row[] = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->time_format);
+                $row[] = $this->customlib->YYYYMMDDTodateFormat($value->date);
                 $row[] = $value->mobileno;
 
                 $row[] = $gender;
@@ -969,7 +977,7 @@ class Appointment extends Admin_Controller
                 //==============================
                 $row[] = $first_action . composePatientName($value->patient_name, $value->pid) . "</a>";
                 $row[] =  $appoint_no;
-                $row[] = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->time_format);
+                $row[] = $this->customlib->YYYYMMDDTodateFormat($value->date);
                 $row[] = $value->mobileno;
 
                 $row[] = $gender;
@@ -1122,7 +1130,7 @@ class Appointment extends Admin_Controller
                 //==============================
                 $row[] = $first_action . composePatientName($value->patient_name, $value->pid) . "</a>";
                 $row[] =  $appoint_no;
-                $row[] = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->time_format);
+                $row[] = $this->customlib->YYYYMMDDTodateFormat($value->date);
                 $row[] = $value->mobileno;
 
                 $row[] = $gender;
@@ -1405,7 +1413,7 @@ class Appointment extends Admin_Controller
         $result["patients_name"]       = composePatientName($result['patients_name'], $result['patient_id']);
         $result["edit_live_consult"]   = $this->lang->line($result['live_consult']);
         $result["live_consult"]        = $result['live_consult'];
-        $result["date"]                = $this->customlib->YYYYMMDDHisTodateFormat($result['date'], $this->time_format);
+        $result["date"]                = $this->customlib->YYYYMMDDTodateFormat($result['date']);
         $result['custom_fields_value'] = display_custom_fields('appointment', $id);
         $cutom_fields_data             = get_custom_table_values($id, 'appointment');
         $result['field_data']          = $cutom_fields_data;
@@ -1886,7 +1894,7 @@ class Appointment extends Admin_Controller
                 $row = array();
 
                 $row[] = composePatientName($value->patient_name, $value->patient_id);
-                $row[] = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->time_format);
+                $row[] = $this->customlib->YYYYMMDDTodateFormat($value->date);
                 $row[] = $value->mobileno;
                 $row[] = ($value->gender) ? $this->lang->line(strtolower($value->gender)):"";
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
@@ -2292,6 +2300,14 @@ class Appointment extends Admin_Controller
             $appointment_id  = $this->input->post('appointment_id', TRUE);
             $date            = $this->input->post('appointment_date', TRUE);
             $date_appoint    = $this->customlib->dateFormatToYYYYMMDDHis($date, $this->time_format);
+            $rslot_id        = $this->input->post('rslot', TRUE);
+            if (!empty($rslot_id)) {
+                $slot_details = $this->onlineappointment_model->getShiftById($rslot_id);
+                if (!empty($slot_details['start_time'])) {
+                    $appoint_date_only = date('Y-m-d', strtotime($date_appoint));
+                    $date_appoint = $appoint_date_only . ' ' . $slot_details['start_time'];
+                }
+            }
 
             $reschedule_time = strtotime($date_appoint);
             $today_start     = strtotime(date('Y-m-d 00:00:00'));
@@ -2310,7 +2326,7 @@ class Appointment extends Admin_Controller
 
             $appointment = array(
                 'id'                     => $appointment_id,
-                'date'                   => $this->customlib->dateFormatToYYYYMMDDHis($date, $this->time_format),
+                'date'                   => $date_appoint,
                 'priority'               => $this->input->post('priority', TRUE),
                 'doctor_shift_time_id'   => $this->input->post('rslot', TRUE),
                 'message'                => $this->input->post('message', TRUE),

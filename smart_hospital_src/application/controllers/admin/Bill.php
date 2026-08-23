@@ -4696,7 +4696,7 @@ class Bill extends Admin_Controller
                 //==============================
                 $row[] = $first_action . composePatientName($value->patient_name, $value->pid) . "</a>";
                 $row[] = $status;
-                $row[] = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->time_format);
+                $row[] = $this->customlib->YYYYMMDDTodateFormat($value->date);
                 $row[] = $value->mobileno;
                 $row[] = $gender;
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
@@ -4812,7 +4812,7 @@ class Bill extends Admin_Controller
                 //==============================
                 $row[] = $first_action . composePatientName($value->patient_name, $value->pid) . "</a>";
                 $row[] = $status;
-                $row[] = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->time_format);
+                $row[] = $this->customlib->YYYYMMDDTodateFormat($value->date);
                 $row[] = $value->mobileno;
                 $row[] = $gender;
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
@@ -4928,7 +4928,7 @@ class Bill extends Admin_Controller
                 //==============================
                 $row[] = $first_action . composePatientName($value->patient_name, $value->pid) . "</a>";
                 $row[] = $status;
-                $row[] = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->time_format);
+                $row[] = $this->customlib->YYYYMMDDTodateFormat($value->date);
                 $row[] = $value->mobileno;
                 $row[] = $gender;
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
@@ -4995,7 +4995,7 @@ class Bill extends Admin_Controller
         $result["patients_name"]       = composePatientName($result['patients_name'], $result['patient_id']);
         $result["edit_live_consult"]   = $this->lang->line($result['live_consult']);
         $result["live_consult"]        = $result['live_consult'];
-        $result["date"]                = $this->customlib->YYYYMMDDHisTodateFormat($result['date'], $this->time_format);
+        $result["date"]                = $this->customlib->YYYYMMDDTodateFormat($result['date']);
         $result['custom_fields_value'] = display_custom_fields('appointment', $id);
         $cutom_fields_data             = get_custom_table_values($id, 'appointment');
         $result['field_data']          = $cutom_fields_data;		
