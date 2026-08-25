@@ -55,7 +55,10 @@ $genderList      = $this->customlib->getGender_Patient();
                     <th><?php echo $this->lang->line('status'); ?></th>
                     <th><?php echo $this->lang->line('fees')." (".$currency_symbol.")"; ?></th>
                     <th><?php echo $this->lang->line('discount')." (%)"; ?></th>
+                    <th><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>
                     <th><?php echo $this->lang->line('paid')." (".$currency_symbol.")"; ?></th>
+                    <th><?php echo $this->lang->line('refunded') ?: 'Refunded'; ?></th>
+                    <th><?php echo ($this->lang->line('refund_amount') ?: 'Refund Amount')." (".$currency_symbol.")"; ?></th>
                     <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                   </tr>
                 </thead>
@@ -97,7 +100,10 @@ $genderList      = $this->customlib->getGender_Patient();
                     <th><?php echo $this->lang->line('status'); ?></th>
                     <th><?php echo $this->lang->line('fees')." (".$currency_symbol.")"; ?></th>
                     <th><?php echo $this->lang->line('discount')." (%)"; ?></th>
+                    <th><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>
                     <th><?php echo $this->lang->line('paid')." (".$currency_symbol.")"; ?></th>
+                    <th><?php echo $this->lang->line('refunded') ?: 'Refunded'; ?></th>
+                    <th><?php echo ($this->lang->line('refund_amount') ?: 'Refund Amount')." (".$currency_symbol.")"; ?></th>
                     <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                   </tr>
                 </thead>
@@ -139,7 +145,10 @@ $genderList      = $this->customlib->getGender_Patient();
                     <th><?php echo $this->lang->line('status'); ?></th>
                     <th><?php echo $this->lang->line('fees')." (".$currency_symbol.")"; ?></th>
                     <th><?php echo $this->lang->line('discount')." (%)"; ?></th>
+                    <th><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>
                     <th><?php echo $this->lang->line('paid')." (".$currency_symbol.")"; ?></th>
+                    <th><?php echo $this->lang->line('refunded') ?: 'Refunded'; ?></th>
+                    <th><?php echo ($this->lang->line('refund_amount') ?: 'Refund Amount')." (".$currency_symbol.")"; ?></th>
                     <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                   </tr>
                 </thead>
@@ -240,7 +249,7 @@ $genderList      = $this->customlib->getGender_Patient();
                   </div>
                   <div class="col-sm-3">
                     <label class="form-label"><?php echo $this->lang->line('doctor_fees') . ' (' . $currency_symbol . ')'; ?></label><small class="req"> *</small>
-                    <input type="text" name="amount" id="doctor_fees" class="form-control form-control-sm" readonly="readonly">
+                    <input type="text" name="amount" id="doctor_fees" class="form-control form-control-sm">
                     <span class="text-danger"><?php echo form_error('doctor_fees'); ?></span>
                   </div>
                   <div class="col-sm-3">
@@ -273,9 +282,10 @@ $genderList      = $this->customlib->getGender_Patient();
                     <label class="form-label"><?php echo $this->lang->line('status'); ?><small class="req"> *</small></label>
                     <select name="appointment_status" class="form-control form-control-sm" id="appointment_status">
                       <option value=""><?php echo $this->lang->line('select'); ?></option>
-                      <?php foreach ($appointment_status as $appointment_status_key => $appointment_status_value) { ?>
+                      <?php foreach ($appointment_status as $appointment_status_key => $appointment_status_value) {
+                        if (in_array($appointment_status_key, ['pending', 'approved'])) { ?>
                       <option value="<?php echo $appointment_status_key; ?>"><?php echo $appointment_status_value; ?></option>
-                      <?php } ?>
+                      <?php } } ?>
                     </select>
                   </div>
                   <div class="col-sm-3">
@@ -378,7 +388,7 @@ $genderList      = $this->customlib->getGender_Patient();
                 </div>
                 <div class="col-sm-3">
                   <label class="form-label"><?php echo $this->lang->line("doctor_fees") . ' (' . $currency_symbol . ')'; ?></label><small class="req"> *</small>
-                  <input type="text" name="doctor_fees" id="rdoctor_fees_edit" class="form-control form-control-sm" readonly="readonly">
+                  <input type="text" name="doctor_fees" id="rdoctor_fees_edit" class="form-control form-control-sm">
                   <span class="text-danger"><?php echo form_error('doctor_fees'); ?></span>
                 </div>
                 <div class="col-sm-3">
@@ -427,9 +437,10 @@ $genderList      = $this->customlib->getGender_Patient();
                   <label class="form-label"><?php echo $this->lang->line('status'); ?><small class="req"> *</small></label>
                   <select name="edit_appointment_status" class="form-control form-control-sm" id="edit_appointment_status">
                     <option value=""><?php echo $this->lang->line('select'); ?></option>
-                    <?php foreach ($appointment_status as $appointment_status_key => $appointment_status_value) { ?>
+                    <?php foreach ($appointment_status as $appointment_status_key => $appointment_status_value) { 
+                      if (in_array($appointment_status_key, ['pending', 'approved'])) { ?>
                     <option value="<?php echo $appointment_status_key ?>"><?php echo $appointment_status_value ?></option>
-                    <?php } ?>
+                    <?php } } ?>
                   </select>
                 </div>
                 <?php if ($this->module_lib->hasActive('live_consultation')) { ?>
@@ -642,7 +653,7 @@ $genderList      = $this->customlib->getGender_Patient();
 
 <script>
 	$("#appointment_status").change(function(){
-  var appointment_status = $('#appointment_status').val();
+      var appointment_status = $('#appointment_status').val();
       var doctor_id = $('#doctorid').val();    
       if(appointment_status == 'approved'){
         $.ajax({
@@ -651,14 +662,14 @@ $genderList      = $this->customlib->getGender_Patient();
             data: {doctor_id: doctor_id},
             dataType: 'json',
             success: function (res) {
-              $("#doctor_fees").val(res.fees);
+              if (!$("#doctor_fees").val() || $("#doctor_fees").val() == '0') {
+                $("#doctor_fees").val(res.fees);
+              }
               $("#charge_id").val(res.charge_id);
           }
         });
-      }else{
-          $('#doctor_fees').val('0');
       }
-});
+    });
   
   $("#edit_appointment_status_old").change(function(){
 
@@ -692,15 +703,16 @@ $("#edit_appointment_status").change(function(){
             data: {doctor_id: doctor_id},
             dataType: 'json',
             success: function (res) {
-              $("#rdoctor_fees_edit").val(res.fees);
+              if (!$("#rdoctor_fees_edit").val() || $("#rdoctor_fees_edit").val() == '0') {
+                $("#rdoctor_fees_edit").val(res.fees);
+              }
               $("#charge_id_edit").val(res.charge_id);
               var rdiscount_percentage_hidden=$("#rdiscount_percentage_hidden").val();
-              $("#rdiscount_percentage").val(rdiscount_percentage_hidden);        
+              if (rdiscount_percentage_hidden) {
+                $("#rdiscount_percentage").val(rdiscount_percentage_hidden);
+              }
           }
         });
-      }else{
-          $('#rdoctor_fees_edit').val('0');
-          $('#rdiscount_percentage').val('0');
       }
   });
 
@@ -1090,16 +1102,35 @@ function getBed(bed_group, bed = '', active, htmlid = 'bed_no') {
         $("#rdoctor_id").val(data.doctor);      
         $("#edit_appoint_priority").val(data.priority).trigger("change");
         $("#message").val(data.message); 
-        $("#edit_appointment_status").val(data.appointment_status);       
        
+        var realFee = (data.standard_amount && parseFloat(data.standard_amount) > 0)
+                        ? data.standard_amount
+                        : ((data.paid_amount && parseFloat(data.paid_amount) > 0)
+                            ? data.paid_amount
+                            : (data.amount || '0'));
+        var realDiscount = (data.discount_percentage && parseFloat(data.discount_percentage) > 0)
+                        ? data.discount_percentage
+                        : '0';
+
         if(data.appointment_status == 'approved'){
-          $("#rdoctor_fees_edit").val(data.amount); 
-          $("#rdiscount_percentage").val(data.discount_percentage);
-          $("#rdiscount_percentage_hidden").val(data.discount_percentage);
+          $('#edit_appointment_status option[value="pending"]').addClass('d-none').prop('disabled', true);
+          $('#edit_appointment_status option[value=""]').addClass('d-none').prop('disabled', true);
+          $('#edit_appointment_status').val('approved').prop('disabled', true);
+          if ($('#edit_appointment_status_hidden').length === 0) {
+              $('#edit_appointment_status').after('<input type="hidden" id="edit_appointment_status_hidden" name="edit_appointment_status" value="approved">');
+          } else {
+              $('#edit_appointment_status_hidden').val('approved');
+          }
         }else{
-          $("#rdoctor_fees_edit").val('0'); 
-          $("#rdiscount_percentage").val('0');
+          $('#edit_appointment_status option[value="pending"]').removeClass('d-none').prop('disabled', false);
+          $('#edit_appointment_status option[value=""]').removeClass('d-none').prop('disabled', false);
+          $('#edit_appointment_status').prop('disabled', false);
+          $('#edit_appointment_status_hidden').remove();
+          $("#edit_appointment_status").val(data.appointment_status);
         }
+        $("#rdoctor_fees_edit").val(realFee); 
+        $("#rdiscount_percentage").val(realDiscount);
+        $("#rdiscount_percentage_hidden").val(realDiscount);
         getDoctorShift("",data.doctor,data.shift_id);
         $('select[id="rdoctor"] option[value="' + data.doctor + '"]').attr("selected", "selected");
         $('select[id="edit_liveconsult"] option[value="' + data.live_consult + '"]').attr("selected", "selected");  

@@ -277,7 +277,7 @@ class Appointment extends Admin_Controller
             $std_charge     = (is_object($charge_details) && isset($charge_details->standard_charge) && $charge_details->standard_charge !== null) ? (float)$charge_details->standard_charge : 0;
 
             $calc_std_amt    = ($std_charge > 0) ? ($std_charge + ($std_charge * $tax_percentage / 100)) : $post_amount;
-            $standard_amount = ($calc_std_amt > 0) ? amountFormat($calc_std_amt) : amountFormat($post_amount);
+            $standard_amount = ($post_amount > 0) ? amountFormat($post_amount) : (($calc_std_amt > 0) ? amountFormat($calc_std_amt) : amountFormat($post_amount));
             $amount_paid1    = $post_amount - calculatePercent($post_amount, $discount_percentage);
             $amount_paid     = $amount_paid1 + calculatePercent($amount_paid1, $tax_percentage);
             if ($app_status === 'pending' || $this->input->post('payment_mode', TRUE) === 'Pay Later') {
@@ -2324,6 +2324,18 @@ class Appointment extends Admin_Controller
 
             $getDoctorShiftTimeId = $this->onlineappointment_model->getDoctorShiftTimeId($rdoctor_id_r, $rglobal_shift_r, $day);
 
+            // SaaS: capture the appointment status BEFORE the update so we can detect a
+            // transition into 'approved' below. The OPD is counted only on the first
+            // approval — never when re-saving an already-approved appointment.
+            $saas_old_appointment = $this->appointment_model->getDetails($appointment_id);
+            $saas_old_status      = isset($saas_old_appointment['appointment_status']) ? $saas_old_appointment['appointment_status'] : '';
+
+            $new_status = $this->input->post('edit_appointment_status', TRUE);
+            if ($saas_old_status == 'approved' && $new_status == 'pending') {
+                $new_status = 'approved';
+            }
+
+            $doctor_fees_post = $this->input->post('doctor_fees', TRUE);
             $appointment = array(
                 'id'                     => $appointment_id,
                 'date'                   => $date_appoint,
@@ -2331,15 +2343,12 @@ class Appointment extends Admin_Controller
                 'doctor_shift_time_id'   => $this->input->post('rslot', TRUE),
                 'message'                => $this->input->post('message', TRUE),
                 'live_consult'           => $this->input->post('live_consult', TRUE),
-                'appointment_status'     => $this->input->post('edit_appointment_status', TRUE),
+                'appointment_status'     => $new_status,
                 'doctor_global_shift_id' => $rglobal_shift_r,
             );
-
-            // SaaS: capture the appointment status BEFORE the update so we can detect a
-            // transition into 'approved' below. The OPD is counted only on the first
-            // approval — never when re-saving an already-approved appointment.
-            $saas_old_appointment = $this->appointment_model->getDetails($appointment_id);
-            $saas_old_status      = isset($saas_old_appointment['appointment_status']) ? $saas_old_appointment['appointment_status'] : '';
+            if ($doctor_fees_post !== null && $doctor_fees_post !== '') {
+                $appointment['amount'] = (float)$doctor_fees_post;
+            }
 
             $this->appointment_model->update($appointment);
 

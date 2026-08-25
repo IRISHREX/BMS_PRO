@@ -14,8 +14,14 @@ class Pathology_model extends MY_Model
             if (!$this->db->field_exists('status', 'pathology_billing')) {
                 $this->db->query("ALTER TABLE `pathology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
             }
+            if (!$this->db->field_exists('is_canceled', 'pathology_report')) {
+                $this->db->query("ALTER TABLE `pathology_report` ADD `is_canceled` tinyint(1) NOT NULL DEFAULT 0");
+            }
+            if (!$this->db->field_exists('canceled_at', 'pathology_report')) {
+                $this->db->query("ALTER TABLE `pathology_report` ADD `canceled_at` datetime DEFAULT NULL");
+            }
         } catch (Throwable $e) {
-            log_message('error', 'Pathology_model: Could not add status column: ' . $e->getMessage());
+            log_message('error', 'Pathology_model: Could not add status/is_canceled/canceled_at column: ' . $e->getMessage());
         }
     }
 
@@ -131,20 +137,28 @@ class Pathology_model extends MY_Model
                 }
             }
             $this->db->where('pathology_bill_id', $pathology_billing_id);
+            $this->db->where('is_canceled', 0);
             if (!empty($keep_ids)) {
                 $this->db->where_not_in('id', $keep_ids);
             }
-            $this->db->delete('pathology_report');
+            $this->db->update('pathology_report', array(
+                'is_canceled' => 1,
+                'canceled_at' => date('Y-m-d H:i:s')
+            ));
         }
 
         if (!empty($addReports)) {
             foreach ($addReports as $report_key => $report_value) {
                 $addReports[$report_key]['pathology_bill_id'] = $inserted;
+                $addReports[$report_key]['is_canceled']       = 0;
             }
             $this->db->insert_batch('pathology_report', $addReports);
         }
 		
         if (!empty($updateReports)) {
+            foreach ($updateReports as $ukey => $uval) {
+                $updateReports[$ukey]['is_canceled'] = 0;
+            }
             $this->db->update_batch('pathology_report', $updateReports, 'id');
         }
 
@@ -499,8 +513,9 @@ class Pathology_model extends MY_Model
             ->where("pathology_billing.id", $id)
             ->get('pathology_billing');
         if ($query->num_rows() > 0) {
-            $result                       = $query->row();
-            $result->{'pathology_report'} = $this->getReportByBillId($result->id);
+            $result                                = $query->row();
+            $result->{'pathology_report'}          = $this->getReportByBillId($result->id);
+            $result->{'canceled_pathology_report'} = $this->getCanceledReportByBillId($result->id);
             return $result;
         }
         return false;
@@ -531,6 +546,19 @@ class Pathology_model extends MY_Model
             ->join('staff as approved_by_staff', 'approved_by_staff.id = pathology_report.approved_by', "left")
             ->join('charges', 'pathology.charge_id = charges.id')
             ->where('pathology_report.pathology_bill_id', $id)
+            ->where('(pathology_report.is_canceled = 0 OR pathology_report.is_canceled IS NULL)')
+            ->get('pathology_report');
+        return $query->result();
+    }
+
+    public function getCanceledReportByBillId($id)
+    {
+        $this->db->join('pathology', 'pathology_report.pathology_id = pathology.id');
+        $query = $this->db->select('pathology_report.*,pathology.test_name,pathology.short_name,pathology.report_days,pathology.id as pid,pathology.charge_id as cid,charges.charge_category_id,charges.name,charges.standard_charge')
+            ->join('pathology_billing', 'pathology_report.pathology_bill_id = pathology_billing.id')
+            ->join('charges', 'pathology.charge_id = charges.id', 'left')
+            ->where('pathology_report.pathology_bill_id', $id)
+            ->where('pathology_report.is_canceled', 1)
             ->get('pathology_report');
         return $query->result();
     } 

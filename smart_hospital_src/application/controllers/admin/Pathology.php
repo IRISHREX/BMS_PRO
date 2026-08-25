@@ -2062,6 +2062,16 @@ class Pathology extends Admin_Controller
                 $row[] = $value->test_name . " (" . $value->short_name . ")";
                 $row[] = $value->doctor_name;
                 $row[] = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
+                if (isset($value->is_canceled) && $value->is_canceled == 1) {
+                    $status_badge = "<span class='badge bg-danger-subtle text-danger border border-danger-subtle'>" . ($this->lang->line('canceled') ?: 'Canceled') . "</span>";
+                } elseif (!empty($value->approved_by)) {
+                    $status_badge = "<span class='badge bg-success-subtle text-success border border-success-subtle'>" . ($this->lang->line('approved') ?: 'Approved') . "</span>";
+                } elseif (!empty($value->collection_specialist)) {
+                    $status_badge = "<span class='badge bg-info-subtle text-info border border-info-subtle'>" . ($this->lang->line('sample_collected') ?: 'Sample Collected') . "</span>";
+                } else {
+                    $status_badge = "<span class='badge bg-warning-subtle text-warning border border-warning-subtle'>" . ($this->lang->line('pending') ?: 'Pending') . "</span>";
+                }
+                $row[] = $status_badge;
                 //====================
                 if (!empty($fields)) {
                     foreach ($fields as $fields_key => $fields_value) {
@@ -2079,6 +2089,7 @@ class Pathology extends Admin_Controller
             }
 
             $footer_row   = array();
+            $footer_row[] = "";
             $footer_row[] = "";
             $footer_row[] = "";
             $footer_row[] = "";

@@ -957,7 +957,22 @@ function get_PatientDetails(id) {
 			$("#rdoctor_id").val(data.doctor);		  
 			$("#edit_appoint_priority").val(data.priority).trigger("change");
 			$("#message").val(data.message); 
-			$("#edit_appointment_status").val(data.appointment_status);				
+			if (data.appointment_status == 'approved') {
+				$('#edit_appointment_status option[value="pending"]').addClass('d-none').prop('disabled', true);
+				$('#edit_appointment_status option[value=""]').addClass('d-none').prop('disabled', true);
+				$('#edit_appointment_status').val('approved').prop('disabled', true);
+				if ($('#edit_appointment_status_hidden').length === 0) {
+					$('#edit_appointment_status').after('<input type="hidden" id="edit_appointment_status_hidden" name="edit_appointment_status" value="approved">');
+				} else {
+					$('#edit_appointment_status_hidden').val('approved');
+				}
+			} else {
+				$('#edit_appointment_status option[value="pending"]').removeClass('d-none').prop('disabled', false);
+				$('#edit_appointment_status option[value=""]').removeClass('d-none').prop('disabled', false);
+				$('#edit_appointment_status').prop('disabled', false);
+				$('#edit_appointment_status_hidden').remove();
+				$("#edit_appointment_status").val(data.appointment_status);
+			}
 			 
 			// Always load the real fee regardless of status.
 			// standard_amount = fee stored in appointment_payment table.
