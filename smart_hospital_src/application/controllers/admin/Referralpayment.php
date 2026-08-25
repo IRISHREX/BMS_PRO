@@ -114,6 +114,29 @@ class Referralpayment extends Admin_Controller
         ));
     }
 
+    public function paySelected()
+    {
+        if (!$this->rbac->hasPrivilege('referral_payment', 'can_edit')) {
+            access_denied();
+        }
+        $ids = $this->input->post('ids', TRUE);
+        if (empty($ids) || !is_array($ids)) {
+            echo json_encode(array(
+                'status'  => false,
+                'message' => 'Please select at least one referral payment to pay.'
+            ));
+            return;
+        }
+
+        $result = $this->referral_payment_model->pay_selected_eligible($ids);
+        echo json_encode(array(
+            'status'  => true,
+            'message' => "Paid {$result['paid_count']} selected eligible referral(s)." . ($result['skipped_count'] > 0 ? " ({$result['skipped_count']} skipped due to pending patient bill balance or already paid)." : ""),
+            'data'    => $result
+        ));
+    }
+
+
     public function updateSettings()
     {
         if (!$this->rbac->hasPrivilege('referral_payment', 'can_edit')) {

@@ -285,6 +285,58 @@ class Referral_payment_model extends MY_Model
         );
     }
 
+    public function pay_selected_eligible($ids, $staff_id = null)
+    {
+        if (empty($ids) || !is_array($ids)) {
+            return array('paid_count' => 0, 'skipped_count' => 0, 'total_selected' => 0);
+        }
+
+        $clean_ids = array_map('intval', $ids);
+        $clean_ids = array_filter($clean_ids, function($v) { return $v > 0; });
+
+        if (empty($clean_ids)) {
+            return array('paid_count' => 0, 'skipped_count' => 0, 'total_selected' => 0);
+        }
+
+        $this->db->where_in('id', $clean_ids);
+        $selected = $this->db->get('referral_payment')->result_array();
+
+        $paid_count    = 0;
+        $skipped_count = 0;
+
+        foreach ($selected as $row) {
+            if (strtolower($row['status']) === 'paid') {
+                $skipped_count++;
+                continue;
+            }
+
+            $settlement = $this->get_bill_settlement($row['billing_id'], $row['referral_type']);
+            if ($settlement['is_settled']) {
+                $current_net = $settlement['net_amount'];
+                $current_commission = round(($current_net * (float)$row['percentage']) / 100, 2);
+                $data = array(
+                    'id'          => $row['id'],
+                    'bill_amount' => $current_net,
+                    'amount'      => $current_commission,
+                    'status'      => 'Paid',
+                    'paid_date'   => date('Y-m-d H:i:s'),
+                    'paid_by'     => $staff_id ? $staff_id : $this->customlib->getLoggedInUserID(),
+                );
+                $this->update($data);
+                $paid_count++;
+            } else {
+                $skipped_count++;
+            }
+        }
+
+        return array(
+            'paid_count'     => $paid_count,
+            'skipped_count'  => $skipped_count,
+            'total_selected' => count($selected),
+        );
+    }
+
+
     public function get_unpaid_referrals()
     {
         $this->db->select("payment.date as date, payment.billing_id, payment.id, payment.status, payment.referral_type, person.name, person.contact, patients.patient_name, patients.id as patient_id, type.name as type, payment.bill_amount, payment.percentage, payment.amount, prefixes.prefix");

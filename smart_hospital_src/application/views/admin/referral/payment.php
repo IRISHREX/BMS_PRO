@@ -23,6 +23,9 @@ if (!empty($payment)) {
                     <h3 class="card-title titlefix"><?php echo $this->lang->line('referral_payment_list'); ?></h3>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
                         <?php if ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) { ?>
+                            <button type="button" class="btn btn-primary btn-sm" id="btnPaySelected">
+                                <i class="fa fa-check-square-o me-1"></i> Pay Selected
+                            </button>
                             <button type="button" class="btn btn-success btn-sm" id="btnPayAll" data-eligible="<?php echo $eligible_count; ?>">
                                 <i class="fa fa-play me-1"></i> Pay All Eligible <?php if ($eligible_count > 0) { ?><span class="badge bg-white text-success ms-1"><?php echo $eligible_count; ?></span><?php } ?>
                             </button>
@@ -85,6 +88,9 @@ if (!empty($payment)) {
                     <table class="table table-hover table-striped table-bordered example">
                         <thead>
                             <tr>
+                                <th class="noExport text-center" style="width: 35px;">
+                                    <input type="checkbox" class="form-check-input" id="select_all" />
+                                </th>
                                 <th><?php echo $this->lang->line('payee'); ?></th>
                                 <th><?php echo $this->lang->line('patient_name'); ?></th>
                                 <th>Entry Date</th>
@@ -107,6 +113,10 @@ if (!empty($payment)) {
                                     $due_balance = isset($value['bill_balance']) ? (float)$value['bill_balance'] : 0;
                             ?>
                             <tr>
+                                <td class="text-center noExport">
+                                    <input type="checkbox" class="form-check-input referral_checkbox" value="<?php echo (int)$value['id']; ?>" <?php echo ($is_paid || !$is_settled) ? 'disabled' : ''; ?> data-is-settled="<?php echo $is_settled ? '1' : '0'; ?>" data-is-paid="<?php echo $is_paid ? '1' : '0'; ?>" <?php if (!$is_settled && !$is_paid) { ?>data-bs-toggle="tooltip" title="Cannot Pay: Patient bill has pending balance of <?php echo amountFormat($due_balance); ?>"<?php } ?> />
+                                </td>
+
                                 <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
                                 <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
                                 <td><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->customlib->getHospitalTimeFormat()); ?></td>
@@ -462,6 +472,65 @@ if (!empty($payment)) {
                     }
                 });
             }
+        });
+
+        // Checkbox select all handler
+        $(document).on('change', '#select_all', function() {
+            $('.referral_checkbox:not(:disabled)').prop('checked', this.checked);
+        });
+
+        // Individual checkbox change handler
+        $(document).on('change', '.referral_checkbox', function() {
+            if (!this.checked) {
+                $('#select_all').prop('checked', false);
+            } else {
+                var totalEnabled = $('.referral_checkbox:not(:disabled)').length;
+                var totalChecked = $('.referral_checkbox:not(:disabled):checked').length;
+                if (totalEnabled > 0 && totalEnabled === totalChecked) {
+                    $('#select_all').prop('checked', true);
+                }
+            }
+        });
+
+        // Pay Selected Action
+        $('#btnPaySelected').on('click', function(e) {
+            e.preventDefault();
+            var selectedIds = [];
+            $('.referral_checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                errorMsg("Please select at least one referral payment to pay.");
+                return;
+            }
+
+            if (!confirm("Are you sure you want to pay the " + selectedIds.length + " selected referral commission(s)?")) {
+                return;
+            }
+
+            var $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Processing...');
+
+            $.ajax({
+                url: '<?php echo base_url(); ?>admin/referralpayment/paySelected',
+                type: 'POST',
+                data: { ids: selectedIds },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status) {
+                        successMsg(res.message);
+                        window.location.reload(true);
+                    } else {
+                        errorMsg(res.message || "Failed to process selected payout.");
+                        $btn.prop('disabled', false).html('<i class="fa fa-check-square-o me-1"></i> Pay Selected');
+                    }
+                },
+                error: function() {
+                    errorMsg("<?php echo $this->lang->line('fail'); ?>");
+                    $btn.prop('disabled', false).html('<i class="fa fa-check-square-o me-1"></i> Pay Selected');
+                }
+            });
         });
 
         // Pay All Eligible Action

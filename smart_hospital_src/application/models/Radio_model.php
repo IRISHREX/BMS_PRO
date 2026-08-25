@@ -13,8 +13,14 @@ class Radio_model extends MY_Model
             if (!$this->db->field_exists('status', 'radiology_billing')) {
                 $this->db->query("ALTER TABLE `radiology_billing` ADD `status` varchar(50) DEFAULT 'Paid'");
             }
+            if (!$this->db->field_exists('is_canceled', 'radiology_report')) {
+                $this->db->query("ALTER TABLE `radiology_report` ADD `is_canceled` tinyint(1) NOT NULL DEFAULT 0");
+            }
+            if (!$this->db->field_exists('canceled_at', 'radiology_report')) {
+                $this->db->query("ALTER TABLE `radiology_report` ADD `canceled_at` datetime DEFAULT NULL");
+            }
         } catch (Throwable $e) {
-            log_message('error', 'Radio_model: Could not add status column: ' . $e->getMessage());
+            log_message('error', 'Radio_model: Could not add status/is_canceled/canceled_at column: ' . $e->getMessage());
         }
     }
 
@@ -276,7 +282,7 @@ class Radio_model extends MY_Model
             }
         }
         $field_variable      = implode(',', $field_var_array);
-        $query = $this->db->select('radiology_billing.*,blood_bank_products.name as blood_group_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id),0) as total_deposit,patients.patient_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id AND type="refund"),0) as refund_amount,patients.id as patient_unique_id,patients.as_of_date,patients.age, patients.month, patients.day,patients.gender,patients.dob,patients.blood_group,patients.mobileno,patients.email,patients.address,staff.employee_id,staff.name,staff.surname,staff.employee_id,transactions.payment_mode,transactions.amount,transactions.cheque_no,transactions.cheque_date,transactions.note as `transaction_note`,staff_roles.role_id as staff_roles_id,org.organisation_name,radiology_billing.insurance_validity,radiology_billing.insurance_id,' . $field_variable)
+        $query = $this->db->select('radiology_billing.*,(SELECT referral_person_id FROM referral_payment WHERE billing_id=radiology_billing.id and referral_type=5 limit 1) as referral_person_id,blood_bank_products.name as blood_group_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id),0) as total_deposit,patients.patient_name,IFNULL((SELECT SUM(amount) FROM transactions WHERE radiology_billing_id=radiology_billing.id AND type="refund"),0) as refund_amount,patients.id as patient_unique_id,patients.as_of_date,patients.age, patients.month, patients.day,patients.gender,patients.dob,patients.blood_group,patients.mobileno,patients.email,patients.address,staff.employee_id,staff.name,staff.surname,staff.employee_id,transactions.payment_mode,transactions.amount,transactions.cheque_no,transactions.cheque_date,transactions.note as `transaction_note`,staff_roles.role_id as staff_roles_id,org.organisation_name,radiology_billing.insurance_validity,radiology_billing.insurance_id,' . $field_variable)
             ->join('patients', 'radiology_billing.patient_id = patients.id')
             ->join('blood_bank_products', 'blood_bank_products.id = patients.blood_bank_product_id', 'left')
             ->join('staff', 'staff.id = radiology_billing.generated_by')
@@ -288,7 +294,8 @@ class Radio_model extends MY_Model
             ->get('radiology_billing');
         if ($query->num_rows() > 0) {
             $result                       = $query->row();
-            $result->{'radiology_report'} = $this->getReportByBillId($result->id);
+            $result->{'radiology_report'}          = $this->getReportByBillId($result->id);
+            $result->{'canceled_radiology_report'} = $this->getCanceledReportByBillId($result->id);
             return $result;
         }
         return false;
@@ -304,6 +311,19 @@ class Radio_model extends MY_Model
             ->join('staff as approved_by_staff', 'approved_by_staff.id = radiology_report.approved_by', "left")
             ->join('charges', 'radio.charge_id = charges.id')
             ->where('radiology_report.radiology_bill_id', $id)
+            ->where('(radiology_report.is_canceled = 0 OR radiology_report.is_canceled IS NULL)')
+            ->get('radiology_report');
+        return $query->result();
+    }
+
+    public function getCanceledReportByBillId($id)
+    {
+        $this->db->join('radio', 'radiology_report.radiology_id = radio.id');
+        $query = $this->db->select('radiology_report.*,radio.test_name,radio.short_name,radio.report_days,radio.id as pid,radio.charge_id as cid,charges.charge_category_id,charges.name,charges.standard_charge')
+            ->join('radiology_billing', 'radiology_report.radiology_bill_id = radiology_billing.id')
+            ->join('charges', 'radio.charge_id = charges.id', 'left')
+            ->where('radiology_report.radiology_bill_id', $id)
+            ->where('radiology_report.is_canceled', 1)
             ->get('radiology_report');
         return $query->result();
     }
@@ -342,11 +362,10 @@ class Radio_model extends MY_Model
             $this->log($message, $record_id, $action);
         }
 
-        // On update, remove any existing reports for this bill that are no longer present in
-        // the form. Done BEFORE inserting new rows (so the just-added tests aren't deleted) and
+        // On update, soft-cancel any existing reports for this bill that are no longer present in
+        // the form. Done BEFORE inserting new rows (so the just-added tests aren't touched) and
         // derived from the rows actually kept ($updateReports) rather than the client-posted
-        // prev_reports — which gets wiped when the TPA toggle reloads the modal body, previously
-        // leaving the old tests behind as duplicates.
+        // prev_reports.
         if ($pathology_billing_id > 0) {
             $keep_ids = array();
             if (!empty($updateReports)) {
@@ -357,20 +376,28 @@ class Radio_model extends MY_Model
                 }
             }
             $this->db->where('radiology_bill_id', $pathology_billing_id);
+            $this->db->where('is_canceled', 0);
             if (!empty($keep_ids)) {
                 $this->db->where_not_in('id', $keep_ids);
             }
-            $this->db->delete('radiology_report');
+            $this->db->update('radiology_report', array(
+                'is_canceled' => 1,
+                'canceled_at' => date('Y-m-d H:i:s')
+            ));
         }
 
         if (!empty($addReports)) {
             foreach ($addReports as $report_key => $report_value) {
                 $addReports[$report_key]['radiology_bill_id'] = $id;
+                $addReports[$report_key]['is_canceled']       = 0;
             }
             $this->db->insert_batch('radiology_report', $addReports);
         }
 		
         if (!empty($updateReports)) {
+            foreach ($updateReports as $ukey => $uval) {
+                $updateReports[$ukey]['is_canceled'] = 0;
+            }
             $this->db->update_batch('radiology_report', $updateReports, 'id');
         }
 
@@ -565,6 +592,8 @@ class Radio_model extends MY_Model
 		
 		if (!empty($id)) {
 			$this->db->delete("transactions", array("radiology_billing_id" => $id));
+			$this->load->model('referral_payment_model');
+			$this->referral_payment_model->deleteByBillId($id, 5);
 		}
 
         $message   = DELETE_RECORD_CONSTANT . " On Radiology Billing id " . $id;

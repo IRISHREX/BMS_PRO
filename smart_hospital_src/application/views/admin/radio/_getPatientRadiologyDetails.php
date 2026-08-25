@@ -233,3 +233,54 @@ $due_class       = ($total_due <= 0) ? 'sh-status-paid' : 'sh-status-due';
         </div>
     </div>
 </div><!-- /tests card -->
+
+<?php if (!empty($result->canceled_radiology_report)) { ?>
+<!-- Card 4: Canceled Radiology Tests -->
+<div class="sh-form-card mt-3 border-danger-subtle">
+    <div class="sh-card-header bg-danger-subtle">
+        <span class="sh-card-header-title text-danger"><i class="fa fa-ban me-1 opacity-75"></i><?php echo $this->lang->line('canceled_tests') ?: 'Canceled tests'; ?></span>
+    </div>
+    <div class="p-2">
+        <div class="table-responsive rounded-3 overflow-hidden border mb-0">
+            <table class="table table-sm table-hover sh-tests-table mb-0">
+                <thead>
+                    <tr class="table-light">
+                        <th class="text-center ps-3" style="width: 50px;">#</th>
+                        <th><?php echo $this->lang->line('test_name'); ?></th>
+                        <th class="text-nowrap"><?php echo $this->lang->line('report_date'); ?></th>
+                        <th class="text-nowrap"><?php echo $this->lang->line('canceled_date') ?: 'Canceled Date & Time'; ?></th>
+                        <th class="text-end text-nowrap"><?php echo $this->lang->line('tax'); ?></th>
+                        <th class="text-end pe-3 text-nowrap"><?php echo $this->lang->line('amount'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $c_counter = 1;
+                    foreach ($result->canceled_radiology_report as $c_report) {
+                        $c_discount_amt = ($c_report->apply_charge * $result->discount_percentage) / 100;
+                        $c_tax_amount   = ($c_report->apply_charge - $c_discount_amt) * $c_report->tax_percentage / 100;
+                        $c_net_row      = $c_report->apply_charge - $c_discount_amt + $c_tax_amount;
+                        $cancel_dt      = !empty($c_report->canceled_at) ? $c_report->canceled_at : $c_report->updated_at;
+                        ?>
+                    <tr>
+                        <td class="text-center text-secondary ps-3"><?php echo $c_counter++; ?></td>
+                        <td>
+                            <span class="fw-semibold text-decoration-line-through text-muted"><?php echo html_escape($c_report->test_name); ?></span>
+                            <?php if (!empty($c_report->short_name)) { ?>
+                                <span class="sh-short-name text-muted">(<?php echo html_escape($c_report->short_name); ?>)</span>
+                            <?php } ?>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2"><?php echo $this->lang->line('canceled') ?: 'Canceled'; ?></span>
+                        </td>
+                        <td class="text-nowrap text-muted"><?php echo (!empty($c_report->reporting_date) ? $this->customlib->YYYYMMDDTodateFormat($c_report->reporting_date) : '—'); ?></td>
+                        <td class="text-nowrap text-muted"><?php echo (!empty($cancel_dt) ? $this->customlib->YYYYMMDDHisTodateFormat($cancel_dt, $this->customlib->getHospitalTimeFormat()) : '—'); ?></td>
+                        <td class="text-end text-nowrap text-muted"><?php echo $c_report->tax_percentage > 0 ? $currency_symbol . amountFormat($c_tax_amount) . ' (' . $c_report->tax_percentage . '%)' : '—'; ?></td>
+                        <td class="text-end pe-3 text-nowrap text-muted text-decoration-line-through"><?php echo $currency_symbol . amountFormat($c_net_row); ?></td>
+                    </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php } ?>
+

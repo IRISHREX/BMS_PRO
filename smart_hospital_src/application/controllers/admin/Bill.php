@@ -27,6 +27,8 @@ class Bill extends Admin_Controller
         $this->load->model('pharmacy_model');
         $this->load->model('pathology_model');
         $this->load->model('radio_model');
+        $this->load->model('referral_person_model');
+        $this->load->model('referral_payment_model');
         $this->load->model('bloodissue_model');
         $this->load->model('customfield_model');
         $this->load->model('vehicle_model');
@@ -1546,8 +1548,9 @@ class Bill extends Admin_Controller
         $patient_names               = array_column($patients, 'patient_name', 'id');
         $doctors                     = $this->staff_model->getStaffbyrole(3);
         $data['custom_fields_value'] = display_custom_fields('pathology', $id);
-        $data["doctors"]             = $doctors;
-        $data["payment_mode"]        = $this->payment_mode;
+        $data["doctors"]              = $doctors;
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
+        $data["payment_mode"]         = $this->payment_mode;
         $page                        = $this->load->view("admin/bill/pathology/_editpathology", $data, true);
         $total_rows                  = count($pathology_data->pathology_report);
         $case_reference_id           = $pathology_data->case_reference_id;
@@ -1907,6 +1910,47 @@ class Bill extends Admin_Controller
                 }
             }
             if ($inserted) {
+                if ($pathology_billing_id > 0) {
+                    $this->referral_payment_model->deleteByBillId($inserted, 4);
+                }
+                $referral_person_id = $this->input->post('referral_person_id', TRUE);
+                if (!empty($referral_person_id)) {
+                    $percentage = $this->referral_payment_model->get_commission($referral_person_id, 4);
+                    $percentage = $percentage ? $percentage : 0;
+                    
+                    $is_fully_paid = false;
+                    $new_net = (float)$this->input->post('net_amount', TRUE);
+                    if ($pathology_billing_id > 0) {
+                        $existing_payments = $this->transaction_model->pathologyTotalPayments($pathology_billing_id);
+                        $prev_total_paid   = ($existing_payments && isset($existing_payments->total_paid)) ? (float)$existing_payments->total_paid : 0;
+                        $prev_total_refund = (float)$this->transaction_model->getTotalRefundAmountByPathologyBillId($pathology_billing_id);
+                        $net_paid          = max(0, round($prev_total_paid - $prev_total_refund, 2));
+                        $is_fully_paid     = ($net_paid >= $new_net);
+                    } else {
+                        $paid_amount       = (float)$this->input->post('amount', TRUE);
+                        $is_fully_paid     = ($paid_amount >= $new_net);
+                    }
+
+                    $ref_settings      = $this->referral_payment_model->get_referral_settings();
+                    $auto_pay          = !empty($ref_settings['referral_auto_pay']);
+                    $status            = ($auto_pay && $is_fully_paid) ? 'Paid' : 'Unpaid';
+                    $commission_amount = round(($new_net * $percentage) / 100, 2);
+                    $payment = array(
+                        "referral_person_id" => $referral_person_id,
+                        "patient_id"         => $patient_id,
+                        "referral_type"      => 4,
+                        "billing_id"         => $inserted,
+                        "bill_amount"        => $new_net,
+                        "percentage"         => $percentage,
+                        "amount"             => $commission_amount,
+                        "status"             => $status,
+                        "paid_date"          => ($status === 'Paid') ? date("Y-m-d H:i:s") : NULL,
+                        "paid_by"            => ($status === 'Paid') ? $this->customlib->getLoggedInUserID() : NULL,
+                        "date"               => $bill_date,
+                    );
+                    $this->referral_payment_model->add($payment);
+                }
+
                 $patientlist    = $this->notificationsetting_model->getpatientDetails($patient_id);
 
                 $event_data     = array(
@@ -2308,8 +2352,9 @@ class Bill extends Admin_Controller
         $patient_names               = array_column($patients, 'patient_name', 'id');
         $doctors                     = $this->staff_model->getStaffbyrole(3);
         $data['custom_fields_value'] = display_custom_fields('radiology', $id);
-        $data["doctors"]             = $doctors;
-        $data["payment_mode"]        = $this->payment_mode;
+        $data["doctors"]              = $doctors;
+        $data["referral_person_list"] = $this->referral_person_model->get_person();
+        $data["payment_mode"]         = $this->payment_mode;
         $page                        = $this->load->view("admin/bill/radiology/_editradiology", $data, true);
         $total_rows                  = count($radiology_data->radiology_report);
         $case_reference_id           = $radiology_data->case_reference_id;
@@ -2675,6 +2720,46 @@ class Bill extends Admin_Controller
                 }
             }
             if ($inserted) {
+                if ($radiology_billing_id > 0) {
+                    $this->referral_payment_model->deleteByBillId($inserted, 5);
+                }
+                $referral_person_id = $this->input->post('referral_person_id', TRUE);
+                if (!empty($referral_person_id)) {
+                    $percentage = $this->referral_payment_model->get_commission($referral_person_id, 5);
+                    $percentage = $percentage ? $percentage : 0;
+                    
+                    $is_fully_paid = false;
+                    $new_net = (float)$this->input->post('net_amount', TRUE);
+                    if ($radiology_billing_id > 0) {
+                        $existing_payments = $this->transaction_model->radiologyTotalPayments($radiology_billing_id);
+                        $prev_total_paid   = ($existing_payments && isset($existing_payments->total_paid)) ? (float)$existing_payments->total_paid : 0;
+                        $prev_total_refund = (float)$this->transaction_model->getTotalRefundAmountByRadiologyBillId($radiology_billing_id);
+                        $net_paid          = max(0, round($prev_total_paid - $prev_total_refund, 2));
+                        $is_fully_paid     = ($net_paid >= $new_net);
+                    } else {
+                        $paid_amount       = (float)$this->input->post('amount', TRUE);
+                        $is_fully_paid     = ($paid_amount >= $new_net);
+                    }
+
+                    $ref_settings      = $this->referral_payment_model->get_referral_settings();
+                    $auto_pay          = !empty($ref_settings['referral_auto_pay']);
+                    $status            = ($auto_pay && $is_fully_paid) ? 'Paid' : 'Unpaid';
+                    $commission_amount = round(($new_net * $percentage) / 100, 2);
+                    $payment = array(
+                        "referral_person_id" => $referral_person_id,
+                        "patient_id"         => $patient_id,
+                        "referral_type"      => 5,
+                        "billing_id"         => $inserted,
+                        "bill_amount"        => $new_net,
+                        "percentage"         => $percentage,
+                        "amount"             => $commission_amount,
+                        "status"             => $status,
+                        "paid_date"          => ($status === 'Paid') ? date("Y-m-d H:i:s") : NULL,
+                        "paid_by"            => ($status === 'Paid') ? $this->customlib->getLoggedInUserID() : NULL,
+                        "date"               => $bill_date,
+                    );
+                    $this->referral_payment_model->add($payment);
+                }
 
                 $patient_name   = $this->notificationsetting_model->getpatientDetails($patient_id);
                 $doctor_details = $this->notificationsetting_model->getstaffDetails($doctor_id);

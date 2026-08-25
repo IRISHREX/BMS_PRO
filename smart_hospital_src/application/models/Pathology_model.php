@@ -638,6 +638,8 @@ class Pathology_model extends MY_Model
         $this->db->delete('pathology_billing');
 		if (!empty($id)) {
 			$this->db->delete("transactions", array("pathology_billing_id" => $id));
+			$this->load->model('referral_payment_model');
+			$this->referral_payment_model->deleteByBillId($id, 4);
 		}
         $message   = DELETE_RECORD_CONSTANT . " On  Pathology Bill  id " . $id;
         $action    = "Delete";
