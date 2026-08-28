@@ -105,6 +105,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                         <th><?php echo $this->lang->line('consultant_doctor'); ?></th>
                                         <th><?php echo $this->lang->line('sample_collected_person_name'); ?></th>
                                         <th><?php echo $this->lang->line('status'); ?></th>
+                                        <th><?php echo $this->lang->line('payment_status') ?: 'Payment Status'; ?></th>
                                         <?php 
                                             if (!empty($fields)) {
                                                 foreach ($fields as $fields_key => $fields_value) {

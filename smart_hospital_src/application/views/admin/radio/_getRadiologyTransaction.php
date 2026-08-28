@@ -341,9 +341,10 @@ function radioCheckRefundAmount(input, formId) {
     if (actionType === 'refund') {
         var maxRefund = parseFloat($(input).data('maxRefundable') || 0);
         var entered = parseFloat($(input).val() || 0);
+        var currentStatus = form.find('#radio_appointment_status').val();
         if (entered >= maxRefund && maxRefund > 0) {
             form.find('#radio_appointment_status').val('cancelled');
-        } else {
+        } else if (currentStatus !== 'cancelled') {
             form.find('#radio_appointment_status').val('approved');
         }
     }

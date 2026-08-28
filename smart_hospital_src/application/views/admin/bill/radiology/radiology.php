@@ -1073,7 +1073,7 @@ function getPrescriptionData(modal_prescription_){
                 dataType: 'json',
                 contentType: false,
                 cache: false,
-               processData:false,               
+                processData:false,               
                 success: function (data) {
                     if (data.status == "fail") {
                         var message = "";
@@ -1083,17 +1083,19 @@ function getPrescriptionData(modal_prescription_){
                         errorMsg(message);
                     } else {
                         successMsg(data.message);
-                        getPayments(radiology_billing_id);
-                        table.ajax.reload();
+                        shModal('#addPaymentModal').hide();
+                        if (typeof table !== 'undefined' && table) {
+                            table.ajax.reload(null, false);
                         }
-                     btn.btnReset();
+                    }
+                    btn.btnReset();
                 },
                 error: function () {
-
+                    btn.btnReset();
                 },
                 complete: function(){
-                 btn.btnReset();
-   }
+                    btn.btnReset();
+                }
             }); 
         });
 

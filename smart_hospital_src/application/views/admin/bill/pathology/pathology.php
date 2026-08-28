@@ -1345,7 +1345,7 @@ $('#addpatient_id').on('select2:select', function (e) {
             },  complete: function(){
                 payment_modal.removeClass('modal_loading'); 
             }
-        });
+          });
     }
 
     $(document).on('submit','#add_partial_payment', function(e){
@@ -1358,7 +1358,7 @@ $('#addpatient_id').on('select2:select', function (e) {
             $.ajax({
                 url: form.attr('action'),
                 type: "POST",
-               data: new FormData(this),
+                data: new FormData(this),
                 dataType: 'json',
                 contentType: false,
                 cache: false,
@@ -1372,19 +1372,21 @@ $('#addpatient_id').on('select2:select', function (e) {
                         errorMsg(message);
                     } else {
                         successMsg(data.message);
-                         getPayments(pathology_billing_id);
-                            table.ajax.reload();
+                        shModal('#addPaymentModal').hide();
+                        if (typeof table !== 'undefined' && table) {
+                            table.ajax.reload(null, false);
                         }
-                     btn.btnReset();
+                    }
+                    btn.btnReset();
                 },
                 error: function () {
-
+                    btn.btnReset();
                 },
                 complete: function(){
-                 btn.btnReset();
-   }
+                    btn.btnReset();
+                }
             });
-        });
+        });       });
 
          $(document).on('click','.print_receipt',function(){
             var $this = $(this);
