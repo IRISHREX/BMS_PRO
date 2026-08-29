@@ -1,6 +1,9 @@
 <?php
 $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
-$total_due       = !empty($result->net_amount) ? ($result->net_amount - $result->total_deposit) : 0;
+$total_deposit   = !empty($result->total_deposit) ? (float)$result->total_deposit : 0;
+$refund_amount   = !empty($result->refund_amount) ? (float)$result->refund_amount : 0;
+$net_amount      = !empty($result->net_amount) ? (float)$result->net_amount : 0;
+$total_due       = $net_amount - ($total_deposit - $refund_amount);
 $denominator     = $result->total - $result->discount;
 $tax_percentage  = ($denominator != 0) ? amountFormat(($result->tax * 100) / $denominator) : 0;
 $due_class       = ($total_due <= 0) ? 'sh-status-paid' : 'sh-status-due';
@@ -146,7 +149,11 @@ $due_class       = ($total_due <= 0) ? 'sh-status-paid' : 'sh-status-due';
             </div>
             <div class="sh-summary-row">
                 <span class="text-secondary"><i class="fa fa-check-circle text-success me-1"></i><?php echo $this->lang->line('total_deposit'); ?></span>
-                <span class="text-success fw-semibold"><?php echo !empty($result->total_deposit) ? $currency_symbol . amountFormat($result->total_deposit) : '—'; ?></span>
+                <span class="text-success fw-semibold"><?php echo !empty($total_deposit) ? $currency_symbol . amountFormat($total_deposit) : $currency_symbol . amountFormat(0); ?></span>
+            </div>
+            <div class="sh-summary-row">
+                <span class="text-secondary"><i class="fa fa-reply text-danger me-1"></i><?php echo $this->lang->line('refund_amount') ?: 'Refund Amount'; ?></span>
+                <span class="text-danger fw-semibold"><?php echo !empty($refund_amount) ? $currency_symbol . amountFormat($refund_amount) : $currency_symbol . amountFormat(0); ?></span>
             </div>
             <div class="sh-due-row <?php echo $due_class; ?>">
                 <span><?php echo $this->lang->line('due_amount'); ?></span>

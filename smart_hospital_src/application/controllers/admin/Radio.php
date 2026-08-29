@@ -1681,6 +1681,9 @@ class Radio extends Admin_Controller
                 $action = "<div class='btn-group action-btn-inner'><button type='button' class='btn btn-default btn-xs dropdown-toggle' data-bs-toggle='dropdown' aria-expanded='false'><i class='fa fa-ellipsis-v'></i></button><ul class='dropdown-menu dropdown-menu-end'>";
 
                 $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item view_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i> " . $this->lang->line('view_reports') . "</a></li>";
+                if ($this->rbac->hasPrivilege('radiology_bill', 'can_view')) {
+                    $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item print_bill' data-bs-toggle='tooltip' title='" . $this->lang->line('print_bill') . "'><i class='fa fa-print'></i> " . $this->lang->line('print_bill') . "</a></li>";
+                }
                 if ($this->rbac->hasPrivilege('radiology_bill', 'can_edit') && $billing_status !== 'refunded_cancelled') {
                     $action .= "<li><a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='dropdown-item edit_radiology' data-bs-toggle='tooltip' title='" . $this->lang->line('edit_radiology') . "'><i class='fa fa-pencil'></i> " . $this->lang->line('edit_radiology') . "</a></li>";
                 }
@@ -1754,7 +1757,7 @@ class Radio extends Admin_Controller
                     } else {
                         $row[] = 0;
                     }
-                    $row[] = amountFormat($adjusted_net, 2);
+                    $row[] = amountFormat($orig_net_amount, 2);
                     $row[] = amountFormat($final_paid, 2);
                     $row[] = amountFormat($final_balance, 2);
                 }

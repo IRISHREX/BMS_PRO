@@ -201,7 +201,7 @@ $tax_amt   = 0;
                         </tr>
                         <tr>
                             <td colspan="4"><?php echo $this->lang->line('net_amount'); ?></td>
-                            <td><?php echo $currency_symbol . amountFormat($adjusted_net_amt); ?></td>
+                            <td><?php echo $currency_symbol . amountFormat($base_net_amt); ?></td>
                         </tr>
                         <tr>
                             <td colspan="4"><?php echo $this->lang->line('paid_amount'); ?></td>

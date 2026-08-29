@@ -211,10 +211,10 @@ class Bill extends Admin_Controller
                 //====================================
 
                 $action = "<div class='rowoptionview rowview-mt-19'>";
-                $action .= "<a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' class='print_bill' data-bs-toggle='tooltip' data-record-id=\"" . $value->id . "\"   data-original-title='" . $this->lang->line('print_bill') . "'><i class='fa fa-print'></i></a>";
-                $action .= "</div>";
-                $action = "<div class='rowoptionview rowview-mt-19'>";
                 $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm view_pathology_detail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i></a>";
+                if ($this->rbac->hasPrivilege('pathology_bill', 'can_view')) {
+                    $action .= "<a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' class='btn btn-secondary btn-sm print_bill' data-bs-toggle='tooltip' data-record-id=\"" . $value->id . "\" title='" . $this->lang->line('print_bill') . "'><i class='fa fa-print'></i></a>";
+                }
                 if ($final_balance > 0) {
                     if ($this->rbac->hasPrivilege('pathology_billing_payment', 'can_view')) {
                         $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm add_pathology_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i></a>";
@@ -278,6 +278,9 @@ class Bill extends Admin_Controller
                 $action = "<div class='rowoptionview rowview-mt-19'>";
 
                 $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm view_radiodetail' data-bs-toggle='tooltip' title='" . $this->lang->line('view_reports') . "' ><i class='fa fa-reorder'></i></a>";
+                if ($this->rbac->hasPrivilege('radiology_bill', 'can_view')) {
+                    $action .= "<a href='javascript:void(0)' data-loading-text='" . $this->lang->line('please_wait') . "' class='btn btn-secondary btn-sm print_bill' data-bs-toggle='tooltip' data-record-id=\"" . $value->id . "\" title='" . $this->lang->line('print_bill') . "'><i class='fa fa-print'></i></a>";
+                }
                 if ($final_balance > 0) {
                     if ($this->rbac->hasPrivilege('radiology_billing_payment', 'can_view')) {
                         $action .= "<a href='javascript:void(0)'  data-loading-text='" . $this->lang->line('please_wait') . "' data-record-id='" . $value->id . "' class='btn btn-secondary btn-sm add_radio_payment' data-bs-toggle='tooltip' title='" . $this->lang->line('add_view_payments') . "' ><i class='fa fa-money'></i></a>";
@@ -295,7 +298,7 @@ class Bill extends Admin_Controller
                 $row[] = $value->discount." (".$value->discount_percentage." %)";
 				$tax_per = ($value->tax*100)/($value->total-$value->discount) ;
                 $row[] = $value->tax . " (".  amountFormat($tax_per) .'%)' ;
-                $row[] = amountFormat($adjusted_net);
+                $row[] = amountFormat($orig_net_amount);
                 $row[] = amountFormat($final_paid);
                 $row[] = amountFormat($final_balance) . $action;
                 //====================

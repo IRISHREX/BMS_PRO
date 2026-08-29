@@ -489,13 +489,55 @@ class Appointment extends Admin_Controller
             $result["doctor_shift_name"]       = '';
         }
 
+        $apt_payments = $this->transaction_model->appointmentTotalPayments($id);
+        if (!empty($apt_payments)) {
+            $result['paid_amount']   = (float)($apt_payments->total_paid ?? $result['paid_amount']);
+            $result['refund_amount'] = (float)($apt_payments->refund_amount ?? ($result['refund_amount'] ?? 0));
+            if (!empty($apt_payments->standard_amount) && (float)$apt_payments->standard_amount > 0) {
+                $result['standard_amount'] = (float)$apt_payments->standard_amount;
+            }
+        }
+
+        $age_y = (int)($result['age'] ?? 0);
+        $age_m = (int)($result['month'] ?? 0);
+        $age_d = (int)($result['day'] ?? 0);
+        if (!empty($result['as_of_date'])) {
+            try {
+                $date1 = new DateTime($result['as_of_date']);
+                $today = new DateTime();
+                $diff  = $today->diff($date1);
+                $age_y += $diff->y;
+                $age_m += $diff->m;
+                $age_d += $diff->d;
+                if ($age_d >= 30) {
+                    $age_m += floor($age_d / 30);
+                    $age_d  = $age_d % 30;
+                }
+                if ($age_m >= 12) {
+                    $age_y += floor($age_m / 12);
+                    $age_m  = $age_m % 12;
+                }
+            } catch (Exception $e) {}
+        }
+        $age_str = "{$age_y}Y,{$age_m}M,{$age_d}D";
+        $gender_str = !empty($result['patients_gender']) ? $result['patients_gender'] : '';
+        $result['age_gender'] = $age_str . ($gender_str ? '/' . $gender_str : '');
+
+        $shift_name = trim($result['global_shift_name'] ?? '');
+        $slot_name  = trim($result['doctor_shift_name'] ?? '');
+        if ($shift_name !== '' && $slot_name !== '') {
+            $result['shift_slot'] = $shift_name . ' (' . $slot_name . ')';
+        } else {
+            $result['shift_slot'] = ($shift_name !== '') ? $shift_name : (($slot_name !== '') ? $slot_name : '-');
+        }
+
         $result["patients_name"]       = composePatientName($result['patients_name'], $result['patient_id']);
         $result["edit_live_consult"]   = $this->lang->line($result['live_consult']);
         $result["live_consult"]        = $result['live_consult'];
         $result["date"]                = $this->customlib->YYYYMMDDHisTodateFormat($result['date'], $this->time_format);
         $result['custom_fields_value'] = display_custom_fields('appointment', $id);
         $cutom_fields_data             = get_custom_table_values($id, 'appointment');
-        $data['field_data']          = $cutom_fields_data;
+        $data['field_data']            = $cutom_fields_data;
         $result['patients_gender']     = $result['patients_gender'];
         $result['transaction_id']      = $this->customlib->getSessionPrefixByType('transaction_id') . $result['transaction_id'];
         $data['appointment_id']        = $id;
