@@ -30,6 +30,53 @@ class Transaction extends Admin_Controller
         echo json_encode(array('status' => 1, 'page' => $page));
     }
 
+    public function printAllTransactions()
+    {
+        $this->load->model('patient_model');
+        $this->load->model('charge_model');
+        $ipd_id          = $this->input->post('ipd_id');
+        $opd_id          = $this->input->post('opd_id');
+        $total_charge    = $this->input->post('total_charge');
+        $print_details   = $this->printing_model->get('', 'paymentreceipt');
+
+        if (!empty($ipd_id)) {
+            $patient         = $this->patient_model->getIpdDetails($ipd_id);
+            $payment_details = $this->transaction_model->IPDPatientPayments($ipd_id);
+            if ($total_charge === null || $total_charge === '') {
+                $charges = $this->charge_model->getCharges($ipd_id);
+                $total_charge = 0;
+                if (!empty($charges)) {
+                    foreach ($charges as $ch) {
+                        $total_charge += (float)$ch['amount'];
+                    }
+                }
+            }
+        } elseif (!empty($opd_id)) {
+            $patient         = $this->patient_model->getopdDetails($opd_id);
+            $payment_details = $this->transaction_model->OPDPatientPayments($opd_id);
+            if ($total_charge === null || $total_charge === '') {
+                $charges = $this->charge_model->getOPDCharges($opd_id);
+                $total_charge = 0;
+                if (!empty($charges)) {
+                    foreach ($charges as $ch) {
+                        $total_charge += (float)$ch['amount'];
+                    }
+                }
+            }
+        } else {
+            $patient         = array();
+            $payment_details = array();
+            $total_charge    = 0;
+        }
+
+        $data['patient']         = $patient;
+        $data['payment_details'] = $payment_details;
+        $data['print_details']   = $print_details;
+        $data['total_charge']    = $total_charge;
+        $page                    = $this->load->view('admin/transaction/_printAllTransactions', $data, true);
+        echo json_encode(array('status' => 1, 'page' => $page));
+    }
+
     public function deleteByID()
     {
         $id          = $this->input->post('id');

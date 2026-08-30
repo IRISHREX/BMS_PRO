@@ -887,7 +887,12 @@ class Bill extends Admin_Controller
             $array = array('status' => 'fail', 'error' => $msg, 'message' => '');
         } else {
 
-            $payment_date = $this->customlib->dateFormatToYYYYMMDD($this->input->post("payment_date", TRUE));
+            $raw_payment_date = $this->input->post("payment_date", TRUE);
+            if (!empty($this->time_format) && strpos($raw_payment_date, ':') !== false) {
+                $payment_date = $this->customlib->dateFormatToYYYYMMDDHis($raw_payment_date, $this->time_format);
+            } else {
+                $payment_date = $this->customlib->dateFormatToYYYYMMDD($raw_payment_date);
+            }
             $cheque_date  = $this->customlib->dateFormatToYYYYMMDD($this->input->post("cheque_date", TRUE));
             $amount       = $this->input->post('amount', TRUE);
 
@@ -903,10 +908,12 @@ class Bill extends Admin_Controller
             );
 
             if ($this->input->post('ipd_id', TRUE) != "") {
-                $data['ipd_id'] = $this->input->post('ipd_id', TRUE);
+                $data['ipd_id']  = $this->input->post('ipd_id', TRUE);
+                $data['section'] = 'IPD';
             }
             if ($this->input->post('opd_id', TRUE) != "") {
-                $data['opd_id'] = $this->input->post('opd_id', TRUE);
+                $data['opd_id']  = $this->input->post('opd_id', TRUE);
+                $data['section'] = 'OPD';
             }
             if ($this->input->post('pathology_billing_id', TRUE) != "") {
                 $data['pathology_billing_id'] = $this->input->post('pathology_billing_id', TRUE);
@@ -934,7 +941,8 @@ class Bill extends Admin_Controller
                 $fileInfo = pathinfo($_FILES["document"]["name"]);
                 $img_name = $insert_id . '.' . $fileInfo['extension'];
                 if (move_uploaded_file($_FILES["document"]["tmp_name"], "./uploads/payment_document/" . $img_name)) {
-                    $data_img = array('id' => $insert_id, 'document' => $img_name);
+                    $data_img = array('id' => $insert_id, 'attachment' => $img_name, 'attachment_name' => $img_name);
+                    $this->transaction_model->add($data_img);
 
                     // SaaS: add the uploaded refund document size to the storage quota usage.
                     try {
@@ -950,6 +958,7 @@ class Bill extends Admin_Controller
                 $data['cheque_date'] = $cheque_date;
                 $data['cheque_no']   = $this->input->post('cheque_no', TRUE);
                 $data['attachment']  = $img_name;
+                $data['attachment_name'] = $img_name;
                 $this->transaction_model->add($data);
             }
 

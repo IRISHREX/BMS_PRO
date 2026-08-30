@@ -12,7 +12,7 @@ $print_date = date($this->customlib->getHospitalDateFormat(true, false));
 
 <div class="fixed-print-header">
     <?php if (!empty($print_details['print_header'])) : ?>
-        <img src="<?php echo $this->media_storage->getImageURL($print_details['print_header']); ?>" style="height:100px; width:100%; object-fit:cover;" class="img-fluid">
+        <img src="<?php echo $this->media_storage->getImageURL($print_details['print_header']); ?>" style="max-height:80px; width:100%; object-fit:contain;" class="img-fluid">
     <?php else : ?>
         <div style="padding: 8px 0;"><span style="font-size: 16px; font-weight: bold;"><?php echo $this->lang->line('prescription'); ?></span></div>
     <?php endif; ?>
@@ -27,45 +27,89 @@ $print_date = date($this->customlib->getHospitalDateFormat(true, false));
         <div class="content-body sh-px-12" >
         <div class="print-area">
 
-            <!-- ① Document title -->
-            <div class="sh-print-title"><?php echo $this->lang->line('prescription'); ?></div>
+<?php
+$raw_age = $this->customlib->get_patient_current_age($result['patientid']);
+$compact_age = str_ireplace(
+    [' Year, ', ' Years, ', ' Month, ', ' Months, ', ' Day', ' Days', ' Year', ' Month'],
+    ['y,', 'y,', 'm,', 'm,', 'd', 'd', 'y', 'm'],
+    $raw_age
+);
+if (empty($compact_age)) {
+    $compact_age = '-';
+}
+?>
 
-            <!-- ② Patient / visit info block -->
+            <!-- ① Receipt Heading with Date on Top-Left and Centered Title -->
+            <table class="sh-receipt-heading-table">
+                <tr>
+                    <td style="width:32%; text-align:left; vertical-align:middle; font-size:11px; font-weight:600; color:#1e293b; white-space:nowrap;">
+                        <span style="color:#64748b; font-weight:500;"><?php echo $this->lang->line('date'); ?>:</span>
+                        <strong><?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?></strong>
+                    </td>
+                    <td style="width:46%; text-align:center; vertical-align:middle; padding:6px 0; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#111;">
+                        <?php echo $this->lang->line('prescription'); ?>
+                    </td>
+                    <td style="width:22%; text-align:right; vertical-align:middle; padding-right:2px;">
+                        &nbsp;
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ② 2-Column Patient Details Box -->
             <div class="sh-print-info-block">
-                <table class="sh-print-info-table">
-                    <colgroup>
-                        <col style="width:16%"><col style="width:18%">
-                        <col style="width:16%"><col style="width:16%">
-                        <col style="width:16%"><col style="width:18%">
-                    </colgroup>
-                    <tr>
-                        <th><?php echo $this->lang->line('opd_no'); ?></th>
-                        <td><?php echo ($result['opd_details_id'] ? $opd_prefix . $result['opd_details_id'] : '-'); ?></td>
-                        <th><?php echo $this->lang->line('checkup_id'); ?></th>
-                        <td><?php echo ($visitid ? $this->customlib->getSessionPrefixByType('checkup_id') . $visitid : '-'); ?></td>
-                        <th><?php echo $this->lang->line('date'); ?></th>
-                        <td><?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?></td>
-                    </tr>
-                    <tr>
-                        <th><?php echo $this->lang->line('patient_name'); ?></th>
-                        <td><?php echo ($result['patient_name'] ? $result['patient_name'] . ' (' . $result['patientid'] . ')' : '-'); ?></td>
-                        <th><?php echo $this->lang->line('age'); ?></th>
-                        <td><?php echo ($this->customlib->get_patient_current_age($result['patientid']) ?: '-'); ?></td>
-                        <th><?php echo $this->lang->line('gender'); ?></th>
-                        <td><?php echo ($result['gender'] ?: '-'); ?></td>
-                    </tr>
-                    <tr>
-                        <th><?php echo $this->lang->line('blood_group'); ?></th>
-                        <td><?php echo ($blood_group_name ?: '-'); ?></td>
-                        <th><?php echo $this->lang->line('address'); ?></th>
-                        <td><?php echo ($result['address'] ?: '-'); ?></td>
-                        <th><?php echo $this->lang->line('consultant_doctor'); ?></th>
-                        <td><?php echo ($result['name'] ? $result['name'] . ' ' . $result['surname'] . ' (' . $result['employee_id'] . ')' : '-'); ?></td>
-                    </tr>
-                    <tr>
-                        <th><?php echo $this->lang->line('known_allergies'); ?></th>
-                        <td colspan="5"><?php echo ($result['known_allergies'] ?: '-'); ?></td>
-                    </tr>
+                <table class="sh-print-info-2col">
+                    <tbody>
+                        <tr>
+                            <!-- Column 1: OPD & Patient Details -->
+                            <td style="width:50%; vertical-align:top; padding-right:12px;">
+                                <table class="sh-print-info-table">
+                                    <colgroup><col style="width:38%"><col style="width:62%"></colgroup>
+                                    <tr>
+                                        <th style="text-align:left;"><?php echo $this->lang->line('opd_no'); ?></th>
+                                        <td style="text-align:left;"><?php echo ($result['opd_details_id'] ? $opd_prefix . $result['opd_details_id'] : '-'); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align:left;"><?php echo $this->lang->line('patient_name'); ?></th>
+                                        <td style="text-align:left;"><?php echo ($result['patient_name'] ?: '-'); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" style="text-align:left; font-size:10.5px; color:#0f172a; padding:2.5px 0; white-space:nowrap;">
+                                            <span style="font-weight:normal; color:#475569;"><?php echo $this->lang->line('gender'); ?>:</span> <strong style="font-weight:700; color:#0f172a;"><?php echo ($result['gender'] ?: '-'); ?></strong>
+                                            <span style="color:#94a3b8; margin:0 4px;">/</span>
+                                            <span style="font-weight:normal; color:#475569;"><?php echo $this->lang->line('age'); ?>:</span> <strong style="font-weight:700; color:#0f172a;"><?php echo $compact_age; ?></strong>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align:left;"><?php echo $this->lang->line('blood_group'); ?></th>
+                                        <td style="text-align:left;"><?php echo ($blood_group_name ?: '-'); ?></td>
+                                    </tr>
+                                </table>
+                            </td>
+
+                            <!-- Column 2: Clinical Reference & Contact -->
+                            <td style="width:50%; vertical-align:top; padding-left:12px;">
+                                <table class="sh-print-info-table">
+                                    <colgroup><col style="width:42%"><col style="width:58%"></colgroup>
+                                    <tr>
+                                        <th style="text-align:left;"><?php echo $this->lang->line('checkup_id'); ?></th>
+                                        <td style="text-align:left;"><?php echo ($visitid ? $this->customlib->getSessionPrefixByType('checkup_id') . $visitid : '-'); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align:left;"><?php echo $this->lang->line('consultant_doctor'); ?></th>
+                                        <td style="text-align:left;"><?php echo ($result['name'] ? trim($result['name'] . ' ' . $result['surname']) : '-'); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align:left;"><?php echo $this->lang->line('address'); ?></th>
+                                        <td style="text-align:left;"><?php echo ($result['address'] ?: '-'); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align:left;"><?php echo $this->lang->line('known_allergies'); ?></th>
+                                        <td style="text-align:left;"><?php echo ($result['known_allergies'] ?: '-'); ?></td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
 

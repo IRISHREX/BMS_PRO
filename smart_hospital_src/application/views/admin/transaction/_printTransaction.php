@@ -59,34 +59,65 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
                 <table class="sh-print-table">
                     <thead>
                         <tr>
-                            <th style="width:4%">#</th>
                             <th><?php echo $this->lang->line('description'); ?></th>
-                            <th class="sh-col-18 sh-text-right"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?></th>
+                            <th style="width:24%; white-space: nowrap;"><?php echo !empty($this->lang->line('date')) ? $this->lang->line('date') : 'Date'; ?></th>
+                            <th style="width:18%"><?php echo !empty($this->lang->line('payment_mode')) ? $this->lang->line('payment_mode') : 'Payment Mode'; ?></th>
+                            <th class="sh-col-18 sh-text-right text-end" style="text-align: right;"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>1</td>
                             <td>
-                                <?php echo ($transaction->type == 'payment') ? $this->lang->line('payment_received') : $this->lang->line('payment_refund'); ?>
-                                <small>
-                                    <?php echo $this->lang->line('by') . ': ' . $this->lang->line(strtolower($transaction->payment_mode)); ?>
-                                    <?php if ($transaction->note != '') { ?>
-                                        <br><?php echo $this->lang->line('note') . ': ' . $transaction->note; ?>
-                                    <?php } ?>
-                                    <?php if ($transaction->payment_mode == 'Cheque') { ?>
-                                        <br><?php echo $this->lang->line('cheque_no') . ': ' . $transaction->cheque_no; ?>
-                                        <br><?php echo $this->lang->line('cheque_date') . ': ' . $this->customlib->YYYYMMDDTodateFormat($transaction->cheque_date); ?>
-                                    <?php } ?>
-                                </small>
+                                <strong>
+                                    <?php echo ($transaction->type == 'payment') ? $this->lang->line('payment_received') : $this->lang->line('payment_refund'); ?>
+                                    (<?php echo $this->customlib->getSessionPrefixByType('transaction_id') . $transaction->id; ?>)
+                                </strong>
+                                <?php if (!empty($transaction->note)) { ?>
+                                    <small><br><?php echo $this->lang->line('note') . ': ' . $transaction->note; ?></small>
+                                <?php } ?>
                             </td>
-                            <td class="sh-text-right"><?php echo amountFormat($transaction->amount); ?></td>
+                            <td style="white-space: nowrap;">
+                                <?php
+                                if ($transaction->payment_date) {
+                                    $t_date = $this->customlib->YYYYMMDDHisTodateFormat($transaction->payment_date, $this->customlib->getHospitalTimeFormat());
+                                    echo strtr($t_date, ['AM' => 'am', 'PM' => 'pm']);
+                                } else {
+                                    echo '-';
+                                }
+                                ?>
+                            </td>
+                            <td class="text-capitalize">
+                                <?php echo $this->lang->line(strtolower($transaction->payment_mode)); ?>
+                                <?php if ($transaction->payment_mode == 'Cheque') { ?>
+                                    <small>
+                                        <?php if (!empty($transaction->cheque_no)) { ?>
+                                            <br><?php echo $this->lang->line('cheque_no') . ': ' . $transaction->cheque_no; ?>
+                                        <?php } ?>
+                                        <?php if (!empty($transaction->cheque_date) && $transaction->cheque_date != '0000-00-00') { ?>
+                                            <br><?php echo $this->lang->line('cheque_date') . ': ' . $this->customlib->YYYYMMDDTodateFormat($transaction->cheque_date); ?>
+                                        <?php } ?>
+                                    </small>
+                                <?php } ?>
+                            </td>
+                            <td class="sh-text-right" style="text-align: right;">
+                                <?php if ($transaction->type == 'refund') { ?>
+                                    <span class="text-danger">- <?php echo amountFormat($transaction->amount); ?></span>
+                                <?php } else { ?>
+                                    <?php echo amountFormat($transaction->amount); ?>
+                                <?php } ?>
+                            </td>
                         </tr>
                     </tbody>
                     <tfoot>
                         <tr class="sh-row-total">
-                            <td colspan="2"><?php echo $this->lang->line('total'); ?></td>
-                            <td><?php echo $currency_symbol . amountFormat($transaction->amount); ?></td>
+                            <td colspan="3" class="sh-text-right"><?php echo ($transaction->type == 'refund') ? $this->lang->line('refund') : (!empty($this->lang->line('total_paid')) ? $this->lang->line('total_paid') : 'Total Paid'); ?></td>
+                            <td class="sh-text-right" style="text-align: right;">
+                                <?php if ($transaction->type == 'refund') { ?>
+                                    <span class="text-danger">- <?php echo $currency_symbol . amountFormat($transaction->amount); ?></span>
+                                <?php } else { ?>
+                                    <?php echo $currency_symbol . amountFormat($transaction->amount); ?>
+                                <?php } ?>
+                            </td>
                         </tr>
                     </tfoot>
                 </table>

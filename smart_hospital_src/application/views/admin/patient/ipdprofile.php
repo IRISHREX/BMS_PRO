@@ -1368,7 +1368,29 @@ $categorylist = $this->operationtheatre_model->category_list();
                                 </div> 
                             </div>
                            <?php }  
-                           if ($this->rbac->hasPrivilege('payment', 'can_view')) { ?> 
+                           if ($this->rbac->hasPrivilege('payment', 'can_view')) { 
+                                if (!isset($total)) {
+                                    $total = 0;
+                                    if (!empty($charges)) {
+                                        foreach ($charges as $charge) {
+                                            $total += $charge["amount"];
+                                        }
+                                    }
+                                }
+                                $total_payment = 0;
+                                $total_refund = 0;
+                                if (!empty($payment_details)) {
+                                    foreach ($payment_details as $payment_item) {
+                                        if (!empty($payment_item['amount'])) {
+                                            if (isset($payment_item['type']) && $payment_item['type'] == 'refund') {
+                                                $total_refund += $payment_item['amount'];
+                                            } else {
+                                                $total_payment += $payment_item['amount'];
+                                            }
+                                        }
+                                    }
+                                }
+                            ?> 
                             <div class="tab-pane card tab-content-height" id="payment">
                                 <div class="box-tab-header">
                                     <h3 class="box-tab-title"><?php echo $this->lang->line('payment'); ?></h3>
@@ -1377,6 +1399,7 @@ $categorylist = $this->operationtheatre_model->category_list();
                                             if ($this->rbac->hasPrivilege('payment', 'can_add')) {
                                                     ?>
                                                         <a href="javascript:void(0)" class="btn btn-sm btn-primary addpayment" onclick="addpaymentModal(); return false;"><i class="fa fa-plus"></i> <?php echo $this->lang->line('add_payment'); ?></a>
+                                                        <a href="javascript:void(0)" class="btn btn-sm btn-primary addrefund" onclick="addRefundModal(); return false;"><i class="fa fa-undo"></i> <?php echo $this->lang->line('refund'); ?></a>
                                                     <?php
                                             }
                                             ?> 
@@ -1395,14 +1418,10 @@ $categorylist = $this->operationtheatre_model->category_list();
                                         </thead>
                                         <tbody>
                                             <?php
-                                            $total_payment=0;
                                             if (!empty($payment_details)) {                                               
 
                                                 foreach ($payment_details as $payment) {
-                                                    if ($payment['type'] != 'refund') {
-                                                    if (!empty($payment['amount'])) {
-                                                        $total_payment += $payment['amount'];
-                                                    }
+                                                    $is_refund = (isset($payment['type']) && $payment['type'] == 'refund');
                                                     ?>
                                                     <tr>
                                                         <td><?php echo $this->customlib->getSessionPrefixByType('transaction_id').$payment['id']; ?></td>
@@ -1422,7 +1441,13 @@ $categorylist = $this->operationtheatre_model->category_list();
                                      }
                                     ?>
                                                         </td>
-                                                        <td class="text-end"><?php echo $payment["amount"] ?></td>                                                    
+                                                        <td class="text-end">
+                                                        <?php if ($is_refund) { ?>
+                                                            <span class="text-danger fw-semibold">- <?php echo number_format($payment["amount"], 2); ?></span> <span class="badge bg-danger ms-1" style="font-size:10px;"><?php echo $this->lang->line('refund'); ?></span>
+                                                        <?php } else { ?>
+                                                            <?php echo $payment["amount"]; ?>
+                                                        <?php } ?>
+                                                        </td>                                                    
                                                         <td class="text-end">
 
                                                         <?php  if ($payment['payment_mode'] == "Cheque" && $payment['attachment'] != "")  {                                                           
@@ -1434,7 +1459,7 @@ $categorylist = $this->operationtheatre_model->category_list();
 
             <a href="javascript:void(0)" class="btn btn-secondary btn-sm print_trans" data-record-id="<?php echo $payment['id'] ?>" data-loading-text="<?php echo $this->lang->line('please_wait'); ?>" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('print'); ?>"><i class="fa fa-print"></i></a>
 			
-			<?php  if ($this->rbac->hasPrivilege('payment', 'can_edit')) { ?>
+			<?php  if ($this->rbac->hasPrivilege('payment', 'can_edit') && !$is_refund) { ?>
             <a href="javascript:void(0);" class="btn btn-secondary btn-sm editpayment" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('edit'); ?>" data-payment-amount="<?php echo $payment["amount"] ?>" data-record-id="<?php echo $payment['id']; ?>"><i class="fa fa-pencil"></i></a>
 			<?php } ?>
 			
@@ -1451,14 +1476,20 @@ $categorylist = $this->operationtheatre_model->category_list();
                                      <?php } }?>
                                                         </td>
                                                     </tr>
-                                                <?php } } ?>                                 
+                                                <?php } ?>                                 
                                             </tbody>
                                                 <tr class="box box-solid total-bg">
                                                     <td></td> 
                                                     <td></td> 
                                                     <td></td> 
                                                     <td></td>
-                                                     <td  colspan = "" class="text-end"><?php echo $this->lang->line('total') . " : " . $currency_symbol . "" . number_format($total_payment, 2) ; ?>
+                                                     <td  colspan = "" class="text-end">
+                                                        <?php if ($total_refund > 0) { ?>
+                                                            <div class="text-muted small"><?php echo $this->lang->line('paid_amount') . ': ' . $currency_symbol . number_format($total_payment, 2); ?></div>
+                                                            <div class="text-danger small"><?php echo $this->lang->line('refund') . ': -' . $currency_symbol . number_format($total_refund, 2); ?></div>
+                                                        <?php } ?>
+                                                        <div><strong><?php echo (!empty($this->lang->line('total_paid')) ? $this->lang->line('total_paid') : 'Total Paid') . " : " . $currency_symbol . "" . number_format($total_payment - $total_refund, 2) ; ?></strong></div>
+                                                        <div><strong><?php echo (!empty($this->lang->line('due_amount')) ? $this->lang->line('due_amount') : 'Due Amount') . " : " . $currency_symbol . "" . number_format(max(0, (isset($total) ? (float)$total : 0) - ($total_payment - $total_refund)), 2) ; ?></strong></div>
                                                     </td>
                                                     <td></td>   
                                                 </tr>
@@ -2416,7 +2447,11 @@ $categorylist = $this->operationtheatre_model->category_list();
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="add_payment" accept-charset="utf-8" method="post">
-                <input type="hidden" name="net_amount" value="<?php echo $total - $total_payment ?>">
+                <?php 
+                    $net_paid   = (isset($total_payment) ? $total_payment : 0) - (isset($total_refund) ? $total_refund : 0);
+                    $due_amount = max(0, $total - $net_paid);
+                ?>
+                <input type="hidden" name="net_amount" value="<?php echo $due_amount ?>">
                 <input type="hidden" name="case_reference_id" id="case_reference_id" value="<?php echo $result['case_reference_id']; ?>">
                 <input type="hidden" name="patient_id" value="<?php echo $result['id']; ?>">
                 <input type="hidden" name="ipdid" value="<?php echo $ipdid ?>">
@@ -2434,7 +2469,7 @@ $categorylist = $this->operationtheatre_model->category_list();
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?> <small class="text-danger">*</small></label>
-                                    <input type="text" name="amount" id="amount" class="form-control" value="<?php echo $total - $total_payment ?>">
+                                    <input type="text" name="amount" id="amount" class="form-control" value="<?php echo $due_amount ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('payment_mode'); ?></label>
@@ -2477,6 +2512,75 @@ $categorylist = $this->operationtheatre_model->category_list();
     </div>
 </div>
 <!-- -->
+
+<!-- Refund Modal -->
+<div class="modal fade sh-modal sh-modal-accent" id="myRefundModal" tabindex="-1" aria-labelledby="myRefundModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="myRefundModalLabel"><?php echo $this->lang->line('refund'); ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="add_refund_form" accept-charset="utf-8" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="case_reference_id" id="refund_case_reference_id" value="<?php echo $result['case_reference_id']; ?>">
+                <input type="hidden" name="patient_id" value="<?php echo $result['id']; ?>">
+                <input type="hidden" name="ipd_id" value="<?php echo $ipdid; ?>">
+                <div class="modal-body">
+                    <div class="sh-form-card">
+                        <div class="sh-card-header">
+                            <span class="sh-card-header-title"><i class="fa fa-undo me-1"></i> <?php echo !empty($this->lang->line('refund_details')) ? $this->lang->line('refund_details') : ($this->lang->line('refund') . ' ' . $this->lang->line('details')); ?></span>
+                        </div>
+                        <div class="p-2">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('date'); ?> <small class="text-danger">*</small></label>
+                                    <input type="text" name="payment_date" id="refund_date" class="form-control datetime" autocomplete="off">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?> <small class="text-danger">*</small></label>
+                                    <input type="text" name="amount" id="refund_amount" class="form-control" placeholder="0.00">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('payment_mode'); ?></label>
+                                    <select class="form-control refund_payment_mode" name="payment_mode" id="refund_payment_mode">
+                                        <?php foreach ($payment_mode as $key => $value) { ?>
+                                        <option value="<?php echo $key ?>" <?php if ($key == 'cash') { echo "selected"; } ?>><?php echo $value ?></option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="col-12 refund_cheque_div" style="display:none">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-1"><?php echo $this->lang->line('cheque_no'); ?> <small class="text-danger">*</small></label>
+                                            <input type="text" name="cheque_no" id="refund_cheque_no" class="form-control">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-1"><?php echo $this->lang->line('cheque_date'); ?> <small class="text-danger">*</small></label>
+                                            <input type="text" name="cheque_date" id="refund_cheque_date" class="form-control date">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label mb-1"><?php echo $this->lang->line('attach_document'); ?></label>
+                                            <input type="file" id="refund_file" class="filestyle form-control" name="document">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('note'); ?></label>
+                                    <textarea name="note" id="refund_note" rows="2" class="form-control"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
+                    <button type="submit" id="add_refundbtn" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i>" class="btn btn-info"><i class="fa fa-check-circle"></i> <?php echo $this->lang->line('save'); ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Refund Modal -->
 
 <!-- -->
 <div class="modal fade sh-modal sh-modal-accent" id="myMedicationModal" tabindex="-1" aria-labelledby="myMedicationModalLabel" aria-hidden="true">
@@ -4163,6 +4267,13 @@ $(function () {
         shModal('myPaymentModal').show();
     }
 
+    function addRefundModal() {
+        $('#add_refund_form').trigger("reset");
+        $("#refund_file").dropify();
+        $("#refund_payment_mode").val("cash").trigger('change');
+        shModal('myRefundModal').show();
+    }
+
     function addmedicationModal() {
         shModal('myaddMedicationModal').show();
     }
@@ -4659,6 +4770,41 @@ $('#myChargesModal').on('hidden.bs.modal', function (e) {
                 },  
                 complete: function(){
                  $("#add_paymentbtn").btnReset();
+                }
+            });
+        }));
+
+        $("#add_refund_form").on('submit', (function (e) {
+            e.preventDefault();            
+            $.ajax({
+                url: '<?php echo base_url(); ?>admin/bill/add_refund',
+                type: "POST",
+                data: new FormData(this),
+                dataType: 'json',
+                contentType: false,
+                cache: false,
+                processData: false,
+                beforeSend: function(){
+                    $("#add_refundbtn").btnLoading();
+                },
+                success: function (data) {
+                    if (data.status == "fail") {
+                        var message = "";
+                        $.each(data.error, function (index, value) {
+                            message += value;
+                        });
+                        errorMsg(message);
+                    } else {
+                        successMsg(data.message);
+                        window.location.reload(true);
+                    }
+                    $("#add_refundbtn").btnReset();
+                },
+                error: function () {
+                    $("#add_refundbtn").btnReset();
+                },  
+                complete: function(){
+                    $("#add_refundbtn").btnReset();
                 }
             });
         }));
@@ -6309,6 +6455,15 @@ $(".addcharges").click(function(){
         $('.cheque_div').css("display", "none");
       }
     });
+
+    $(document).on('change','.refund_payment_mode',function(){
+      var mode=$(this).val();
+      if(mode == "Cheque"){
+        $('.refund_cheque_div').css("display", "block");
+      }else{
+        $('.refund_cheque_div').css("display", "none");
+      }
+    });
 </script>
 
 <script type="text/javascript">
@@ -6501,6 +6656,41 @@ function makeid(length) {
              }
       });
   });
+
+    function printAllIpdTransactions(ipd_id) {
+        var total_charge = $('#charge_total').val();
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/transaction/printAllTransactions',
+            type: 'POST',
+            data: { ipd_id: ipd_id, total_charge: total_charge },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status == 1) {
+                    popup(res.page);
+                }
+            },
+            error: function(xhr) {
+                alert("<?php echo $this->lang->line('error_occurred_please_try_again'); ?>");
+            }
+        });
+    }
+
+    // Intercept outside table print and pdf buttons for IPD payment transactions
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('#payment .buttons-print, #payment .buttons-pdf');
+        if (btn) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            printAllIpdTransactions('<?php echo $ipdid; ?>');
+        }
+    }, true);
+
+    $(document).on('click', '#payment .buttons-print, #payment .buttons-pdf', function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        printAllIpdTransactions('<?php echo $ipdid; ?>');
+        return false;
+    });
   
      $(document).on('change','.death_status',function(){
       var status=$(this).val();
