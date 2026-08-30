@@ -1386,7 +1386,7 @@ $('#addpatient_id').on('select2:select', function (e) {
                     btn.btnReset();
                 }
             });
-        });       });
+        });
 
          $(document).on('click','.print_receipt',function(){
             var $this = $(this);

@@ -78,20 +78,21 @@ body {
 .sh-print-info-table tr { vertical-align: top; }
 .sh-print-info-table th {
   font-size: 9.5px;
-  font-weight: 500;
-  color: #111;
-  white-space: normal;
-  word-break: break-word;
-  padding: 3px 5px 3px 0;
-  text-align: right;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  padding: 3px 2px 3px 0;
+  text-align: left;
 }
-.sh-print-info-table th::after { content: ' :'; color: #111; font-weight: 400; }
+.sh-print-info-table th::after { content: ' :'; color: #475569; font-weight: 500; }
 .sh-print-info-table th:empty::after { content: ''; }
 .sh-print-info-table td {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 3px 10px 3px 3px;
-  color: #111;
+  padding: 3px 0 3px 6px;
+  color: #0f172a;
+  text-align: left;
+  word-break: break-word;
 }
 
 /* Two-column flex layout for paired info tables (50/50 split) */
@@ -106,6 +107,58 @@ body {
   width: auto;
 }
 .sh-print-info-table.w-50 { width: 50%; }
+
+/* Two-column layout for info tables (50/50 split) */
+.sh-print-info-2col {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.sh-print-info-2col > tbody > tr > td {
+  width: 50%;
+  vertical-align: top;
+}
+
+/* Three-column layout for info tables (33/33/33 split) */
+.sh-print-info-3col {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.sh-print-info-3col > tbody > tr > td {
+  width: 33.333%;
+  vertical-align: top;
+  padding: 0 5px;
+}
+.sh-print-info-3col > tbody > tr > td:first-child {
+  padding-left: 0;
+}
+.sh-print-info-3col > tbody > tr > td:last-child {
+  padding-right: 0;
+}
+
+/* Receipt Top Header with Status */
+.sh-receipt-heading-table {
+  width: 100%;
+  border-top: 2px solid #111;
+  border-bottom: 1px solid #111;
+  margin-bottom: 10px;
+  border-collapse: collapse;
+}
+.sh-receipt-heading-table td {
+  vertical-align: middle;
+}
+.sh-payment-status-badge {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 12px;
+  border-radius: 4px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .sh-px-12 { padding-left: 12px; padding-right: 12px; }
 .sh-col-22 { width: 22%; }
 .sh-text-right { text-align: right; }
@@ -188,10 +241,11 @@ body {
   text-align: left;
 }
 .sh-print-table tbody td {
-  padding: 6px 8px;
+  padding: 4px 6px;
   border-bottom: 1px solid #cbd5e1;
-  vertical-align: top;
+  font-size: 9.5px;
   color: #111;
+  vertical-align: top;
 }
 .sh-print-table tbody tr:last-child td { border-bottom: 1px solid #94a3b8; }
 .sh-print-table tbody td small {
@@ -219,11 +273,18 @@ body {
 /* ── @media print overrides ───────────────────────── */
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  @page { margin: 12mm; }
-  .fixed-print-header { position: fixed; top: 0; width: 100%; z-index: 10; }
+  @page {
+    size: auto;
+    margin: 8mm 10mm;
+  }
+  .fixed-print-header { position: fixed; top: 0; width: 100%; z-index: 10; max-height: 80px; }
+  .fixed-print-header img { max-height: 80px; width: 100%; object-fit: contain; }
+  .header-space  { height: 80px; }
   .footer-fixed { position: fixed; bottom: 0; width: 100%; background: #fff; }
-  .sh-print-info-block { background: #f9fafb !important; page-break-inside: avoid; }
+  .footer-space  { height: 50px; }
+  .sh-print-info-block { background: #f9fafb !important; page-break-inside: avoid; break-inside: avoid; }
   .sh-print-table thead th { background: #f1f5f9 !important; }
+  .sh-print-table, .sh-print-table tr, .print-area { page-break-inside: avoid; break-inside: avoid; }
   .no-print { display: none !important; }
 }
 

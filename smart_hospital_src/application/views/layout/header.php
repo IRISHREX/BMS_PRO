@@ -612,10 +612,4 @@
 </script>
 
 <main class="content">
-<?php if ($this->config->item('SHLK') == '') { ?>
-<div class="sh-license-banner">
-  <span class="sh-license-banner-icon"><i class="fa fa-exclamation"></i></span>
-  <span class="sh-license-banner-text">Alert! You are using unregistered version of Smart Hospital. Please <a href="#" class="purchasemodal">click here</a> to register your purchase code for Smart Hospital.</span>
-</div>
-<?php } ?>
 <!-- ═══════════════════ PAGE CONTENT START ═══════════════════ -->

@@ -40,7 +40,7 @@ $.fn.btnReset = function () {
 
 /* Bootstrap 5 Modal helper — replaces $('#id').modal('show'/'hide') */
 function shModal(idOrEl) {
-  var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
+  var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl.replace(/^#/, '')) : idOrEl;
   if (!el) return { show: function(){}, hide: function(){}, toggle: function(){} };
   if (el.parentNode !== document.body) { document.body.appendChild(el); }
   return bootstrap.Modal.getOrCreateInstance(el);
@@ -162,9 +162,7 @@ function delete_recordByIdReload(url) {
 $(document).ready(function () {
 
   /* --- License modal --- */
-  if ($('.purchasemodal').length <= 0 && chk_validate == '') {
-    shModal('activelicmodal').show();
-  }
+  // Auto-show disabled
   $(document).on('click', '.purchasemodal', function () {
     shModal('activelicmodal').show();
   });
