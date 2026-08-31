@@ -161,10 +161,19 @@ class Generatestaffidcard extends Admin_Controller
             $staffid_arr[] = $value->staff_id;
         }
         $staffs_arr = $this->Generatestaffidcard_model->getEmployee($staffid_arr, 1);
-        $scan_type  = $this->sch_setting_detail->scan_code_type;
-		 
+
         foreach ($staffs_arr as $key => $staffs_value) {
-             $staffs_arr[$key]->barcode = $this->customlib->generatestaffbarcode($staffs_value->employee_id,$staffs_value->id,$scan_type);
+            // Attendance always uses a QR payload of employee_id, independent of the
+            // optional global barcode setting. Generate both card assets on every print.
+            $staffs_arr[$key]->barcode = $this->customlib->generatestaffbarcode($staffs_value->employee_id, $staffs_value->id, 'barcode');
+            $staffs_arr[$key]->qrcode  = $this->customlib->generatestaffbarcode($staffs_value->employee_id, $staffs_value->id, 'qrcode');
+            $relative_qr_path           = $staffs_arr[$key]->qrcode;
+            $configured_qr_path         = rtrim((string) $this->customlib->getFolderPath(), '/\\') . DIRECTORY_SEPARATOR . $relative_qr_path;
+            $public_qr_path             = FCPATH . $relative_qr_path;
+            $qr_file                    = is_file($configured_qr_path) ? $configured_qr_path : $public_qr_path;
+            // Embed the image in the printable card. This works even when Hostinger's
+            // configured upload path is outside the web root or blocks direct image URLs.
+            $staffs_arr[$key]->qrcode_src = is_file($qr_file) ? 'data:image/png;base64,' . base64_encode(file_get_contents($qr_file)) : '';
         }
 
         $data['staffs']        = $staffs_arr;

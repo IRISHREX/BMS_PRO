@@ -6,8 +6,8 @@ $db['default'] = array(
     'dsn'          => '',
     'hostname'     => getenv('DB_HOST') ?: 'localhost',
     'username'     => getenv('DB_USER') ?: 'root',
-    'password'     => getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'Roti100%',
-    'database'     => getenv('DB_NAME') ?: 'new_schema',
+    'password'     => getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'Sohel@34892',
+    'database'     => getenv('DB_NAME') ?: 'shnodb',
     'port'         => getenv('DB_PORT') ?: 3306,
     'dbdriver'     => 'mysqli',
     'dbprefix'     => '',
@@ -15,8 +15,8 @@ $db['default'] = array(
     'db_debug'     => (ENVIRONMENT !== 'production'),
     'cache_on'     => false,
     'cachedir'     => '',
-    'char_set'     => 'utf8',
-    'dbcollat'     => 'utf8_general_ci',
+    'char_set'     => 'utf8mb4',
+    'dbcollat'     => 'utf8mb4_unicode_ci',
     'swap_pre'     => '',
     'encrypt'      => false,
     'compress'     => false,
@@ -52,8 +52,8 @@ if ($mysqli && !$mysqli->connect_errno) {
                     $db[$short_name]['db_debug']     = false;
                     $db[$short_name]['cache_on']     = false;
                     $db[$short_name]['cachedir']     = '';
-                    $db[$short_name]['char_set']     = 'utf8';
-                    $db[$short_name]['dbcollat']     = 'utf8_general_ci';
+                    $db[$short_name]['char_set']     = 'utf8mb4';
+                    $db[$short_name]['dbcollat']     = 'utf8mb4_unicode_ci';
                     $db[$short_name]['swap_pre']     = '';
                     $db[$short_name]['autoinit']     = false;
                     $db[$short_name]['stricton']     = false;

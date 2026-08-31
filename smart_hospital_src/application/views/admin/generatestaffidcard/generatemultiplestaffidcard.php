@@ -45,11 +45,10 @@
                                         <img src="<?php echo $this->media_storage->getImageURL('uploads/patient_images/no_image.png'); ?>" class="img-fluid" />
                                         <?php } ?>
                                     </div>
-                                    <?php if ($id_card[0]->enable_staff_barcode == 1) { ?>
-                                    <div class="barcodeimg">
-                                        <img src="<?php echo $this->media_storage->getImageURL($staff_value->barcode); ?>" />
+                                    <?php // Staff cards always include the QR attendance credential. ?>
+                                    <div class="barcodeimg text-center">
+                                        <img src="<?php echo !empty($staff_value->qrcode_src) ? $staff_value->qrcode_src : $this->media_storage->getImageURL(isset($staff_value->qrcode) ? $staff_value->qrcode : $staff_value->barcode); ?>" alt="Staff attendance QR code" style="max-width:70px;max-height:70px" />
                                     </div>
-                                    <?php } ?>
                                 </div><!--./cardleft-->
                                 <div class="cardright">
                                     <ul class="stlist">
@@ -68,11 +67,13 @@
                                             <li><?php echo $this->lang->line('date_of_birth'); ?>
                                                 <span>
                                                     <?php
-                                                    echo $dob = "";
-                                                    if ($staff_value->dob != "0000-00-00") {
-                                                        $dob = date($this->customlib->getHospitalDateFormat(), $this->customlib->dateYYYYMMDDtoStrtotime($staff_value->dob));
+                                                    $dob = '';
+                                                    if (!empty($staff_value->dob) && $staff_value->dob !== '0000-00-00') {
+                                                        $timestamp = $this->customlib->dateYYYYMMDDtoStrtotime($staff_value->dob);
+                                                        if ($timestamp !== false && $timestamp !== null && $timestamp !== '') {
+                                                            $dob = date($this->customlib->getHospitalDateFormat(), (int) $timestamp);
+                                                        }
                                                     }
-                                                    
                                                     echo $dob;
                                                     ?>
                                                 </span></li>

@@ -2019,16 +2019,23 @@ class Customlib
         $this->CI->zend->load('Zend/Barcode');
         //generate barcode
         $imageResource = Zend_Barcode::factory('code128', 'image', array('text' => $code, 'barHeight' => 20), array())->draw();
-        $barcode_dir = $this->CI->customlib->getFolderPath().'uploads/staff_id_card/barcodes/';
-        if (!is_dir($barcode_dir)) {
-            mkdir($barcode_dir, 0755, true);
+        // QR files are standard web assets, so they must always be written beneath
+        // the public application root (the same location Media_storage serves).
+        $storage_root = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR;
+        $barcode_dir = $storage_root . 'uploads/staff_id_card/barcodes/';
+        if ((!is_dir($barcode_dir) && !@mkdir($barcode_dir, 0755, true)) || !is_writable($barcode_dir)) {
+            $storage_root = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR;
+            $barcode_dir  = $storage_root . 'uploads/staff_id_card/barcodes/';
+            if (!is_dir($barcode_dir)) {
+                @mkdir($barcode_dir, 0755, true);
+            }
         }
         imagepng($imageResource, $barcode_dir . $staff_id . '.png');
         $barcode = 'uploads/staff_id_card/barcodes/' . $staff_id . '.png';
         //=============qrcode=================
         $this->CI->load->library('QR_Code');
 
-        $path = $this->CI->customlib->getFolderPath().'uploads/staff_id_card/qrcode/';
+        $path = $storage_root . 'uploads/staff_id_card/qrcode/';
         if (!is_dir($path)) {
             mkdir($path, 0755, true);
         }
