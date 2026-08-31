@@ -19,6 +19,9 @@ class QR_Code
 
     public function generate($upload_path,$text,$file_name)
     {
+        if (!is_dir($upload_path) && !mkdir($upload_path, 0755, true) && !is_dir($upload_path)) {
+            return false;
+        }
         $data = $text;
         $options = new QROptions([
             'version' => 5,
@@ -37,8 +40,8 @@ class QR_Code
         $qrCode = new QRCode($options);
 
         // generating the QR code image happens here
-        $qrCodeImage = $qrCode->render($data, $upload_path.$file_name.'.png');
-      
+        $qrCode->render($data, $upload_path.$file_name.'.png');
+        return is_file($upload_path.$file_name.'.png') && filesize($upload_path.$file_name.'.png') > 0;
 
     }
 }

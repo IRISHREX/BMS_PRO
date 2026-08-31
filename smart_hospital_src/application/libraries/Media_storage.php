@@ -15,15 +15,65 @@ class Media_storage
         $this->_CI->load->library('customlib');
     }
 
+    /**
+     * Canonicalise a database/file path to a safe application-relative path.
+     * Every browser URL maps to FCPATH; this prevents a separate folder_path
+     * from creating files the public web server can never serve.
+     */
+    private function relativePath($path)
+    {
+        $path = str_replace('\\', '/', trim((string) $path));
+        $path = preg_replace('#^\./+#', '', $path);
+        $path = ltrim($path, '/');
+        if ($path === '' || strpos($path, '..') !== false) {
+            return '';
+        }
+        return $path;
+    }
+
+    private function publicPath($path, $repair_legacy = true)
+    {
+        $relative = $this->relativePath($path);
+        if ($relative === '') {
+            return '';
+        }
+        $public = FCPATH . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+
+        // One-time self repair for historic assets stored under sch_settings.folder_path.
+        // On Hostinger folder_path may be outside document root, while all image URLs
+        // correctly resolve under the application URL/FCPATH.
+        if ($repair_legacy && !is_file($public)) {
+            $legacy_root = rtrim((string) $this->_CI->customlib->getFolderPath(), '/\\');
+            if ($legacy_root !== '' && realpath($legacy_root) !== realpath(FCPATH)) {
+                $legacy = $legacy_root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+                if (is_file($legacy) && is_readable($legacy)) {
+                    $directory = dirname($public);
+                    if (!is_dir($directory)) {
+                        @mkdir($directory, 0755, true);
+                    }
+                    if (is_dir($directory) && is_writable($directory)) {
+                        @copy($legacy, $public);
+                    }
+                }
+            }
+        }
+        return $public;
+    }
+
     public function fileupload($media_name, $upload_path = "")
     {
         if (file_exists($_FILES[$media_name]['tmp_name']) && !$_FILES[$media_name]['error'] == UPLOAD_ERR_NO_FILE) {
 
             $name        = $_FILES[$media_name]['name'];
             $file_name   = time() . "-" . uniqid(rand()) . "!" . $name;
-            $destination = FCPATH . $upload_path . $file_name;
+            $relative    = rtrim($this->relativePath($upload_path), '/') . '/' . $file_name;
+            $destination = $this->publicPath($relative, false);
+            $directory   = dirname($destination);
+            if (!is_dir($directory)) {
+                @mkdir($directory, 0755, true);
+            }
 
-            if (move_uploaded_file($_FILES[$media_name]["tmp_name"], $destination)) {
+            if (is_dir($directory) && is_writable($directory) && move_uploaded_file($_FILES[$media_name]["tmp_name"], $destination)) {
                 return $file_name;
             }
 
@@ -56,7 +106,12 @@ class Media_storage
             if (strpos($file_name, 'http') === 0) {
                 return $file_name . img_time();
             }
-            $download_file_name = $this->_CI->customlib->getBaseUrl() . $file_name . img_time();
+            $relative = $this->relativePath($file_name);
+            if ($relative === '') {
+                return null;
+            }
+            $this->publicPath($relative); // repair a legacy external-storage asset before linking it
+            $download_file_name = rtrim($this->_CI->customlib->getBaseUrl(), '/') . '/' . $relative . img_time();
             return $download_file_name;
         }
         return null;
@@ -65,7 +120,7 @@ class Media_storage
     public function filedelete($file_name, $path = "")
     {
         if (!IsNullOrEmptyString($file_name)) {
-            $url = FCPATH . $path . "/" . $file_name;
+        $url = $this->publicPath(trim($path, '/\\') . '/' . $file_name, false);
             if (file_exists($url)) {
                 if (unlink($url)) {
                     return true;
@@ -128,9 +183,9 @@ class Media_storage
     public function getUploadedFileSize($file_name, $file_path = "")
     {
         if ($file_path == "") {
-            $file_url = FCPATH . $file_name;
+            $file_url = $this->publicPath($file_name);
         } else {
-            $file_url = FCPATH . $file_path . "/" . $file_name;
+            $file_url = $this->publicPath(trim($file_path, '/\\') . '/' . $file_name);
         }
 
         if (file_exists($file_url)) {

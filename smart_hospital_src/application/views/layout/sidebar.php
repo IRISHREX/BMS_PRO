@@ -351,28 +351,16 @@
             ?>
 			
 			<?php
-				if($this->auth->addonchk('shqra')){
-				if($this->module_lib->hasModule('qr_code_attendence')){
-                if($this->module_lib->hasActive('qr_code_attendence')){			
-                    if(($this->rbac->hasPrivilege('qr_code_attendance','can_view')) ||
-                        ($this->rbac->hasPrivilege('qr_code_setting','can_view'))){ ?>
+				// QR attendance is a native extension of staff attendance; it does not require a separate licensed add-on.
+				if($this->rbac->hasPrivilege('staff_attendance','can_view')){ ?>
 						<li class="nav-item <?php echo set_Topmenu('qrattendance'); ?>">
-							<a class="nav-link" href="<?php echo base_url(); ?>admin/qrattendance/setting/index"><i class="fa fa-qrcode" aria-hidden="true"></i><span><?php echo $this->lang->line('qr_code_attendance'); ?></span><i class="fa fa-angle-down ms-auto sidebar-arrow"></i></a>
+							<a class="nav-link" href="<?php echo base_url(); ?>admin/qrattendance/attendance/index"><i class="fa fa-qrcode" aria-hidden="true"></i><span>QR Code Attendance</span><i class="fa fa-angle-down ms-auto sidebar-arrow"></i></a>
 							<ul class="sh-subnav <?php echo set_Topmenu('qrattendance') ? 'show' : ''; ?>" id="sub-3">
-									
-								<?php if ($this->rbac->hasPrivilege('qr_code_attendance', 'can_view')) { ?>
-								
-									<li class="nav-item" data-submenu="admin/qrattendance/attendance/index"><a class="nav-link" href="<?php echo base_url(); ?>admin/qrattendance/attendance/index"><i class="fas fa-angle-right"></i> <?php echo $this->lang->line('attendance'); ?> </a></li>
-									
-								<?php } if ($this->rbac->hasPrivilege('qr_code_setting', 'can_view')) { ?>
-								
-									<li class="nav-item" data-submenu="admin/qrattendance/setting/index"><a class="nav-link" href="<?php echo base_url(); ?>admin/qrattendance/setting/index"><i class="fas fa-angle-right"></i> <?php echo $this->lang->line('settings'); ?></a></li>
-									
-								<?php } ?>
-								
+								<li class="nav-item" data-submenu="admin/qrattendance/attendance/index"><a class="nav-link" href="<?php echo base_url(); ?>admin/qrattendance/attendance/index"><i class="fas fa-angle-right"></i> Attendance</a></li>
+								<li class="nav-item" data-submenu="admin/qrattendance/setting/index"><a class="nav-link" href="<?php echo base_url(); ?>admin/qrattendance/setting/index"><i class="fas fa-angle-right"></i> Settings</a></li>
 							</ul>
 						</li>
-				<?php } } } } ?>
+				<?php } ?>
 			
 			<?php 
 				if($this->module_lib->hasActive('duty_roster')){ 
