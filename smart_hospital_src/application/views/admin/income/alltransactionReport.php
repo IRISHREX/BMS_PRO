@@ -8,7 +8,11 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             <div class="card-header ptbnull"></div>
             <div class="card-header">
                 <h3 class="card-title"><?php echo $this->lang->line('transaction_report') ?></h3>
-                <div class="d-flex gap-2 align-items-center flex-wrap float-end"></div>
+                <div class="d-flex gap-2 align-items-center flex-wrap float-end">
+                    <button type="button" class="btn btn-primary btn-sm d-none" id="btn_print_txn_report">
+                        <i class="fa fa-print me-1"></i> <?php echo $this->lang->line('print'); ?>
+                    </button>
+                </div>
             </div>
             <div class="card-body pb-0">
                 <form id="form1" action="" method="post">
@@ -111,8 +115,54 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 <script>
 ( function ( $ ) {
     'use strict';
+
+    var isPrinting = false;
+
+    function printAllTransactionReport() {
+        if (isPrinting) {
+            return false;
+        }
+        isPrinting = true;
+
+        var formData = new FormData($('#form1')[0]);
+        var $btn = $('#btn_print_txn_report, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/income/print_alltransaction_report',
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (res) {
+                $btn.prop('disabled', false);
+                setTimeout(function() {
+                    isPrinting = false;
+                }, 2000);
+                if (res.status === 'success' && res.html) {
+                    popup(res.html);
+                } else {
+                    errorMsg('No data available to print');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                isPrinting = false;
+                errorMsg('Something went wrong generating the report.');
+            }
+        });
+    }
+
     $(document).ready(function () {
         emptyDatatable('allajaxlist', 'data');
+
+        $(document).off('click', '#btn_print_txn_report').on('click', '#btn_print_txn_report', function(e) {
+            e.preventDefault();
+            printAllTransactionReport();
+        });
+
         $('#form1').on('submit', (function (e) {
             e.preventDefault();
             var formData = new FormData(this);
@@ -148,6 +198,26 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                 { "sWidth": "150px", "aTargets": [1], 'sClass': 'dt-body-left' },
                                 { "sWidth": "150px", "aTargets": [-1], 'sClass': 'dt-body-right' }
                             ]);
+
+                        $('#btn_print_txn_report').removeClass('d-none');
+
+                        setTimeout(function() {
+                            try {
+                                var dt = $('.allajaxlist').DataTable();
+                                if (dt && dt.button) {
+                                    if (dt.button('.btn-print').length) {
+                                        dt.button('.btn-print').action(function (e, dtInstance, node, config) {
+                                            printAllTransactionReport();
+                                        });
+                                    }
+                                    if (dt.button('.btn-pdf').length) {
+                                        dt.button('.btn-pdf').action(function (e, dtInstance, node, config) {
+                                            printAllTransactionReport();
+                                        });
+                                    }
+                                }
+                            } catch(err) {}
+                        }, 200);
                     }
                 }
             });

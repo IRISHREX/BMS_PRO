@@ -635,6 +635,156 @@ class Expense extends Admin_Controller
         $this->load->view('layout/footer', $data);
     }
 
+    public function print_expense_report()
+    {
+        if (!$this->rbac->hasPrivilege('expense_report', 'can_view')) {
+            echo json_encode(array('status' => 'fail', 'message' => 'Access Denied'));
+            return;
+        }
+
+        $search_type = $this->input->post('search_type', TRUE);
+        $date_from   = $this->input->post('date_from', TRUE);
+        $date_to     = $this->input->post('date_to', TRUE);
+        $start_date  = '';
+        $end_date    = '';
+
+        if ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (!empty($search_type)) {
+                $dates = $this->customlib->get_betweendate($search_type);
+            } else {
+                $dates = $this->customlib->get_betweendate('this_year');
+            }
+            $start_date = $dates['from_date'];
+            $end_date   = $dates['to_date'];
+        }
+
+        $reportdata = $this->transaction_model->expensereportRecord($start_date, $end_date);
+        $reportdata = json_decode($reportdata);
+
+        $hospital_name = 'YOUR HOSPITAL NAME';
+        $h_details = $this->setting_model->getHospitalDetails();
+        if (!empty($h_details) && !empty($h_details->name)) {
+            $hospital_name = $h_details->name;
+        }
+
+        if ($search_type == 'period' && !empty($start_date) && !empty($end_date)) {
+            $report_subtitle = "Expense Report [From: " . date('d-M-Y', strtotime($start_date)) . " To: " . date('d-M-Y', strtotime($end_date)) . "]";
+        } else {
+            $lbl = !empty($search_type) ? (isset($this->search_type[$search_type]) ? $this->search_type[$search_type] : ucfirst(str_replace('_', ' ', $search_type))) : 'This Year';
+            $report_subtitle = "Expense Report [Duration: " . $lbl . "]";
+        }
+
+        $print_rows   = array();
+        $total_amount = 0;
+
+        if (!empty($reportdata->data)) {
+            foreach ($reportdata->data as $value) {
+                $amt = (float)$value->amount;
+                $total_amount += $amt;
+
+                $print_rows[] = array(
+                    'name'         => $value->expense_name,
+                    'invoice_no'   => $value->invoice_no,
+                    'expense_head' => $value->exp_category,
+                    'date'         => !empty($value->payment_date) ? date('d-M-Y', strtotime($value->payment_date)) : '-',
+                    'amount'       => number_format($amt, 2),
+                );
+            }
+        }
+
+        $data['hospital_name']   = $hospital_name;
+        $data['report_subtitle'] = $report_subtitle;
+        $data['print_rows']      = $print_rows;
+        $data['total_amount']    = $total_amount;
+        $data['currency_symbol'] = $this->customlib->getHospitalCurrencyFormat();
+
+        $html = $this->load->view('admin/expense/_printExpenseReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
+    }
+
+    public function print_expense_group_report()
+    {
+        if (!$this->rbac->hasPrivilege('expense_group_report', 'can_view')) {
+            echo json_encode(array('status' => 'fail', 'message' => 'Access Denied'));
+            return;
+        }
+
+        $search_type = $this->input->post('search_type', TRUE);
+        $date_from   = $this->input->post('date_from', TRUE);
+        $date_to     = $this->input->post('date_to', TRUE);
+        $head_id     = $this->input->post('head', TRUE);
+        $start_date  = '';
+        $end_date    = '';
+
+        if ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (!empty($search_type)) {
+                $dates = $this->customlib->get_betweendate($search_type);
+            } else {
+                $dates = $this->customlib->get_betweendate('this_year');
+            }
+            $start_date = $dates['from_date'];
+            $end_date   = $dates['to_date'];
+        }
+
+        $result = $this->expense_model->getexpensereport($start_date, $end_date, $head_id);
+        $m      = json_decode($result);
+
+        $hospital_name = 'YOUR HOSPITAL NAME';
+        $h_details = $this->setting_model->getHospitalDetails();
+        if (!empty($h_details) && !empty($h_details->name)) {
+            $hospital_name = $h_details->name;
+        }
+
+        if ($search_type == 'period' && !empty($start_date) && !empty($end_date)) {
+            $report_subtitle = "Expense Group Report [From: " . date('d-M-Y', strtotime($start_date)) . " To: " . date('d-M-Y', strtotime($end_date)) . "]";
+        } else {
+            $lbl = !empty($search_type) ? (isset($this->search_type[$search_type]) ? $this->search_type[$search_type] : ucfirst(str_replace('_', ' ', $search_type))) : 'This Year';
+            $report_subtitle = "Expense Group Report [Duration: " . $lbl . "]";
+        }
+
+        $groups      = array();
+        $grand_total = 0;
+
+        if (!empty($m->data)) {
+            foreach ($m->data as $val) {
+                $h_id = $val->exp_head_id;
+                if (!isset($groups[$h_id])) {
+                    $groups[$h_id] = array(
+                        'head_name' => $val->exp_category,
+                        'subtotal'  => 0,
+                        'items'     => array()
+                    );
+                }
+                $amt = (float)$val->amount;
+                $groups[$h_id]['subtotal'] += $amt;
+                $grand_total += $amt;
+
+                $groups[$h_id]['items'][] = array(
+                    'id'         => $val->id,
+                    'name'       => $val->name,
+                    'date'       => !empty($val->date) ? date('d-M-Y', strtotime($val->date)) : '-',
+                    'invoice_no' => $val->invoice_no,
+                    'amount'     => number_format($amt, 2),
+                );
+            }
+        }
+
+        $data['hospital_name']   = $hospital_name;
+        $data['report_subtitle'] = $report_subtitle;
+        $data['groups']          = $groups;
+        $data['grand_total']     = $grand_total;
+        $data['currency_symbol'] = $this->customlib->getHospitalCurrencyFormat();
+
+        $html = $this->load->view('admin/expense/_printExpenseGroupReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
+    }
+
     /* this function is used to get and return income group report parameter without applying any validation */
     public function getgroupreportparam()
     {

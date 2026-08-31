@@ -6,9 +6,13 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
         <div class="card">
             <?php $this->load->view('admin/report/_finance'); ?>
             <div class="card-header ptbnull"></div>
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h3 class="card-title"><?php echo $this->lang->line('daily_transaction_report'); ?></h3>
-                <div class="d-flex gap-2 align-items-center flex-wrap float-end"></div>
+                <?php if (isset($result)) { ?>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" id="btn_print_dtr">
+                    <i class="fa fa-print"></i> <?php echo $this->lang->line('print'); ?>
+                </button>
+                <?php } ?>
             </div>
             <div class="card-body pb-0">
                 <form id="transaction_form" action="" method="post">
@@ -42,7 +46,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             <?php if (isset($result)) { ?>
             <div class="card-body table-responsive pt-0">
                 <div class="download_label"><?php echo $this->lang->line('daily_transaction_report'); ?></div>
-                <table class="table table-striped table-bordered table-hover example" cellspacing="0" width="100%">
+                <table class="table table-striped table-bordered table-hover example" id="daily_trans_table" cellspacing="0" width="100%">
                     <thead>
                         <tr>
                             <th><?php echo $this->lang->line('date'); ?></th>
@@ -82,6 +86,9 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             <div class="modal-header">
                 <h5 class="modal-title" id="collectionModalLabel"><?php echo $this->lang->line('collection_list'); ?></h5>
                 <div class="d-flex align-items-center gap-2 ms-auto">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn_print_collection_modal">
+                        <i class="fa fa-print"></i> <?php echo $this->lang->line('print'); ?>
+                    </button>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
             </div>
@@ -96,7 +103,87 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 </div>
 
 <script type="text/javascript">
+var isPrinting = false;
+
+function printDailyTransactionReport() {
+    if (isPrinting) {
+        return false;
+    }
+    isPrinting = true;
+
+    var formData = new FormData($('#transaction_form')[0]);
+    var $btn = $('#btn_print_dtr, #daily_trans_table_wrapper .buttons-print, #daily_trans_table_wrapper .buttons-pdf');
+    $btn.prop('disabled', true);
+
+    $.ajax({
+        url: '<?php echo base_url(); ?>admin/transaction/print_dailytransaction_report',
+        type: "POST",
+        data: formData,
+        dataType: 'json',
+        contentType: false,
+        cache: false,
+        processData: false,
+        success: function (res) {
+            $btn.prop('disabled', false);
+            setTimeout(function() {
+                isPrinting = false;
+            }, 2000);
+            if (res.status === 'success' && res.html) {
+                popup(res.html);
+            } else {
+                errorMsg('No data available to print');
+            }
+        },
+        error: function () {
+            $btn.prop('disabled', false);
+            isPrinting = false;
+            errorMsg('Something went wrong generating the report.');
+        }
+    });
+}
+
     $(document).ready(function () {
+        $(document).off('click', '#btn_print_dtr').on('click', '#btn_print_dtr', function(e) {
+            e.preventDefault();
+            printDailyTransactionReport();
+        });
+
+        setTimeout(function() {
+            try {
+                var dt = $('#daily_trans_table').DataTable();
+                if (dt && dt.button) {
+                    if (dt.button('.buttons-print').length) {
+                        dt.button('.buttons-print').action(function (e, dtInstance, node, config) {
+                            printDailyTransactionReport();
+                        });
+                    }
+                    if (dt.button('.buttons-pdf').length) {
+                        dt.button('.buttons-pdf').action(function (e, dtInstance, node, config) {
+                            printDailyTransactionReport();
+                        });
+                    }
+                    if (dt.button('.btn-print').length) {
+                        dt.button('.btn-print').action(function (e, dtInstance, node, config) {
+                            printDailyTransactionReport();
+                        });
+                    }
+                    if (dt.button('.btn-pdf').length) {
+                        dt.button('.btn-pdf').action(function (e, dtInstance, node, config) {
+                            printDailyTransactionReport();
+                        });
+                    }
+                }
+            } catch(err) {}
+        }, 200);
+
+        $(document).off('click', '#daily_trans_table_wrapper .buttons-print, #daily_trans_table_wrapper .buttons-pdf, #daily_trans_table_wrapper .btn-print, #daily_trans_table_wrapper .btn-pdf')
+            .on('click', '#daily_trans_table_wrapper .buttons-print, #daily_trans_table_wrapper .buttons-pdf, #daily_trans_table_wrapper .btn-print, #daily_trans_table_wrapper .btn-pdf', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                printDailyTransactionReport();
+                return false;
+            });
+
         document.querySelectorAll('.start_date').forEach(function (startEl) {
             if (!startEl.classList.contains('date')) startEl.classList.add('date');
             SHPicker.onChange(startEl, function (e) {
@@ -117,14 +204,64 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
         });
     });
 
+    var currentCollectionDate = '';
+
+    function printCollectionList(date) {
+        if (isPrinting) {
+            return false;
+        }
+        isPrinting = true;
+
+        var $btn = $('#btn_print_collection_modal, #collectionModal .buttons-print, #collectionModal .buttons-pdf');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/transaction/print_collection_list',
+            type: "POST",
+            data: { 'date': date },
+            dataType: 'json',
+            success: function (res) {
+                $btn.prop('disabled', false);
+                setTimeout(function() {
+                    isPrinting = false;
+                }, 2000);
+                if (res.status === 'success' && res.html) {
+                    popup(res.html);
+                } else {
+                    errorMsg('No data available to print');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                isPrinting = false;
+                errorMsg('Something went wrong generating the report.');
+            }
+        });
+    }
+
+    $(document).off('click', '#btn_print_collection_modal').on('click', '#btn_print_collection_modal', function(e) {
+        e.preventDefault();
+        printCollectionList(currentCollectionDate);
+    });
+
+    $(document).off('click', '#collectionModal .buttons-print, #collectionModal .buttons-pdf')
+        .on('click', '#collectionModal .buttons-print, #collectionModal .buttons-pdf', function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            printCollectionList(currentCollectionDate);
+            return false;
+        });
+
     $(document).on('click', '.daily_collection', function (e) {
         var $btn = $(this);
         e.preventDefault();
         var dateText = $(this).closest('tr').find('td:first').text().trim();
+        currentCollectionDate = $(this).data('date');
+
         $.ajax({
             url: baseurl + 'admin/transaction/gettransactionbydate',
             type: "POST",
-            data: { 'date': $(this).data('date') },
+            data: { 'date': currentCollectionDate },
             dataType: 'json',
             beforeSend: function () {
                 $btn.btnLoading();
@@ -139,16 +276,21 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         { extend: 'copyHtml5', text: '<i class="fa fa-files-o"></i>', titleAttr: 'Copy', title: $('.download_label').html(), exportOptions: { columns: ["thead th:not(.noExport)"] } },
                         { extend: 'excelHtml5', text: '<i class="fa fa-file-excel-o"></i>', titleAttr: 'Excel', title: $('.download_label').html(), exportOptions: { columns: ["thead th:not(.noExport)"] } },
                         { extend: 'csvHtml5', text: '<i class="fa fa-file-text-o"></i>', titleAttr: 'CSV', title: $('.download_label').html(), exportOptions: { columns: ["thead th:not(.noExport)"] } },
-                        { extend: 'pdfHtml5', text: '<i class="fa fa-file-pdf-o"></i>', titleAttr: 'PDF', title: $('.download_label').html(), exportOptions: { columns: ["thead th:not(.noExport)"] } },
                         {
-                            extend: 'print', text: '<i class="fa fa-print"></i>', titleAttr: 'Print', title: $('.download_label').html(),
-                            customize: function (win) {
-                                $(win.document.body).find('th').addClass('display').css('text-align', 'left');
-                                $(win.document.body).find('td').addClass('display').css('text-align', 'left');
-                                $(win.document.body).find('table').addClass('display').css('font-size', '14px');
-                                $(win.document.body).find('h1').css('text-align', 'center');
-                            },
-                            exportOptions: { columns: ["thead th:not(.noExport)"] }
+                            extend: 'pdfHtml5',
+                            text: '<i class="fa fa-file-pdf-o"></i>',
+                            titleAttr: 'PDF',
+                            action: function (e, dt, node, config) {
+                                printCollectionList(currentCollectionDate);
+                            }
+                        },
+                        {
+                            extend: 'print',
+                            text: '<i class="fa fa-print"></i>',
+                            titleAttr: 'Print',
+                            action: function (e, dt, node, config) {
+                                printCollectionList(currentCollectionDate);
+                            }
                         }
                     ]
                 });

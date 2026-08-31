@@ -363,6 +363,121 @@ class Report extends Admin_Controller
         $this->load->view('layout/footer', $data);
     }
 
+    public function print_balanceamount_report()
+    {
+        if (!$this->rbac->hasPrivilege('balance_amount_report', 'can_view')) {
+            echo json_encode(array('status' => 'fail', 'message' => 'Access Denied'));
+            return;
+        }
+
+        $modules_type = $this->input->post('modules_type');
+        $patient_id   = $this->input->post('patient_id');
+        $patient_name = $this->input->post('patient_name');
+
+        $balance_data = $this->report_model->getmodulewisebalance_report($modules_type, $patient_id);
+        $modules      = $this->customlib->get_modules();
+
+        $hospital_name = 'YOUR HOSPITAL NAME';
+        if (isset($this->setting_model)) {
+            $h_details = $this->setting_model->getHospitalDetails();
+            if (!empty($h_details) && !empty($h_details->name)) {
+                $hospital_name = $h_details->name;
+            }
+        }
+
+        $module_label = 'All';
+        if (!empty($modules_type)) {
+            if ($modules_type == 'blood_component') {
+                $module_label = 'Blood Component';
+            } elseif (isset($modules[$modules_type])) {
+                $module_label = $modules[$modules_type];
+            } else {
+                $module_label = ucfirst(str_replace('_', ' ', $modules_type));
+            }
+        }
+
+        $patient_label = !empty($patient_name) ? preg_replace('/\s*\([^)]*\)$/', '', trim($patient_name)) : 'All';
+        $report_subtitle = "Balance Amount Report [Head: " . $module_label . "] For Patient: " . $patient_label;
+
+        $print_rows           = array();
+        $total_amount         = 0;
+        $total_discount       = 0;
+        $total_tax            = 0;
+        $total_net_amount     = 0;
+        $total_paid_amount    = 0;
+        $total_refund_amount  = 0;
+        $total_balance_amount = 0;
+
+        if (!empty($balance_data)) {
+            foreach ($balance_data as $val) {
+                $prefix = $this->customlib->getSessionPrefixByType($val['prefix_type']);
+                $bill_no = $prefix . $val['bill_no'];
+                $case_id = !empty($val['case_id']) ? $val['case_id'] : '-';
+
+                $p_name = !empty($val['patient_name']) ? preg_replace('/\s*\([^)]*\)$/', '', trim($val['patient_name'])) : '-';
+
+                $gen_by = trim(($val['name'] ?? '') . ' ' . ($val['surname'] ?? ''));
+                if (empty($gen_by)) {
+                    $gen_by = '-';
+                }
+
+                $doc_name = !empty($val['doctor_name']) ? preg_replace('/\s*\([^)]*\)$/', '', trim($val['doctor_name'])) : '-';
+                if (empty($doc_name)) {
+                    $doc_name = '-';
+                }
+
+                $tot = (float)$val['total'];
+                $disc = (float)$val['discount'];
+                $tax = (float)$val['tax'];
+                $net = (float)$val['net_amount'];
+                $paid = (float)$val['paid_amount'];
+                $ref = (float)$val['refund_amount'];
+                $bal = $net - $paid + $ref;
+
+                $total_amount         += $tot;
+                $total_discount       += $disc;
+                $total_tax            += $tax;
+                $total_net_amount     += $net;
+                $total_paid_amount    += $paid;
+                $total_refund_amount  += $ref;
+                $total_balance_amount += $bal;
+
+                $discount_pct = ($tot != 0) ? ($disc * 100) / $tot : 0;
+                $tax_pct = (($tot - $disc) != 0) ? ($tax * 100) / ($tot - $disc) : 0;
+
+                $print_rows[] = array(
+                    'bill_no'        => $bill_no,
+                    'case_id'        => $case_id,
+                    'patient_name'   => $p_name,
+                    'generated_by'   => $gen_by,
+                    'doctor_name'    => $doc_name,
+                    'amount'         => number_format($tot, 2),
+                    'discount'       => number_format($disc, 2) . ' (' . number_format($discount_pct, 2) . '%)',
+                    'tax'            => number_format($tax, 2) . ' (' . number_format($tax_pct, 2) . '%)',
+                    'net_amount'     => number_format($net, 2),
+                    'paid_amount'    => number_format($paid, 2),
+                    'refund_amount'  => number_format($ref, 2),
+                    'balance_amount' => number_format($bal, 2),
+                );
+            }
+        }
+
+        $data['hospital_name']        = $hospital_name;
+        $data['report_subtitle']      = $report_subtitle;
+        $data['print_rows']           = $print_rows;
+        $data['total_amount']         = $total_amount;
+        $data['total_discount']       = $total_discount;
+        $data['total_tax']            = $total_tax;
+        $data['total_net_amount']     = $total_net_amount;
+        $data['total_paid_amount']    = $total_paid_amount;
+        $data['total_refund_amount']  = $total_refund_amount;
+        $data['total_balance_amount'] = $total_balance_amount;
+        $data['currency_symbol']      = $this->customlib->getHospitalCurrencyFormat();
+
+        $html = $this->load->view('admin/report/_printBalanceAmountReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
+    }
+
     public function incomeexpensebalancereport()
     {
         if (!$this->rbac->hasPrivilege('income_expense_balance_report', 'can_view')) {
@@ -432,6 +547,139 @@ class Report extends Admin_Controller
         $this->load->view('layout/header', $data);
         $this->load->view('admin/report/incomeexpensebalancereport', $data);
         $this->load->view('layout/footer', $data);
+    }
+
+    public function print_incomeexpensebalance_report()
+    {
+        if (!$this->rbac->hasPrivilege('income_expense_balance_report', 'can_view')) {
+            echo json_encode(array('status' => 'fail', 'message' => 'Access Denied'));
+            return;
+        }
+
+        $search_type = $this->input->post('search_type', TRUE);
+        if (empty($search_type)) {
+            $search_type = 'this_month';
+        }
+
+        $today     = $this->customlib->YYYYMMDDTodateFormat(date('Y-m-d'));
+        $date_from = $this->input->post('date_from', TRUE) ?: $today;
+        $date_to   = $this->input->post('date_to', TRUE) ?: $today;
+
+        $start_date = null;
+        $end_date   = null;
+
+        if ($search_type == 'today') {
+            $start_date = date('Y-m-d');
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'this_week') {
+            $start_date = date('Y-m-d', strtotime('monday this week'));
+            $end_date   = date('Y-m-d', strtotime('sunday this week'));
+        } elseif ($search_type == 'last_week') {
+            $start_date = date('Y-m-d', strtotime('monday last week'));
+            $end_date   = date('Y-m-d', strtotime('sunday last week'));
+        } elseif ($search_type == 'this_month') {
+            $start_date = date('Y-m-01');
+            $end_date   = date('Y-m-t');
+        } elseif ($search_type == 'last_month') {
+            $start_date = date('Y-m-01', strtotime('first day of last month'));
+            $end_date   = date('Y-m-t', strtotime('last day of last month'));
+        } elseif ($search_type == 'last_3_month') {
+            $start_date = date('Y-m-d', strtotime('-3 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_6_month') {
+            $start_date = date('Y-m-d', strtotime('-6 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_12_month') {
+            $start_date = date('Y-m-d', strtotime('-12 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_year') {
+            $start_date = date('Y-m-d', strtotime('first day of january last year'));
+            $end_date   = date('Y-m-d', strtotime('last day of december last year'));
+        } elseif ($search_type == 'this_year') {
+            $start_date = date('Y-01-01');
+            $end_date   = date('Y-12-31');
+        } elseif ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$start_date) ||
+                !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$end_date)) {
+                $start_date = null;
+                $end_date   = null;
+            }
+        }
+
+        $report_data = $this->report_model->getIncomeExpenseBalanceReport($start_date, $end_date);
+
+        $hospital_name = 'YOUR HOSPITAL NAME';
+        if (isset($this->setting_model)) {
+            $h_details = $this->setting_model->getHospitalDetails();
+            if (!empty($h_details) && !empty($h_details->name)) {
+                $hospital_name = $h_details->name;
+            }
+        }
+
+        $search_type_labels = array(
+            'today'         => 'Today',
+            'this_week'     => 'This Week',
+            'last_week'     => 'Last Week',
+            'this_month'    => 'This Month',
+            'last_month'    => 'Last Month',
+            'last_3_month'  => 'Last 3 Months',
+            'last_6_month'  => 'Last 6 Months',
+            'last_12_month' => 'Last 12 Months',
+            'last_year'     => 'Last Year',
+            'this_year'     => 'This Year',
+            'all_time'      => 'All Time',
+            'period'        => 'Period'
+        );
+
+        if ($search_type == 'period' && !empty($start_date) && !empty($end_date)) {
+            $report_subtitle = "Income Expense Balance Report [Period From: " . date('d-M-Y', strtotime($start_date)) . " To: " . date('d-M-Y', strtotime($end_date)) . "]";
+        } else {
+            $lbl = isset($search_type_labels[$search_type]) ? $search_type_labels[$search_type] : ucfirst(str_replace('_', ' ', $search_type));
+            $report_subtitle = "Income Expense Balance Report [Duration: " . $lbl . "]";
+        }
+
+        $print_rows    = array();
+        $total_income  = 0;
+        $total_expense = 0;
+
+        if (!empty($report_data)) {
+            foreach ($report_data as $row) {
+                $inc = (float)$row['income_in'];
+                $exp = (float)$row['expense_out'];
+                $bal = $inc - $exp;
+
+                $total_income  += $inc;
+                $total_expense += $exp;
+
+                $date_disp = (!empty($row['record_date']) && $row['record_date'] != '0000-00-00')
+                    ? date('d-M-Y', strtotime($row['record_date']))
+                    : '-';
+
+                $print_rows[] = array(
+                    'date'        => $date_disp,
+                    'type'        => $row['inc_exp_head'],
+                    'income_in'   => number_format($inc, 2),
+                    'expense_out' => number_format($exp, 2),
+                    'balance'     => number_format($bal, 2),
+                    'balance_val' => $bal,
+                );
+            }
+        }
+
+        $net_balance = $total_income - $total_expense;
+
+        $data['hospital_name']   = $hospital_name;
+        $data['report_subtitle'] = $report_subtitle;
+        $data['print_rows']      = $print_rows;
+        $data['total_income']    = $total_income;
+        $data['total_expense']   = $total_expense;
+        $data['net_balance']     = $net_balance;
+        $data['currency_symbol'] = $this->customlib->getHospitalCurrencyFormat();
+
+        $html = $this->load->view('admin/report/_printIncomeExpenseBalanceReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
     }
 
     public function salereturns()

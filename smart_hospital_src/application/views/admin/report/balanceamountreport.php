@@ -7,8 +7,11 @@ $genderList = $this->customlib->getGender();
         <div class="card">
             <?php $this->load->view('admin/report/_finance'); ?>
             <div class="card-header ptbnull"></div>
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h3 class="card-title"><?php echo $this->lang->line('balance_amount_report'); ?></h3>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" id="btn_print_balance_report">
+                    <i class="fa fa-print"></i> <?php echo $this->lang->line('print'); ?>
+                </button>
             </div>
             <div class="card-body pb-0">
                 <form id="form111" action="<?php echo base_url('admin/report/balanceamountreport'); ?>" method="post" accept-charset="utf-8">
@@ -126,7 +129,87 @@ $genderList = $this->customlib->getGender();
 </div>
 
 <script type="text/javascript">
+    var isPrinting = false;
+
+    function printBalanceAmountReport() {
+        if (isPrinting) {
+            return false;
+        }
+        isPrinting = true;
+
+        var formData = new FormData($('#form111')[0]);
+        var $btn = $('#btn_print_balance_report, #testreport_wrapper .btn-print, #testreport_wrapper .btn-pdf');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/report/print_balanceamount_report',
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (res) {
+                $btn.prop('disabled', false);
+                setTimeout(function() {
+                    isPrinting = false;
+                }, 2000);
+                if (res.status === 'success' && res.html) {
+                    popup(res.html);
+                } else {
+                    errorMsg('No data available to print');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                isPrinting = false;
+                errorMsg('Something went wrong generating the report.');
+            }
+        });
+    }
+
     $(document).ready(function () {
+        $(document).off('click', '#btn_print_balance_report').on('click', '#btn_print_balance_report', function(e) {
+            e.preventDefault();
+            printBalanceAmountReport();
+        });
+
+        setTimeout(function() {
+            try {
+                var dt = $('#testreport').DataTable();
+                if (dt && dt.button) {
+                    if (dt.button('.buttons-print').length) {
+                        dt.button('.buttons-print').action(function (e, dtInstance, node, config) {
+                            printBalanceAmountReport();
+                        });
+                    }
+                    if (dt.button('.buttons-pdf').length) {
+                        dt.button('.buttons-pdf').action(function (e, dtInstance, node, config) {
+                            printBalanceAmountReport();
+                        });
+                    }
+                    if (dt.button('.btn-print').length) {
+                        dt.button('.btn-print').action(function (e, dtInstance, node, config) {
+                            printBalanceAmountReport();
+                        });
+                    }
+                    if (dt.button('.btn-pdf').length) {
+                        dt.button('.btn-pdf').action(function (e, dtInstance, node, config) {
+                            printBalanceAmountReport();
+                        });
+                    }
+                }
+            } catch(err) {}
+        }, 200);
+
+        $(document).off('click', '#testreport_wrapper .buttons-print, #testreport_wrapper .buttons-pdf, #testreport_wrapper .btn-print, #testreport_wrapper .btn-pdf')
+            .on('click', '#testreport_wrapper .buttons-print, #testreport_wrapper .buttons-pdf, #testreport_wrapper .btn-print, #testreport_wrapper .btn-pdf', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                printBalanceAmountReport();
+                return false;
+            });
+
         $('.patient_list_ajax').select2({
             minimumInputLength: 2,
             ajax: {

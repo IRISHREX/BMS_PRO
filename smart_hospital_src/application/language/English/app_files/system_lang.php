@@ -3275,3 +3275,5 @@ $lang["partially_refunded"] = "Partially Refunded";
 $lang["partially_refunded_cancelled"] = "Partially Refunded (Cancelled)";
 $lang["full_refunded"] = "Full Refunded";
 $lang["valid_amount"] = "Valid Amount";
+$lang["department_wise_transaction_report"] = "Department Wise Transaction Report";
+

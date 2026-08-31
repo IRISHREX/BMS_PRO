@@ -6,9 +6,11 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
         <div class="card">
             <?php $this->load->view('admin/report/_finance'); ?>
             <div class="card-header ptbnull"></div>
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h3 class="card-title"><?php echo $this->lang->line('income_group_report'); ?></h3>
-                <div class="d-flex gap-2 align-items-center flex-wrap float-end"></div>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" id="btn_print_incomegroup_report">
+                    <i class="fa fa-print"></i> <?php echo $this->lang->line('print'); ?>
+                </button>
             </div>
             <div class="card-body pb-0">
                 <form role="form" id="form" method="post" action="<?php echo site_url('admin/income/getgroupreportparam') ?>">
@@ -65,7 +67,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             </div>
             <div class="card-body table-responsive pt-0">
                 <div class="download_label"><?php echo $this->lang->line('income_group_report'); ?></div>
-                <table class="table table-striped table-bordered table-hover income-list" data-export-title="<?php echo $this->lang->line('income') . " " . $this->lang->line('group') . " " . $this->lang->line('report'); ?>">
+                <table class="table table-striped table-bordered table-hover income-list" id="income_group_table" data-export-title="<?php echo $this->lang->line('income') . " " . $this->lang->line('group') . " " . $this->lang->line('report'); ?>">
                     <thead>
                         <tr>
                             <th><?php echo $this->lang->line('income_head'); ?></th>
@@ -108,9 +110,61 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 </script>
 
 <script>
+    var isPrinting = false;
+
+    function printIncomeGroupReport() {
+        if (isPrinting) {
+            return false;
+        }
+        isPrinting = true;
+
+        var formData = new FormData($('#form')[0]);
+        var $btn = $('#btn_print_incomegroup_report, #income_group_table_wrapper .buttons-print, #income_group_table_wrapper .buttons-pdf, #income_group_table_wrapper .btn-print, #income_group_table_wrapper .btn-pdf');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/income/print_income_group_report',
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (res) {
+                $btn.prop('disabled', false);
+                setTimeout(function() {
+                    isPrinting = false;
+                }, 2000);
+                if (res.status === 'success' && res.html) {
+                    popup(res.html);
+                } else {
+                    errorMsg('No data available to print');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                isPrinting = false;
+                errorMsg('Something went wrong generating the report.');
+            }
+        });
+    }
+
     $(document).ready(function () {
         showdate('<?php echo $search_type; ?>');
         emptyDatatable('income-list', 'data');
+
+        $(document).off('click', '#btn_print_incomegroup_report').on('click', '#btn_print_incomegroup_report', function(e) {
+            e.preventDefault();
+            printIncomeGroupReport();
+        });
+
+        $(document).off('click', '#income_group_table_wrapper .buttons-print, #income_group_table_wrapper .buttons-pdf, #income_group_table_wrapper .btn-print, #income_group_table_wrapper .btn-pdf, .income-list_wrapper .btn-print, .income-list_wrapper .btn-pdf')
+            .on('click', '#income_group_table_wrapper .buttons-print, #income_group_table_wrapper .buttons-pdf, #income_group_table_wrapper .btn-print, #income_group_table_wrapper .btn-pdf, .income-list_wrapper .btn-print, .income-list_wrapper .btn-pdf', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                printIncomeGroupReport();
+                return false;
+            });
 
         document.querySelectorAll('.detail_popover').forEach(function (el) {
             new bootstrap.Popover(el, {

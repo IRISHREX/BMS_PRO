@@ -6,9 +6,11 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
         <div class="card">
             <?php $this->load->view('admin/report/_finance'); ?>
             <div class="card-header ptbnull"></div>
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h3 class="card-title"><?php echo $this->lang->line('expense_group_report'); ?></h3>
-                <div class="d-flex gap-2 align-items-center flex-wrap float-end"></div>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" id="btn_print_expensegroup_report">
+                    <i class="fa fa-print"></i> <?php echo $this->lang->line('print'); ?>
+                </button>
             </div>
             <div class="card-body pb-0">
                 <form role="form" id="form" action="<?php echo site_url('admin/expense/getgroupreportparam') ?>" method="post">
@@ -64,7 +66,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                 </form>
             </div>
             <div class="card-body table-responsive pt-0" id="transfee">
-                <table class="table table-striped table-bordered table-hover expense-list" data-export-title="<?php echo $this->lang->line('expense_group_report'); ?>">
+                <table class="table table-striped table-bordered table-hover expense-list" id="expense_group_table" data-export-title="<?php echo $this->lang->line('expense_group_report'); ?>">
                     <thead>
                         <tr>
                             <th><?php echo $this->lang->line('expense_head'); ?></th>
@@ -103,8 +105,60 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 </script>
 
 <script>
+    var isPrinting = false;
+
+    function printExpenseGroupReport() {
+        if (isPrinting) {
+            return false;
+        }
+        isPrinting = true;
+
+        var formData = new FormData($('#form')[0]);
+        var $btn = $('#btn_print_expensegroup_report, #expense_group_table_wrapper .buttons-print, #expense_group_table_wrapper .buttons-pdf, #expense_group_table_wrapper .btn-print, #expense_group_table_wrapper .btn-pdf');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/expense/print_expense_group_report',
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (res) {
+                $btn.prop('disabled', false);
+                setTimeout(function() {
+                    isPrinting = false;
+                }, 2000);
+                if (res.status === 'success' && res.html) {
+                    popup(res.html);
+                } else {
+                    errorMsg('No data available to print');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                isPrinting = false;
+                errorMsg('Something went wrong generating the report.');
+            }
+        });
+    }
+
     $(document).ready(function () {
         initDatatable('expense-list', 'admin/expense/dtexpensegroupreport');
+
+        $(document).off('click', '#btn_print_expensegroup_report').on('click', '#btn_print_expensegroup_report', function(e) {
+            e.preventDefault();
+            printExpenseGroupReport();
+        });
+
+        $(document).off('click', '#expense_group_table_wrapper .buttons-print, #expense_group_table_wrapper .buttons-pdf, #expense_group_table_wrapper .btn-print, #expense_group_table_wrapper .btn-pdf, .expense-list_wrapper .btn-print, .expense-list_wrapper .btn-pdf')
+            .on('click', '#expense_group_table_wrapper .buttons-print, #expense_group_table_wrapper .buttons-pdf, #expense_group_table_wrapper .btn-print, #expense_group_table_wrapper .btn-pdf, .expense-list_wrapper .btn-print, .expense-list_wrapper .btn-pdf', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                printExpenseGroupReport();
+                return false;
+            });
 
         document.querySelectorAll('.detail_popover').forEach(function (el) {
             new bootstrap.Popover(el, {

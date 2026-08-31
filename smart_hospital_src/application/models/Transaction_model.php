@@ -354,6 +354,171 @@ class Transaction_model extends MY_Model
         return $this->datatables->generate('json');
     }
 
+    public function departmentWiseTransactionRecord($start_date, $end_date, $department = 'all')
+    {
+        $condition = "";
+        if (!empty($department) && $department != 'all') {
+            $dep_lower = strtolower($department);
+            if ($dep_lower == 'appointment') {
+                $condition .= " AND (transactions.appointment_id IS NOT NULL OR LOWER(transactions.section) = 'appointment')";
+            } elseif ($dep_lower == 'opd') {
+                $condition .= " AND (transactions.opd_id IS NOT NULL OR LOWER(transactions.section) = 'opd')";
+            } elseif ($dep_lower == 'ipd') {
+                $condition .= " AND (transactions.ipd_id IS NOT NULL OR LOWER(transactions.section) = 'ipd')";
+            } elseif ($dep_lower == 'pharmacy') {
+                $condition .= " AND (transactions.pharmacy_bill_basic_id IS NOT NULL OR LOWER(transactions.section) = 'pharmacy')";
+            } elseif ($dep_lower == 'pathology') {
+                $condition .= " AND (transactions.pathology_billing_id IS NOT NULL OR LOWER(transactions.section) = 'pathology')";
+            } elseif ($dep_lower == 'radiology') {
+                $condition .= " AND (transactions.radiology_billing_id IS NOT NULL OR LOWER(transactions.section) = 'radiology')";
+            } elseif ($dep_lower == 'blood_bank') {
+                $condition .= " AND (transactions.blood_issue_id IS NOT NULL OR transactions.blood_donor_cycle_id IS NOT NULL OR LOWER(transactions.section) LIKE '%blood%')";
+            } elseif ($dep_lower == 'ambulance') {
+                $condition .= " AND (transactions.ambulance_call_id IS NOT NULL OR LOWER(transactions.section) = 'ambulance')";
+            }
+        }
+
+        $sql = "SELECT transactions.*,
+                CASE 
+                   WHEN (appointment_id IS NOT NULL ) THEN 'appointment'
+                   WHEN (ipd_id IS NOT NULL ) THEN 'ipd_no'
+                   WHEN (opd_id IS NOT NULL) THEN 'opd_no'       
+                   WHEN (pharmacy_bill_basic_id IS NOT NULL) THEN 'pharmacy_billing'       
+                   WHEN (pathology_billing_id IS NOT NULL) THEN 'pathology_billing'       
+                   WHEN (radiology_billing_id IS NOT NULL) THEN 'radiology_billing'       
+                   WHEN (blood_issue_id IS NOT NULL) THEN 'blood_bank_billing'       
+                   WHEN (ambulance_call_id IS NOT NULL) THEN 'ambulance_call_billing'       
+                END AS ward,
+                CASE 
+                   WHEN (appointment_id IS NOT NULL ) THEN appointment_id
+                   WHEN (ipd_id IS NOT NULL ) THEN ipd_id
+                   WHEN (opd_id IS NOT NULL) THEN opd_id       
+                   WHEN (pharmacy_bill_basic_id IS NOT NULL) THEN pharmacy_bill_basic_id       
+                   WHEN (pathology_billing_id IS NOT NULL) THEN pathology_billing_id       
+                   WHEN (radiology_billing_id IS NOT NULL) THEN radiology_billing_id       
+                   WHEN (blood_issue_id IS NOT NULL) THEN blood_issue_id       
+                   WHEN (ambulance_call_id IS NOT NULL) THEN ambulance_call_id       
+                END AS reference,
+                CASE
+                   WHEN transactions.section IS NOT NULL AND transactions.section != '' THEN transactions.section
+                   WHEN transactions.appointment_id IS NOT NULL THEN 'Appointment'
+                   WHEN transactions.ipd_id IS NOT NULL THEN 'IPD'
+                   WHEN transactions.opd_id IS NOT NULL THEN 'OPD'
+                   WHEN transactions.pharmacy_bill_basic_id IS NOT NULL THEN 'Pharmacy'
+                   WHEN transactions.pathology_billing_id IS NOT NULL THEN 'Pathology'
+                   WHEN transactions.radiology_billing_id IS NOT NULL THEN 'Radiology'
+                   WHEN transactions.blood_issue_id IS NOT NULL OR transactions.blood_donor_cycle_id IS NOT NULL THEN 'Blood Bank'
+                   WHEN transactions.ambulance_call_id IS NOT NULL THEN 'Ambulance'
+                   ELSE 'General'
+                END AS department,
+                patients.patient_name,
+                patients.id as `patient_id`,
+                staff.name,
+                staff.surname,
+                staff.employee_id 
+                FROM transactions 
+                LEFT JOIN ipd_details ON ipd_details.id = transactions.ipd_id 
+                LEFT JOIN patients ON patients.id = transactions.patient_id 
+                LEFT JOIN opd_details ON opd_details.id = transactions.opd_id 
+                LEFT JOIN pharmacy_bill_basic ON pharmacy_bill_basic.id = transactions.pharmacy_bill_basic_id 
+                LEFT JOIN pathology_billing ON pathology_billing.id = transactions.pathology_billing_id 
+                LEFT JOIN radiology_billing ON radiology_billing.id = transactions.radiology_billing_id 
+                LEFT JOIN blood_issue ON blood_issue.id = transactions.blood_issue_id 
+                LEFT JOIN appointment ON appointment.id = transactions.appointment_id 
+                LEFT JOIN staff ON staff.id = transactions.received_by 
+                WHERE date_format(transactions.payment_date,'%Y-%m-%d') >= '" . $start_date . "'
+                  AND date_format(transactions.payment_date,'%Y-%m-%d') <= '" . $end_date . "'
+                  AND (transactions.appointment_id IS NULL OR appointment.appointment_status != 'pending') " . $condition;
+
+        $this->datatables->query($sql)
+            ->searchable('transactions.id,patients.patient_name,transactions.payment_date,transactions.type,transactions.payment_mode,transactions.amount')
+            ->orderable('transactions.payment_date,transactions.id,department,patients.patient_name,reference,transactions.payment_mode,transactions.amount')
+            ->sort('transactions.payment_date', 'desc')
+            ->query_where_enable(TRUE);
+        return $this->datatables->generate('json');
+    }
+
+    public function getDepartmentWiseTransactionList($start_date, $end_date, $department = 'all')
+    {
+        $condition = "";
+        if (!empty($department) && $department != 'all') {
+            $dep_lower = strtolower($department);
+            if ($dep_lower == 'appointment') {
+                $condition .= " AND (transactions.appointment_id IS NOT NULL OR LOWER(transactions.section) = 'appointment')";
+            } elseif ($dep_lower == 'opd') {
+                $condition .= " AND (transactions.opd_id IS NOT NULL OR LOWER(transactions.section) = 'opd')";
+            } elseif ($dep_lower == 'ipd') {
+                $condition .= " AND (transactions.ipd_id IS NOT NULL OR LOWER(transactions.section) = 'ipd')";
+            } elseif ($dep_lower == 'pharmacy') {
+                $condition .= " AND (transactions.pharmacy_bill_basic_id IS NOT NULL OR LOWER(transactions.section) = 'pharmacy')";
+            } elseif ($dep_lower == 'pathology') {
+                $condition .= " AND (transactions.pathology_billing_id IS NOT NULL OR LOWER(transactions.section) = 'pathology')";
+            } elseif ($dep_lower == 'radiology') {
+                $condition .= " AND (transactions.radiology_billing_id IS NOT NULL OR LOWER(transactions.section) = 'radiology')";
+            } elseif ($dep_lower == 'blood_bank') {
+                $condition .= " AND (transactions.blood_issue_id IS NOT NULL OR transactions.blood_donor_cycle_id IS NOT NULL OR LOWER(transactions.section) LIKE '%blood%')";
+            } elseif ($dep_lower == 'ambulance') {
+                $condition .= " AND (transactions.ambulance_call_id IS NOT NULL OR LOWER(transactions.section) = 'ambulance')";
+            }
+        }
+
+        $sql = "SELECT transactions.*,
+                CASE 
+                   WHEN (appointment_id IS NOT NULL ) THEN 'appointment'
+                   WHEN (ipd_id IS NOT NULL ) THEN 'ipd_no'
+                   WHEN (opd_id IS NOT NULL) THEN 'opd_no'       
+                   WHEN (pharmacy_bill_basic_id IS NOT NULL) THEN 'pharmacy_billing'       
+                   WHEN (pathology_billing_id IS NOT NULL) THEN 'pathology_billing'       
+                   WHEN (radiology_billing_id IS NOT NULL) THEN 'radiology_billing'       
+                   WHEN (blood_issue_id IS NOT NULL) THEN 'blood_bank_billing'       
+                   WHEN (ambulance_call_id IS NOT NULL) THEN 'ambulance_call_billing'       
+                END AS ward,
+                CASE 
+                   WHEN (appointment_id IS NOT NULL ) THEN appointment_id
+                   WHEN (ipd_id IS NOT NULL ) THEN ipd_id
+                   WHEN (opd_id IS NOT NULL) THEN opd_id       
+                   WHEN (pharmacy_bill_basic_id IS NOT NULL) THEN pharmacy_bill_basic_id       
+                   WHEN (pathology_billing_id IS NOT NULL) THEN pathology_billing_id       
+                   WHEN (radiology_billing_id IS NOT NULL) THEN radiology_billing_id       
+                   WHEN (blood_issue_id IS NOT NULL) THEN blood_issue_id       
+                   WHEN (ambulance_call_id IS NOT NULL) THEN ambulance_call_id       
+                END AS reference,
+                CASE
+                   WHEN transactions.section IS NOT NULL AND transactions.section != '' THEN transactions.section
+                   WHEN transactions.appointment_id IS NOT NULL THEN 'Appointment'
+                   WHEN transactions.ipd_id IS NOT NULL THEN 'IPD'
+                   WHEN transactions.opd_id IS NOT NULL THEN 'OPD'
+                   WHEN transactions.pharmacy_bill_basic_id IS NOT NULL THEN 'Pharmacy'
+                   WHEN transactions.pathology_billing_id IS NOT NULL THEN 'Pathology'
+                   WHEN transactions.radiology_billing_id IS NOT NULL THEN 'Radiology'
+                   WHEN transactions.blood_issue_id IS NOT NULL OR transactions.blood_donor_cycle_id IS NOT NULL THEN 'Blood Bank'
+                   WHEN transactions.ambulance_call_id IS NOT NULL THEN 'Ambulance'
+                   ELSE 'General'
+                END AS department,
+                patients.patient_name,
+                patients.id as `patient_id`,
+                staff.name,
+                staff.surname,
+                staff.employee_id 
+                FROM transactions 
+                LEFT JOIN ipd_details ON ipd_details.id = transactions.ipd_id 
+                LEFT JOIN patients ON patients.id = transactions.patient_id 
+                LEFT JOIN opd_details ON opd_details.id = transactions.opd_id 
+                LEFT JOIN pharmacy_bill_basic ON pharmacy_bill_basic.id = transactions.pharmacy_bill_basic_id 
+                LEFT JOIN pathology_billing ON pathology_billing.id = transactions.pathology_billing_id 
+                LEFT JOIN radiology_billing ON radiology_billing.id = transactions.radiology_billing_id 
+                LEFT JOIN blood_issue ON blood_issue.id = transactions.blood_issue_id 
+                LEFT JOIN appointment ON appointment.id = transactions.appointment_id 
+                LEFT JOIN staff ON staff.id = transactions.received_by 
+                WHERE date_format(transactions.payment_date,'%Y-%m-%d') >= '" . $start_date . "'
+                  AND date_format(transactions.payment_date,'%Y-%m-%d') <= '" . $end_date . "'
+                  AND (transactions.appointment_id IS NULL OR appointment.appointment_status != 'pending') " . $condition . "
+                ORDER BY transactions.payment_date DESC";
+
+        $query = $this->db->query($sql);
+        return $query->result();
+    }
+
     public function allTransactionRecord($start_date, $end_date, $collect_staff = null)
     {
         $txn_cond = $inc_cond = $exp_cond = '';
@@ -452,6 +617,167 @@ class Transaction_model extends MY_Model
             ->sort('payment_date', 'desc')
             ->query_where_enable(FALSE);
         return $this->datatables->generate('json');
+    }
+
+    public function getAllTransactionReportPrintData($start_date, $end_date, $collect_staff = null, $modules_select = 'all')
+    {
+        $txn_cond = '';
+        $inc_cond = '';
+        $exp_cond = '';
+        if (!empty($collect_staff)) {
+            $txn_cond = " AND transactions.received_by = " . $this->db->escape($collect_staff);
+            $inc_cond = " AND income.generated_by = "      . $this->db->escape($collect_staff);
+            $exp_cond = " AND expenses.generated_by = "    . $this->db->escape($collect_staff);
+        }
+
+        $module_txn_filter = '';
+        if ($modules_select == 'appointment') {
+            $module_txn_filter = " AND transactions.appointment_id IS NOT NULL";
+        } elseif ($modules_select == 'opd_patient') {
+            $module_txn_filter = " AND transactions.opd_id IS NOT NULL";
+        } elseif ($modules_select == 'ipd_patient') {
+            $module_txn_filter = " AND transactions.ipd_id IS NOT NULL";
+        } elseif ($modules_select == 'pharmacy_bill') {
+            $module_txn_filter = " AND transactions.pharmacy_bill_basic_id IS NOT NULL";
+        } elseif ($modules_select == 'pathology_test') {
+            $module_txn_filter = " AND transactions.pathology_billing_id IS NOT NULL";
+        } elseif ($modules_select == 'radiology_test') {
+            $module_txn_filter = " AND transactions.radiology_billing_id IS NOT NULL";
+        } elseif ($modules_select == 'blood_bank') {
+            $module_txn_filter = " AND transactions.blood_issue_id IS NOT NULL";
+        } elseif ($modules_select == 'ambulance_call') {
+            $module_txn_filter = " AND transactions.ambulance_call_id IS NOT NULL";
+        }
+
+        if ($modules_select == 'income') {
+            $sql = "SELECT income.id,
+                           'Payment' AS type,
+                           income.amount,
+                           CONCAT(income.date, ' 00:00:00') AS payment_date,
+                           '' AS payment_mode,
+                           'income' AS ward,
+                           NULL AS reference,
+                           'Income' AS section,
+                           income.name AS patient_name,
+                           NULL AS patient_id,
+                           staff.name AS staff_name,
+                           staff.surname AS staff_surname,
+                           staff.employee_id
+                    FROM income
+                    LEFT JOIN staff ON staff.id = income.generated_by
+                    WHERE income.date >= " . $this->db->escape($start_date) . "
+                      AND income.date <= " . $this->db->escape($end_date) . "
+                      AND income.is_deleted = 'no' " . $inc_cond . "
+                    ORDER BY income.date ASC, income.id ASC";
+            return $this->db->query($sql)->result_array();
+        }
+
+        if ($modules_select == 'expense') {
+            $sql = "SELECT expenses.id,
+                           'Payment' AS type,
+                           expenses.amount,
+                           CONCAT(expenses.date, ' 00:00:00') AS payment_date,
+                           '' AS payment_mode,
+                           'expenses' AS ward,
+                           NULL AS reference,
+                           'Expense' AS section,
+                           expenses.name AS patient_name,
+                           NULL AS patient_id,
+                           staff.name AS staff_name,
+                           staff.surname AS staff_surname,
+                           staff.employee_id
+                    FROM expenses
+                    LEFT JOIN staff ON staff.id = expenses.generated_by
+                    WHERE expenses.date >= " . $this->db->escape($start_date) . "
+                      AND expenses.date <= " . $this->db->escape($end_date) . " " . $exp_cond . "
+                    ORDER BY expenses.date ASC, expenses.id ASC";
+            return $this->db->query($sql)->result_array();
+        }
+
+        $part1 = "SELECT transactions.id,
+                         transactions.type,
+                         transactions.amount,
+                         transactions.payment_date,
+                         transactions.payment_mode,
+                         CASE
+                             WHEN appointment_id IS NOT NULL         THEN 'appointment'
+                             WHEN ipd_id IS NOT NULL                 THEN 'ipd_no'
+                             WHEN opd_id IS NOT NULL                 THEN 'opd_no'
+                             WHEN pharmacy_bill_basic_id IS NOT NULL THEN 'pharmacy_billing'
+                             WHEN pathology_billing_id IS NOT NULL   THEN 'pathology_billing'
+                             WHEN radiology_billing_id IS NOT NULL   THEN 'radiology_billing'
+                             WHEN blood_issue_id IS NOT NULL         THEN 'blood_bank_billing'
+                             WHEN ambulance_call_id IS NOT NULL      THEN 'ambulance_call_billing'
+                         END AS ward,
+                         CASE
+                             WHEN appointment_id IS NOT NULL         THEN appointment_id
+                             WHEN ipd_id IS NOT NULL                 THEN ipd_id
+                             WHEN opd_id IS NOT NULL                 THEN opd_id
+                             WHEN pharmacy_bill_basic_id IS NOT NULL THEN pharmacy_bill_basic_id
+                             WHEN pathology_billing_id IS NOT NULL   THEN pathology_billing_id
+                             WHEN radiology_billing_id IS NOT NULL   THEN radiology_billing_id
+                             WHEN blood_issue_id IS NOT NULL         THEN blood_issue_id
+                             WHEN ambulance_call_id IS NOT NULL      THEN ambulance_call_id
+                         END AS reference,
+                         transactions.section,
+                         patients.patient_name,
+                         patients.id AS patient_id,
+                         staff.name AS staff_name,
+                         staff.surname AS staff_surname,
+                         staff.employee_id
+                  FROM transactions
+                  LEFT JOIN patients ON patients.id = transactions.patient_id
+                  LEFT JOIN staff    ON staff.id    = transactions.received_by
+                  LEFT JOIN appointment ON appointment.id = transactions.appointment_id
+                  WHERE date_format(transactions.payment_date,'%Y-%m-%d') >= " . $this->db->escape($start_date) . "
+                    AND date_format(transactions.payment_date,'%Y-%m-%d') <= " . $this->db->escape($end_date) . "
+                    AND (transactions.appointment_id IS NULL OR appointment.appointment_status != 'pending')
+                    " . $txn_cond . $module_txn_filter;
+
+        if ($modules_select == 'all') {
+            $part2 = "SELECT income.id,
+                             'Payment' AS type,
+                             income.amount,
+                             CONCAT(income.date, ' 00:00:00') AS payment_date,
+                             '' AS payment_mode,
+                             'income' AS ward,
+                             NULL AS reference,
+                             'Income' AS section,
+                             income.name AS patient_name,
+                             NULL AS patient_id,
+                             staff.name AS staff_name,
+                             staff.surname AS staff_surname,
+                             staff.employee_id
+                      FROM income
+                      LEFT JOIN staff ON staff.id = income.generated_by
+                      WHERE income.date >= " . $this->db->escape($start_date) . "
+                        AND income.date <= " . $this->db->escape($end_date) . "
+                        AND income.is_deleted = 'no' " . $inc_cond;
+
+            $part3 = "SELECT expenses.id,
+                             'Payment' AS type,
+                             -expenses.amount AS amount,
+                             CONCAT(expenses.date, ' 00:00:00') AS payment_date,
+                             '' AS payment_mode,
+                             'expenses' AS ward,
+                             NULL AS reference,
+                             'Expense' AS section,
+                             expenses.name AS patient_name,
+                             NULL AS patient_id,
+                             staff.name AS staff_name,
+                             staff.surname AS staff_surname,
+                             staff.employee_id
+                      FROM expenses
+                      LEFT JOIN staff ON staff.id = expenses.generated_by
+                      WHERE expenses.date >= " . $this->db->escape($start_date) . "
+                        AND expenses.date <= " . $this->db->escape($end_date) . " " . $exp_cond;
+
+            $sql = "SELECT * FROM ($part1 UNION ALL $part2 UNION ALL $part3) AS all_txns ORDER BY payment_date ASC, id ASC";
+        } else {
+            $sql = $part1 . " ORDER BY payment_date ASC, transactions.id ASC";
+        }
+
+        return $this->db->query($sql)->result_array();
     }
 
     public function appointmentpatientRecord($start_date, $end_date,$collect_staff=null) {

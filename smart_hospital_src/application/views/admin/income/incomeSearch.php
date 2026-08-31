@@ -6,9 +6,11 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
         <div class="card">
             <?php $this->load->view('admin/report/_finance'); ?>
             <div class="card-header ptbnull"></div>
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h3 class="card-title"><?php echo $this->lang->line('income_report'); ?></h3>
-                <div class="d-flex gap-2 align-items-center flex-wrap float-end"></div>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" id="btn_print_income_report">
+                    <i class="fa fa-print"></i> <?php echo $this->lang->line('print'); ?>
+                </button>
             </div>
             <div class="card-body pb-0">
                 <form id="form1" action="" method="post">
@@ -53,7 +55,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             </div>
             <div class="card-body table-responsive pt-0">
                 <div class="download_label"><?php echo $this->lang->line('income_report'); ?></div>
-                <table class="table table-striped table-bordered table-hover allajaxlist" data-export-title="<?php echo $this->lang->line('income_report'); ?>">
+                <table class="table table-striped table-bordered table-hover allajaxlist" id="income_table" data-export-title="<?php echo $this->lang->line('income_report'); ?>">
                     <thead>
                         <tr>
                             <th><?php echo $this->lang->line('name'); ?></th>
@@ -95,8 +97,60 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 </script>
 
 <script>
+    var isPrinting = false;
+
+    function printIncomeReport() {
+        if (isPrinting) {
+            return false;
+        }
+        isPrinting = true;
+
+        var formData = new FormData($('#form1')[0]);
+        var $btn = $('#btn_print_income_report, #income_table_wrapper .buttons-print, #income_table_wrapper .buttons-pdf, #income_table_wrapper .btn-print, #income_table_wrapper .btn-pdf');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/income/print_income_report',
+            type: "POST",
+            data: formData,
+            dataType: 'json',
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (res) {
+                $btn.prop('disabled', false);
+                setTimeout(function() {
+                    isPrinting = false;
+                }, 2000);
+                if (res.status === 'success' && res.html) {
+                    popup(res.html);
+                } else {
+                    errorMsg('No data available to print');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false);
+                isPrinting = false;
+                errorMsg('Something went wrong generating the report.');
+            }
+        });
+    }
+
     $(document).ready(function (e) {
         emptyDatatable('allajaxlist', 'data');
+
+        $(document).off('click', '#btn_print_income_report').on('click', '#btn_print_income_report', function(e) {
+            e.preventDefault();
+            printIncomeReport();
+        });
+
+        $(document).off('click', '#income_table_wrapper .buttons-print, #income_table_wrapper .buttons-pdf, #income_table_wrapper .btn-print, #income_table_wrapper .btn-pdf, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf')
+            .on('click', '#income_table_wrapper .buttons-print, #income_table_wrapper .buttons-pdf, #income_table_wrapper .btn-print, #income_table_wrapper .btn-pdf, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf', function(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                printIncomeReport();
+                return false;
+            });
     });
 
     (function ($) {

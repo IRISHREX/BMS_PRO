@@ -7,39 +7,49 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
             <?php $this->load->view('admin/report/_finance'); ?>
             <div class="card-header ptbnull"></div>
             <div class="card-header d-flex align-items-center justify-content-between">
-                <h3 class="card-title"><?php echo $this->lang->line('expense_report'); ?></h3>
-                <button type="button" class="btn btn-primary btn-sm ms-auto" id="btn_print_expense_report">
+                <h3 class="card-title"><?php echo $this->lang->line('department_wise_transaction_report'); ?></h3>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" id="btn_print_dwtr">
                     <i class="fa fa-print"></i> <?php echo $this->lang->line('print'); ?>
                 </button>
             </div>
             <div class="card-body pb-0">
-                <form id="form1" action="" method="post">
+                <form id="form_dwtr" action="" method="post">
                     <div class="row">
                         <?php echo $this->customlib->getCSRF(); ?>
-                        <div class="col-sm-6 col-md-4">
+                        <div class="col-sm-6 col-md-3">
                             <div class="mb-3">
-                                <label><?php echo $this->lang->line('time_duration'); ?></label>
+                                <label><?php echo $this->lang->line('search_type'); ?></label><small class="req"> *</small>
                                 <select class="form-control" name="search_type" onchange="showdate(this.value)">
                                     <option value=""><?php echo $this->lang->line('select') ?></option>
                                     <?php foreach ($searchlist as $key => $search) { ?>
                                         <option value="<?php echo $key ?>" <?php if ((isset($search_type)) && ($search_type == $key)) { echo "selected"; } ?>><?php echo $search ?></option>
                                     <?php } ?>
                                 </select>
-                                <span class="text-danger"><?php echo form_error('search_type'); ?></span>
+                                <span class="text-danger" id="error_search_type"><?php echo form_error('search_type'); ?></span>
                             </div>
                         </div>
-                        <div class="col-sm-6 col-md-4 d-none" id="fromdate">
+                        <div class="col-sm-6 col-md-3 d-none" id="fromdate">
                             <div class="mb-3">
-                                <label><?php echo $this->lang->line('date_from'); ?></label><small class="req"> *</small>
+                                <label><?php echo $this->lang->line('date_from'); ?></label>
                                 <input id="date_from" name="date_from" type="text" class="form-control date" value="<?php echo set_value('date_from', date($this->customlib->getHospitalDateFormat())); ?>" />
-                                <span class="text-danger"><?php echo form_error('date_from'); ?></span>
+                                <span class="text-danger" id="error_date_from"><?php echo form_error('date_from'); ?></span>
                             </div>
                         </div>
-                        <div class="col-sm-6 col-md-4 d-none" id="todate">
+                        <div class="col-sm-6 col-md-3 d-none" id="todate">
                             <div class="mb-3">
-                                <label><?php echo $this->lang->line('date_to'); ?></label><small class="req"> *</small>
+                                <label><?php echo $this->lang->line('date_to'); ?></label>
                                 <input id="date_to" name="date_to" type="text" class="form-control date" value="<?php echo set_value('date_to', date($this->customlib->getHospitalDateFormat())); ?>" />
-                                <span class="text-danger"><?php echo form_error('date_to'); ?></span>
+                                <span class="text-danger" id="error_date_to"><?php echo form_error('date_to'); ?></span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('department'); ?></label>
+                                <select class="form-control" name="department" id="department">
+                                    <?php foreach ($departments as $dept_key => $dept_val) { ?>
+                                        <option value="<?php echo $dept_key; ?>"><?php echo $dept_val; ?></option>
+                                    <?php } ?>
+                                </select>
                             </div>
                         </div>
                         <div class="col-sm-6 col-md-auto d-flex align-items-end ps-md-3 pe-md-3">
@@ -52,21 +62,33 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         </div>
                     </div>
                 </form>
+<style>
+    #dept_trans_table td:nth-child(1),
+    #dept_trans_table th:nth-child(1),
+    #dept_trans_table td:nth-child(2),
+    #dept_trans_table th:nth-child(2),
+    #dept_trans_table td:nth-child(5),
+    #dept_trans_table th:nth-child(5),
+    #dept_trans_table td:nth-child(6),
+    #dept_trans_table th:nth-child(6),
+    #dept_trans_table td:nth-child(7),
+    #dept_trans_table th:nth-child(7) {
+        white-space: nowrap !important;
+    }
+</style>
             </div>
             <div class="card-body table-responsive pt-0">
-                <table class="table table-striped table-bordered table-hover allajaxlist" id="expense_table" data-export-title="<?php echo $this->lang->line('expense_report'); ?>">
+                <div class="download_label"><?php echo $this->lang->line('department_wise_transaction_report'); ?></div>
+                <table class="table table-striped table-bordered table-hover allajaxlist" id="dept_trans_table" data-export-title="<?php echo $this->lang->line('department_wise_transaction_report'); ?>">
                     <thead>
                         <tr>
-                            <th><?php echo $this->lang->line('name'); ?></th>
-                            <th><?php echo $this->lang->line('invoice_number'); ?></th>
-                            <th><?php echo $this->lang->line('expense_head'); ?></th>
-                            <th><?php echo $this->lang->line('date'); ?></th>
-                            <?php if (!empty($fields)) {
-                                foreach ($fields as $fields_key => $fields_value) { ?>
-                                    <th><?php echo $fields_value->name; ?></th>
-                                <?php }
-                            } ?>
-                            <th class="text-end"><?php echo $this->lang->line('amount'); ?> <span><?php echo "(" . $currency_symbol . ")"; ?></span></th>
+                            <th class="text-nowrap"><?php echo $this->lang->line('date'); ?></th>
+                            <th class="text-nowrap"><?php echo $this->lang->line('transaction_id'); ?></th>
+                            <th><?php echo $this->lang->line('department'); ?></th>
+                            <th><?php echo $this->lang->line('patient_name'); ?></th>
+                            <th class="text-nowrap"><?php echo $this->lang->line('reference_no'); ?></th>
+                            <th class="text-nowrap"><?php echo $this->lang->line('payment_mode'); ?></th>
+                            <th class="text-end text-nowrap"><?php echo $this->lang->line('amount'); ?> <span><?php echo "(" . $currency_symbol . ")"; ?></span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -92,18 +114,18 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 <script>
     var isPrinting = false;
 
-    function printExpenseReport() {
+    function printDepartmentWiseTransactionReport() {
         if (isPrinting) {
             return false;
         }
         isPrinting = true;
 
-        var formData = new FormData($('#form1')[0]);
-        var $btn = $('#btn_print_expense_report, #expense_table_wrapper .buttons-print, #expense_table_wrapper .buttons-pdf, #expense_table_wrapper .btn-print, #expense_table_wrapper .btn-pdf');
+        var formData = new FormData($('#form_dwtr')[0]);
+        var $btn = $('#btn_print_dwtr, #dept_trans_table_wrapper .buttons-print, #dept_trans_table_wrapper .buttons-pdf, #dept_trans_table_wrapper .btn-print, #dept_trans_table_wrapper .btn-pdf, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf');
         $btn.prop('disabled', true);
 
         $.ajax({
-            url: '<?php echo base_url(); ?>admin/expense/print_expense_report',
+            url: '<?php echo base_url(); ?>admin/transaction/print_departmentwisetransaction_report',
             type: "POST",
             data: formData,
             dataType: 'json',
@@ -131,19 +153,17 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 
     $(document).ready(function (e) {
         emptyDatatable('allajaxlist', 'data');
-        var date_format = '<?php echo strtr($this->customlib->getHospitalDateFormat(), ['d' => 'dd', 'm' => 'mm', 'Y' => 'yyyy']); ?>';
-        $.fn.dataTable.moment(date_format.toUpperCase());
 
-        $(document).off('click', '#btn_print_expense_report').on('click', '#btn_print_expense_report', function(e) {
+        $(document).off('click', '#btn_print_dwtr').on('click', '#btn_print_dwtr', function(e) {
             e.preventDefault();
-            printExpenseReport();
+            printDepartmentWiseTransactionReport();
         });
 
-        $(document).off('click', '#expense_table_wrapper .buttons-print, #expense_table_wrapper .buttons-pdf, #expense_table_wrapper .btn-print, #expense_table_wrapper .btn-pdf, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf')
-            .on('click', '#expense_table_wrapper .buttons-print, #expense_table_wrapper .buttons-pdf, #expense_table_wrapper .btn-print, #expense_table_wrapper .btn-pdf, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf', function(e) {
+        $(document).off('click', '#dept_trans_table_wrapper .buttons-print, #dept_trans_table_wrapper .buttons-pdf, #dept_trans_table_wrapper .btn-print, #dept_trans_table_wrapper .btn-pdf, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf')
+            .on('click', '#dept_trans_table_wrapper .buttons-print, #dept_trans_table_wrapper .buttons-pdf, #dept_trans_table_wrapper .btn-print, #dept_trans_table_wrapper .btn-pdf, .allajaxlist_wrapper .btn-print, .allajaxlist_wrapper .btn-pdf', function(e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                printExpenseReport();
+                printDepartmentWiseTransactionReport();
                 return false;
             });
     });
@@ -151,12 +171,12 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
     (function ($) {
         'use strict';
         $(document).ready(function () {
-            $('#form1').on('submit', (function (e) {
+            $('#form_dwtr').on('submit', function (e) {
                 e.preventDefault();
                 var formData = new FormData(this);
                 formData.append('search', 'search_filter');
                 $.ajax({
-                    url: '<?php echo base_url(); ?>admin/expense/checkvalidationexpense',
+                    url: '<?php echo base_url(); ?>admin/transaction/checkvalidationdepartment',
                     type: "POST",
                     data: formData,
                     dataType: 'json',
@@ -170,11 +190,14 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             });
                         } else {
                             $("#error_search_type").html('');
-                            initDatatable('allajaxlist', 'admin/expense/expensereports/', data.param, [], 100);
+                            initDatatable('allajaxlist', 'admin/transaction/dtdepartmentwisetransactionreport/', data.param, [], 100, [
+                                { "aTargets": [0, 1, 4, 5], 'sClass': 'text-nowrap' },
+                                { "aTargets": [-1], 'sClass': 'dt-body-right text-nowrap' }
+                            ]);
                         }
                     }
                 });
-            }));
+            });
         });
     }(jQuery));
 </script>

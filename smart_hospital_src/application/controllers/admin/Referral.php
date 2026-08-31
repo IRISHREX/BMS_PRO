@@ -246,4 +246,108 @@ class Referral extends Admin_Controller
         echo json_encode($json_data);
     }
 
+    public function print_report()
+    {
+        if (!$this->rbac->hasPrivilege('referral_payment', 'can_view')) {
+            access_denied();
+        }
+
+        $search_type  = $this->input->post('search_type', TRUE);
+        $payee        = $this->input->post('payee', TRUE);
+        $patient_type = $this->input->post('patient_type', TRUE);
+        $patient      = $this->input->post('patient', TRUE);
+        $status       = $this->input->post('status', TRUE);
+        $date_from    = $this->input->post('date_from', TRUE);
+        $date_to      = $this->input->post('date_to', TRUE);
+
+        $start_date = '';
+        $end_date   = '';
+
+        if ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (isset($search_type) && $search_type != '') {
+                $dates      = $this->customlib->get_betweendate($search_type);
+                $start_date = $dates['from_date'];
+                $end_date   = $dates['to_date'];
+            }
+        }
+
+        $raw_records     = $this->report_model->getReferralReportData($payee, $patient_type, $patient, $start_date, $end_date, $status);
+        $setting         = $this->setting_model->get();
+        $hospital_name   = (!empty($setting) && isset($setting[0]['name'])) ? $setting[0]['name'] : $this->customlib->getAppName();
+        $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
+
+        $period_label = '';
+        if (!empty($start_date) && !empty($end_date)) {
+            $from_ts = strtotime($start_date);
+            $to_ts   = strtotime($end_date);
+            if (date('m-Y', $from_ts) === date('m-Y', $to_ts)) {
+                $period_label = "For the Month of " . date('F Y', $from_ts);
+            } else {
+                $period_label = "For the Period " . date('d-M-Y', $from_ts) . " to " . date('d-M-Y', $to_ts);
+            }
+        } elseif (!empty($start_date)) {
+            $period_label = "For the Month of " . date('F Y', strtotime($start_date));
+        } else {
+            $period_label = "For the Month of " . date('F Y');
+        }
+
+        $grouped_doctors = array();
+        foreach ($raw_records as $rec) {
+            $doc_id = $rec['person_id'];
+            if (!isset($grouped_doctors[$doc_id])) {
+                $contact = !empty($rec['doctor_phone']) ? $rec['doctor_phone'] : $rec['doctor_contact'];
+                $grouped_doctors[$doc_id] = array(
+                    'doctor_name'     => $rec['doctor_name'],
+                    'doctor_address'  => $rec['doctor_address'],
+                    'doctor_contact'  => $contact,
+                    'total_amount'    => 0,
+                    'total_commission'=> 0,
+                    'bills'           => array(),
+                );
+            }
+
+            $bill_amt = (float)$rec['bill_amount'];
+            $comm_amt = (float)$rec['amount'];
+
+            $grouped_doctors[$doc_id]['total_amount']     += $bill_amt;
+            $grouped_doctors[$doc_id]['total_commission'] += $comm_amt;
+
+            $dept = strtoupper($rec['type'] ?: '');
+            if (strpos($dept, 'PATHOLOGY') !== false) {
+                $dept = 'INSIDE PATHOLOGY';
+            } elseif (strpos($dept, 'RADIOLOGY') !== false) {
+                $dept = 'RADIOLOGY';
+            } elseif (empty($dept)) {
+                $dept = 'GENERAL';
+            }
+
+            $bill_date_formatted = !empty($rec['date']) ? date('d-M-y', strtotime($rec['date'])) : '';
+
+            $bill_number = !empty($rec['prefix']) ? ($rec['prefix'] . $rec['billing_id']) : $rec['billing_id'];
+            if (empty($bill_number)) {
+                $bill_number = $rec['id'];
+            }
+
+            $grouped_doctors[$doc_id]['bills'][] = array(
+                'bill_no'      => $bill_number,
+                'bill_date'    => $bill_date_formatted,
+                'patient_name' => $rec['patient_name'],
+                'department'   => $dept,
+                'bill_amount'  => $bill_amt,
+                'commission'   => $comm_amt,
+            );
+        }
+
+        $data['grouped_doctors'] = $grouped_doctors;
+        $data['hospital_name']   = $hospital_name;
+        $data['period_label']    = $period_label;
+        $data['currency_symbol'] = $currency_symbol;
+
+        $html = $this->load->view('admin/referral/_printReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
+    }
+
 }

@@ -715,6 +715,131 @@ class Income extends Admin_Controller
         echo json_encode($json_data);
     }
 
+    public function print_alltransaction_report()
+    {
+        if (!$this->rbac->hasPrivilege('all_transaction_report', 'can_view')) {
+            access_denied();
+        }
+
+        $this->load->model('setting_model');
+        $this->load->model('staff_model');
+
+        $search_type    = $this->input->post('search_type', TRUE);
+        $collect_staff  = $this->input->post('collect_staff', TRUE);
+        $modules_select = $this->input->post('modules_select', TRUE) ?: 'all';
+        $date_from      = $this->input->post('date_from', TRUE);
+        $date_to        = $this->input->post('date_to', TRUE);
+        $start_date     = '';
+        $end_date       = '';
+        $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
+
+        if ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (!empty($search_type)) {
+                $dates = $this->customlib->get_betweendate($search_type);
+            } else {
+                $dates = $this->customlib->get_betweendate('this_year');
+            }
+            $start_date = $dates['from_date'];
+            $end_date   = $dates['to_date'];
+        }
+
+        // Hospital Details
+        $setting_result = $this->setting_model->getHospitalDetails();
+        $hospital_name  = !empty($setting_result['name']) ? $setting_result['name'] : 'Hospital';
+
+        // Staff / User label for subtitle
+        $user_label = 'Center';
+        if (!empty($collect_staff)) {
+            $staff_info = $this->staff_model->get($collect_staff);
+            if (!empty($staff_info)) {
+                $user_label = trim($staff_info['name'] . ' ' . $staff_info['surname']);
+            }
+        }
+
+        // Subtitle formatted
+        $from_formatted = !empty($start_date) ? date('d-M-Y', strtotime($start_date)) : '';
+        $to_formatted   = !empty($end_date) ? date('d-M-Y', strtotime($end_date)) : '';
+        $report_subtitle = "Income-Expense Report [OverAll] summary From " . $from_formatted . " To " . $to_formatted . " For User : " . $user_label;
+
+        // Fetch raw unpaginated dataset
+        $raw_records = $this->transaction_model->getAllTransactionReportPrintData($start_date, $end_date, $collect_staff, $modules_select);
+
+        $print_rows   = array();
+        $sum_amount   = 0;
+        $total_refund = 0;
+
+        if (!empty($raw_records)) {
+            foreach ($raw_records as $val) {
+                $amt = abs((float)$val['amount']);
+                $is_refund = (strtolower($val['type'] ?? '') === 'refund');
+
+                $sum_amount += $amt;
+
+                if ($is_refund) {
+                    $total_refund += $amt;
+                    $refund_display = number_format($amt, 2);
+                } else {
+                    $refund_display = '';
+                }
+
+                $date_disp = !empty($val['payment_date']) ? date('d-M-Y', strtotime($val['payment_date'])) : '';
+
+                if (!empty($val['ward']) && !in_array($val['ward'], array('income', 'expenses'))) {
+                    $ward_prefix = $this->customlib->getSessionPrefixbyType($val['ward']);
+                } else {
+                    $ward_prefix = '';
+                }
+
+                if (!empty($val['reference'])) {
+                    $ref_disp = $ward_prefix . $val['reference'];
+                } elseif (!empty($val['id'])) {
+                    $ref_disp = (string)$val['id'];
+                } else {
+                    $ref_disp = '-';
+                }
+
+                $dept_disp = !empty($val['section']) ? $val['section'] : 'Billing';
+
+                $patient_disp = !empty($val['patient_name']) ? strtoupper($val['patient_name']) : 'N/A';
+                $staff_disp   = trim(($val['staff_name'] ?? '') . ' ' . ($val['staff_surname'] ?? ''));
+                if (empty($staff_disp)) {
+                    $staff_disp = 'Center';
+                }
+
+                $type_disp = !empty($val['type']) ? ucfirst($val['type']) : 'Payment';
+                $mode_disp = !empty($val['payment_mode']) ? ucfirst($val['payment_mode']) : 'Cash';
+
+                $print_rows[] = array(
+                    'date'          => $date_disp,
+                    'reference'     => $ref_disp,
+                    'department'    => $dept_disp,
+                    'patient_name'  => $patient_disp,
+                    'collected_by'  => $staff_disp,
+                    'payment_type'  => $type_disp,
+                    'patient_mode'  => $mode_disp,
+                    'refund_amount' => $refund_display,
+                    'amount'        => number_format($amt, 2),
+                );
+            }
+        }
+
+        $total_income = $sum_amount - $total_refund;
+
+        $data['hospital_name']   = $hospital_name;
+        $data['report_subtitle'] = $report_subtitle;
+        $data['print_rows']      = $print_rows;
+        $data['sum_amount']      = $sum_amount;
+        $data['total_refund']    = $total_refund;
+        $data['total_income']    = $total_income;
+        $data['currency_symbol'] = $currency_symbol;
+
+        $html = $this->load->view('admin/income/_printAllTransactionReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
+    }
+
     public function incomereports()
     {
         if (!$this->rbac->hasPrivilege('income_report', 'can_view')) {
@@ -822,6 +947,156 @@ class Income extends Admin_Controller
         $this->load->view('layout/header', $data);
         $this->load->view('admin/income/groupincomeReport', $data);
         $this->load->view('layout/footer', $data);
+    }
+
+    public function print_income_report()
+    {
+        if (!$this->rbac->hasPrivilege('income_report', 'can_view')) {
+            echo json_encode(array('status' => 'fail', 'message' => 'Access Denied'));
+            return;
+        }
+
+        $search_type = $this->input->post('search_type', TRUE);
+        $date_from   = $this->input->post('date_from', TRUE);
+        $date_to     = $this->input->post('date_to', TRUE);
+        $start_date  = '';
+        $end_date    = '';
+
+        if ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (!empty($search_type)) {
+                $dates = $this->customlib->get_betweendate($search_type);
+            } else {
+                $dates = $this->customlib->get_betweendate('this_year');
+            }
+            $start_date = $dates['from_date'];
+            $end_date   = $dates['to_date'];
+        }
+
+        $reportdata   = $this->transaction_model->incomereportRecord($start_date, $end_date);
+        $reportdata   = json_decode($reportdata);
+
+        $hospital_name = 'YOUR HOSPITAL NAME';
+        $h_details = $this->setting_model->getHospitalDetails();
+        if (!empty($h_details) && !empty($h_details->name)) {
+            $hospital_name = $h_details->name;
+        }
+
+        if ($search_type == 'period' && !empty($start_date) && !empty($end_date)) {
+            $report_subtitle = "Income Report [From: " . date('d-M-Y', strtotime($start_date)) . " To: " . date('d-M-Y', strtotime($end_date)) . "]";
+        } else {
+            $lbl = !empty($search_type) ? (isset($this->search_type[$search_type]) ? $this->search_type[$search_type] : ucfirst(str_replace('_', ' ', $search_type))) : 'This Year';
+            $report_subtitle = "Income Report [Duration: " . $lbl . "]";
+        }
+
+        $print_rows   = array();
+        $total_amount = 0;
+
+        if (!empty($reportdata->data)) {
+            foreach ($reportdata->data as $value) {
+                $amt = (float)$value->amount;
+                $total_amount += $amt;
+
+                $print_rows[] = array(
+                    'name'            => $value->invoice_name,
+                    'invoice_no'      => $value->invoice_no,
+                    'income_head'     => $value->income_category,
+                    'date'            => !empty($value->payment_date) ? date('d-M-Y', strtotime($value->payment_date)) : '-',
+                    'amount'          => number_format($amt, 2),
+                );
+            }
+        }
+
+        $data['hospital_name']   = $hospital_name;
+        $data['report_subtitle'] = $report_subtitle;
+        $data['print_rows']      = $print_rows;
+        $data['total_amount']    = $total_amount;
+        $data['currency_symbol'] = $this->customlib->getHospitalCurrencyFormat();
+
+        $html = $this->load->view('admin/income/_printIncomeReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
+    }
+
+    public function print_income_group_report()
+    {
+        if (!$this->rbac->hasPrivilege('income_group_report', 'can_view')) {
+            echo json_encode(array('status' => 'fail', 'message' => 'Access Denied'));
+            return;
+        }
+
+        $search_type = $this->input->post('search_type', TRUE);
+        $date_from   = $this->input->post('date_from', TRUE);
+        $date_to     = $this->input->post('date_to', TRUE);
+        $head_id     = $this->input->post('head', TRUE);
+        $start_date  = '';
+        $end_date    = '';
+
+        if ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (!empty($search_type)) {
+                $dates = $this->customlib->get_betweendate($search_type);
+            } else {
+                $dates = $this->customlib->get_betweendate('this_year');
+            }
+            $start_date = $dates['from_date'];
+            $end_date   = $dates['to_date'];
+        }
+
+        $incomeList = $this->report_model->searchincomegroup($start_date, $end_date, $head_id);
+        $m          = json_decode($incomeList);
+
+        $hospital_name = 'YOUR HOSPITAL NAME';
+        $h_details = $this->setting_model->getHospitalDetails();
+        if (!empty($h_details) && !empty($h_details->name)) {
+            $hospital_name = $h_details->name;
+        }
+
+        if ($search_type == 'period' && !empty($start_date) && !empty($end_date)) {
+            $report_subtitle = "Income Group Report [From: " . date('d-M-Y', strtotime($start_date)) . " To: " . date('d-M-Y', strtotime($end_date)) . "]";
+        } else {
+            $lbl = !empty($search_type) ? (isset($this->search_type[$search_type]) ? $this->search_type[$search_type] : ucfirst(str_replace('_', ' ', $search_type))) : 'This Year';
+            $report_subtitle = "Income Group Report [Duration: " . $lbl . "]";
+        }
+
+        $groups      = array();
+        $grand_total = 0;
+
+        if (!empty($m->data)) {
+            foreach ($m->data as $val) {
+                $h_id = $val->head_id;
+                if (!isset($groups[$h_id])) {
+                    $groups[$h_id] = array(
+                        'head_name' => $val->income_category,
+                        'subtotal'  => 0,
+                        'items'     => array()
+                    );
+                }
+                $amt = (float)$val->amount;
+                $groups[$h_id]['subtotal'] += $amt;
+                $grand_total += $amt;
+
+                $groups[$h_id]['items'][] = array(
+                    'id'         => $val->id,
+                    'name'       => $val->name,
+                    'date'       => !empty($val->date) ? date('d-M-Y', strtotime($val->date)) : '-',
+                    'invoice_no' => $val->invoice_no,
+                    'amount'     => number_format($amt, 2),
+                );
+            }
+        }
+
+        $data['hospital_name']   = $hospital_name;
+        $data['report_subtitle'] = $report_subtitle;
+        $data['groups']          = $groups;
+        $data['grand_total']     = $grand_total;
+        $data['currency_symbol'] = $this->customlib->getHospitalCurrencyFormat();
+
+        $html = $this->load->view('admin/income/_printIncomeGroupReport', $data, true);
+        echo json_encode(array('status' => 'success', 'html' => $html));
     }
 
     /* this function is used to get and return income group report parameter without applying any validation */

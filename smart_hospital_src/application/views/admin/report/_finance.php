@@ -70,6 +70,10 @@
 
 			<li class="col-lg-4 col-md-4 col-sm-6 <?php echo set_SubSubmenu('admin/report/incomeexpensebalancereport'); ?>"><a href="<?php echo base_url(); ?>admin/report/incomeexpensebalancereport"><i class="fa fa-file-text-o"></i> <?php echo $this->lang->line('income_expense_balance_report') ?></a></li>
 
+		<?php } if ($this->rbac->hasPrivilege('department_wise_transaction_report', 'can_view') || $this->rbac->hasPrivilege('daily_transaction_report', 'can_view')) { ?>
+
+			<li class="col-lg-4 col-md-4 col-sm-6 <?php echo set_SubSubmenu('reports/transaction/departmentwisetransactionreport'); ?>"><a href="<?php echo base_url(); ?>admin/transaction/departmentwisetransactionreport"><i class="fa fa-file-text-o"></i> <?php echo $this->lang->line('department_wise_transaction_report') ?></a></li>
+
 		<?php } ?>
 
 
