@@ -8129,6 +8129,28 @@ This Function is used to Import Multiple Patient Records
         echo json_encode(array('status' => 1, 'page' => $page));
     }
 
+    public function printIpdAdmissionForm()
+    {
+        $ipdid                    = $this->input->post('ipdid');
+        $data['result']           = $this->patient_model->getIpdDetails($ipdid);
+        $data['hospital_setting'] = $this->setting_model->get();
+        $data['print_details']    = $this->printing_model->get('', 'ipd');
+        $page                     = $this->load->view('admin/patient/_printIpdAdmissionForm', $data, true);
+        echo json_encode(array('status' => 1, 'page' => $page));
+    }
+
+    public function printIpdFinalBill()
+    {
+        $ipdid                    = $this->input->post('ipdid');
+        $data['result']           = $this->patient_model->getIpdDetails($ipdid);
+        $data['charges']          = $this->charge_model->getCharges($ipdid);
+        $data['paymentDetails']   = $this->transaction_model->IPDPatientPayments($ipdid);
+        $data['hospital_setting'] = $this->setting_model->get();
+        $data['print_details']    = $this->printing_model->get('', 'ipd');
+        $page                     = $this->load->view('admin/patient/_printIpdFinalBill', $data, true);
+        echo json_encode(array('status' => 1, 'page' => $page));
+    }
+
     public function getpatientBycaseId($case_reference_id)
     {		 
         $patient = $this->patient_model->getDetailsByCaseId($case_reference_id);

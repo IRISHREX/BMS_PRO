@@ -107,6 +107,8 @@ $categorylist = $this->operationtheatre_model->category_list();
                         <?php if ($result['ipd_discharge'] != 'yes' && $this->rbac->hasPrivilege('ipd_patient', 'can_delete')): ?>
                           <a href="javascript:void(0)" onclick="deleteIpdPatient('<?php echo $ipdid; ?>')" class="btn btn-sm text-danger ph-act ph-act-delete" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('delete_patient'); ?>"><i class="fa fa-trash"></i></a>
                         <?php endif; ?>
+                        <a href="javascript:void(0)" onclick="printIpdAdmissionForm('<?php echo $ipdid; ?>')" class="ph-act-admit"><i class="fa fa-file-pdf-o"></i> Admit PDF</a>
+                        <a href="javascript:void(0)" onclick="printIpdFinalBill('<?php echo $ipdid; ?>')" class="ph-act-finalbill ms-1"><i class="fa fa-file-text-o"></i> Final Bill</a>
                       </div>
                     </div>
 
@@ -8020,7 +8022,72 @@ function makeid(length) {
             }
         });
     }
+
+    function printIpdAdmissionForm(ipdid) {
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/patient/printIpdAdmissionForm',
+            type: 'POST',
+            data: { ipdid: ipdid },
+            dataType: 'json',
+            success: function (res) {
+                if (res.status == 1) {
+                    popup(res.page);
+                } else {
+                    errorMsg(res.msg || 'Error generating admission form');
+                }
+            },
+            error: function () {
+                errorMsg('Failed to process print request');
+            }
+        });
+    }
+
+    function printIpdFinalBill(ipdid) {
+        $.ajax({
+            url: '<?php echo base_url(); ?>admin/patient/printIpdFinalBill',
+            type: 'POST',
+            data: { ipdid: ipdid },
+            dataType: 'json',
+            success: function (res) {
+                if (res.status == 1) {
+                    popup(res.page);
+                } else {
+                    errorMsg(res.msg || 'Error generating final bill');
+                }
+            },
+            error: function () {
+                errorMsg('Failed to process print request');
+            }
+        });
+    }
 </script>
+<style type="text/css">
+.ph-act-admit,
+.ph-act-finalbill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    padding: 0 14px !important;
+    border-radius: 20px !important;
+    background-color: var(--blue, #007bff) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 12.5px !important;
+    border: none !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.25) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+.ph-act-admit:hover,
+.ph-act-finalbill:hover {
+    background-color: var(--link-2, #0056b3) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.35) !important;
+}
+</style>
 <script>
 (function () {
     var nav  = document.getElementById('ph_tabs_nav');
