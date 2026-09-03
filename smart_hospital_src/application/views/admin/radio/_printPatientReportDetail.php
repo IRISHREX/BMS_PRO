@@ -32,7 +32,7 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
                             </tr>
                             <tr>
                                 <th><?php echo $this->lang->line('patient'); ?></th>
-                                <td><?php echo (($result->patient_name || $result->patient_id) ? composePatientName($result->patient_name, $result->patient_id) : '-'); ?></td>
+                                <td><?php echo ($result->patient_name ?: '-'); ?></td>
                             </tr>
                             <tr>
                                 <th><?php echo $this->lang->line('case_id'); ?></th>
@@ -48,7 +48,7 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
                             </tr>
                             <tr>
                                 <th><?php echo $this->lang->line('doctor_name'); ?></th>
-                                <td><?php echo ($result->doctor_name ?: '-'); ?></td>
+                                <td><?php echo (preg_replace('/\s*\([^)]*\)$/', '', $result->doctor_name) ?: '-'); ?></td>
                             </tr>
                         </table>
                         <table class="sh-print-info-table w-50" >

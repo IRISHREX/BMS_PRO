@@ -111,6 +111,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             <th><?php echo $this->lang->line('date'); ?></th>
                             <th><?php echo $this->lang->line('bill_no'); ?></th>
                             <th><?php echo $this->lang->line('status'); ?></th>
+                            <th><?php echo $this->lang->line('paid_by'); ?></th>
                             <th class="text-end" width="15%"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
                             <th class="text-end" width="15%"><?php echo $this->lang->line('bill_amount') . ' (' . $currency_symbol . ')'; ?></th>
                             <th class="text-end" width="15%"><?php echo $this->lang->line('commission_amount') . ' (' . $currency_symbol . ')'; ?></th>

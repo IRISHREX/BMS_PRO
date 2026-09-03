@@ -23,8 +23,8 @@ $genderList = $this->customlib->getGender();
                                 <th class="white-space-nowrap"><?php echo $this->lang->line('bill_date'); ?></th> 
                                 <th class="white-space-nowrap"><?php echo $this->lang->line('patient_name'); ?></th>
                                 <th class="white-space-nowrap"><?php echo $this->lang->line('generated_by'); ?></th>
-                                <th class="white-space-nowrap"><?php echo $this->lang->line('reference_doctor'); ?></th>
-                                <th>Referral Person Name</th>
+                                <th class="white-space-nowrap"><?php echo $this->lang->line('consultant_doctor'); ?></th>
+                                <th><?php echo $this->lang->line('referred_by'); ?></th>
                                 <th>Status</th>
                                 <?php 
                                     if (!empty($fields)) {
@@ -772,7 +772,7 @@ function getdate(day, datepicker_obj) {
             dataType: 'json',
             success: function (res) {
                 if (res) {
-                    $('#doctname').val(res.name + " " + res.surname + " (" + res.employee_id + ")");
+                    $('#doctname').val(res.name + " " + res.surname);
                     $('#doctorid').val(res.id);
                 } else {
 

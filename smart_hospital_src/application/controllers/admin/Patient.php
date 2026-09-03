@@ -3539,6 +3539,7 @@ This Function is used to Import Multiple Patient Records
             $data["prescription_detail"] = $prescription_details;
             $data["timeline_list"]       = $timeline_list;
             $data["charge_type"]         = $this->chargetype_model->getChargeTypeByModule("ipd");
+            $data["charge_list"]         = $this->charge_model->getChargesByModule("ipd");
             $data["charges"]             = $charges;
             $data['roles']               = $this->role_model->get();
         }

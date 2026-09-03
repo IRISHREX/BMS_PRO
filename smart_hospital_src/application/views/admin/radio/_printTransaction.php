@@ -30,7 +30,7 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
                             <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
                             <tr>
                                 <th><?php echo $this->lang->line('patient'); ?></th>
-                                <td><?php echo (($transaction->patient_name || $transaction->patient_id) ? composePatientName($transaction->patient_name, $transaction->patient_id) : '-'); ?></td>
+                                <td><?php echo ($transaction->patient_name ?: '-'); ?></td>
                             </tr>
                             <tr>
                                 <th><?php echo $this->lang->line('case_id'); ?></th>

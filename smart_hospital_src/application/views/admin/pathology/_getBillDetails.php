@@ -257,7 +257,7 @@ $patient_demographics = "Gender: " . $gender_name . " / Age: " . $compact_age;
                                         </tr>
                                         <tr>
                                             <th style="text-align:left;"><?php echo $this->lang->line('patient_name'); ?></th>
-                                            <td style="text-align:left;"><?php echo composePatientName($result->patient_name, $result->patient_id); ?></td>
+                                            <td style="text-align:left;"><?php echo ($result->patient_name ?: '-'); ?></td>
                                         </tr>
                                         <tr>
                                             <td colspan="2" style="text-align:left; font-size:10.5px; color:#0f172a; padding:2.5px 0; white-space:nowrap;">
@@ -274,8 +274,12 @@ $patient_demographics = "Gender: " . $gender_name . " / Age: " . $compact_age;
                                     <table class="sh-print-info-table">
                                         <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
                                         <tr>
-                                            <th style="text-align:left;"><?php echo $this->lang->line('reference_doctor'); ?></th>
-                                            <td style="text-align:left;"><?php echo ($result->doctor_name ?: '-'); ?></td>
+                                            <th style="text-align:left;"><?php echo $this->lang->line('consultant_doctor'); ?></th>
+                                            <td style="text-align:left;"><?php echo (preg_replace('/\s*\([^)]*\)$/', '', $result->doctor_name) ?: '-'); ?></td>
+                                        </tr>
+                                        <tr>
+                                            <th style="text-align:left;"><?php echo $this->lang->line('referred_by'); ?></th>
+                                            <td style="text-align:left;"><?php echo ($result->referral_person_name ?: '-'); ?></td>
                                         </tr>
                                         <tr>
                                             <th style="text-align:left;"><?php echo $this->lang->line('phone'); ?></th>

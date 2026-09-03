@@ -931,6 +931,7 @@ $case_reference_id=$result['case_reference_id'];
                                       if($is_discharge){ ?>
                                     <div class="box-tab-tools">                                     
                                         <a href="#" class="btn btn-sm btn-primary dropdown-toggle addpayment"  data-bs-toggle='modal'><i class="fa fa-plus"></i> <?php echo $this->lang->line('add_payment'); ?></a>
+                                        <a href="javascript:void(0)" class="btn btn-sm btn-primary addrefund" onclick="addRefundModal(); return false;"><i class="fa fa-undo"></i> <?php echo $this->lang->line('refund'); ?></a>
                                     </div><!--./impbtnview-->
                                     <?php
                                     }
@@ -948,15 +949,18 @@ $case_reference_id=$result['case_reference_id'];
                                         <th class="text-end"><?php echo $this->lang->line('paid_amount') . " (" . $currency_symbol . ")"; ?></th>
                                         <th class="text-end noExport"><?php echo $this->lang->line('action') ?></th>
                                         </thead>
-                                        <tbody>
-
-                                        <?php
+                                                                 <?php
                                         $total_payment = 0;
+                                        $total_refund = 0;
                                             if (!empty($payment_details)) {
-                                                $total_payment = 0;
                                                 foreach ($payment_details as $payment) {
+                                                    $is_refund = (isset($payment['type']) && $payment['type'] == 'refund');
                                                     if (!empty($payment['amount'])) {
-                                                        $total_payment += $payment['amount'];
+                                                        if ($is_refund) {
+                                                            $total_refund += $payment['amount'];
+                                                        } else {
+                                                            $total_payment += $payment['amount'];
+                                                        }
                                                     }
                                                     ?> 
                                                     <tr>
@@ -977,7 +981,13 @@ $case_reference_id=$result['case_reference_id'];
                                                         ?>                                                           
 
                                                         </td>
-                                                        <td class="text-end"><?php echo $payment["amount"] ?></td>                                                      
+                                                        <td class="text-end">
+                                                        <?php if ($is_refund) { ?>
+                                                            <span class="text-danger fw-semibold">- <?php echo number_format($payment["amount"], 2); ?></span> <span class="badge bg-danger ms-1" style="font-size:10px;"><?php echo $this->lang->line('refund'); ?></span>
+                                                        <?php } else { ?>
+                                                            <?php echo $payment["amount"]; ?>
+                                                        <?php } ?>
+                                                        </td>                                                      
                                                         <td class="text-end">
             <?php         if ($payment['payment_mode'] == "Cheque" && $payment['attachment'] != "")  {
     ?>
@@ -997,7 +1007,7 @@ $case_reference_id=$result['case_reference_id'];
                                                             <a href="javascript:void(0);" class="btn btn-secondary btn-sm editpayment" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('edit'); ?>" data-payment-amount="<?php echo $payment["amount"] ?>" data-record-id="<?php echo $payment['id']; ?>"><i class="fa fa-pencil"></i></a>
                                                             <?php } ?>
                                                             <?php
-                                                             if($is_discharge){ 
+                                                              if($is_discharge){ 
                                                             if ($this->rbac->hasPrivilege('opd_payment', 'can_delete')) { ?>
                                                                 <a href="javascript:void(0);" onclick="deletePayment('<?php echo $payment['id']; ?>')" class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('delete'); ?>"><i class="fa fa-trash"></i></a>   
                                                     <?php } } ?>
@@ -1010,10 +1020,10 @@ $case_reference_id=$result['case_reference_id'];
                                                     <td></td> 
                                                     <td></td> 
                                                     <td></td> 
-                                                     <td  class="text-end"><?php echo $this->lang->line('total') . " : " . $currency_symbol . "" . number_format((float)$total_payment, 2, '.', ''); ?>
+                                                     <td  class="text-end"><?php echo $this->lang->line('total') . " : " . $currency_symbol . "" . number_format((float)($total_payment - $total_refund), 2, '.', ''); ?>
                                                     </td> 
                                                         <td></td>
-                                                </tr>
+                                                </tr>                     </tr>
                                     </table>
                                 </div> 
                             </div> 
@@ -3242,7 +3252,7 @@ $case_reference_id=$result['case_reference_id'];
                                 <div class="row g-2">
                                     <div class="col-md-6">
                                         <label class="form-label"><?php echo $this->lang->line('date'); ?></label><small class="req"> *</small>
-                                        <input type="text" name="payment_date" id="date" class="form-control form-control-sm datetime" autocomplete="off">
+                                        <input type="text" name="payment_date" id="date" class="form-control form-control-sm datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>" autocomplete="off">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label"><?php echo $this->lang->line('amount') . " (" . $currency_symbol . ")"; ?></label><small class="req"> *</small>
@@ -3268,7 +3278,7 @@ $case_reference_id=$result['case_reference_id'];
                                     </div>
                                     <div class="col-md-6 cheque_div" style="display:none;">
                                         <label class="form-label"><?php echo $this->lang->line('cheque_date'); ?></label><small class="req"> *</small>
-                                        <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date">
+                                        <input type="text" name="cheque_date" id="cheque_date" class="form-control form-control-sm date" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, false)); ?>">
                                         <span class="text-danger"><?php echo form_error('cheque_date'); ?></span>
                                     </div>
                                     <div class="col-12 cheque_div" style="display:none;">
@@ -3289,6 +3299,75 @@ $case_reference_id=$result['case_reference_id'];
         </div>
     </div>
 </div>
+
+<!-- Refund Modal -->
+<div class="modal fade sh-modal sh-modal-accent" id="myRefundModal" tabindex="-1" aria-labelledby="myRefundModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="myRefundModalLabel"><?php echo $this->lang->line('refund'); ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="add_refund_form" accept-charset="utf-8" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="case_reference_id" id="refund_case_reference_id" value="<?php echo $result['case_reference_id']; ?>">
+                <input type="hidden" name="patient_id" value="<?php echo $id; ?>">
+                <input type="hidden" name="opd_id" value="<?php echo $result['id']; ?>">
+                <div class="modal-body modal-background">
+                    <div class="sh-form-card">
+                        <div class="sh-card-header">
+                            <span class="sh-card-header-title"><i class="fa fa-undo me-1"></i> <?php echo !empty($this->lang->line('refund_details')) ? $this->lang->line('refund_details') : ($this->lang->line('refund') . ' ' . $this->lang->line('details')); ?></span>
+                        </div>
+                        <div class="p-2">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('date'); ?> <small class="req">*</small></label>
+                                    <input type="text" name="payment_date" id="refund_date" class="form-control form-control-sm datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>" autocomplete="off">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?> <small class="req">*</small></label>
+                                    <input type="text" name="amount" id="refund_amount" class="form-control form-control-sm" placeholder="0.00">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('payment_mode'); ?></label>
+                                    <select class="form-control form-control-sm refund_payment_mode" name="payment_mode" id="refund_payment_mode">
+                                        <?php foreach ($payment_mode as $key => $value) { ?>
+                                        <option value="<?php echo $key ?>" <?php if ($key == 'cash') { echo "selected"; } ?>><?php echo $value ?></option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="col-12 refund_cheque_div" style="display:none">
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-1"><?php echo $this->lang->line('cheque_no'); ?> <small class="req">*</small></label>
+                                            <input type="text" name="cheque_no" id="refund_cheque_no" class="form-control form-control-sm">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label mb-1"><?php echo $this->lang->line('cheque_date'); ?> <small class="req">*</small></label>
+                                            <input type="text" name="cheque_date" id="refund_cheque_date" class="form-control form-control-sm date" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, false)); ?>">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label mb-1"><?php echo $this->lang->line('attach_document'); ?></label>
+                                            <input type="file" id="refund_file" class="filestyle form-control form-control-sm" name="document">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label mb-1"><?php echo $this->lang->line('note'); ?></label>
+                                    <textarea name="note" id="refund_note" rows="2" class="form-control form-control-sm"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
+                    <button type="submit" id="add_refundbtn" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i>" class="btn btn-info"><i class="fa fa-check-circle"></i> <?php echo $this->lang->line('save'); ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- /Refund Modal -->
 
 <!-- -->
 <div class="modal fade sh-modal sh-modal-accent" id="view_ot_modal" tabindex="-1" aria-labelledby="view_ot_modalLabel" aria-hidden="true">
@@ -3758,7 +3837,7 @@ $(document).on('input paste keyup','.apply_charge_add_charge,.discount_percentag
      var opdid = "<?php echo $this->uri->segment(5); ?>";   
     'use strict';
     $(document).ready(function () {
-        modal_click_disabled('view_ot_modal', 'myPaymentModal', 'viewModal', 'add_chargeModal', 'editpayment_modal', 'add_operationtheatre', 'myTimelineModal', 'vitalModal', 'myaddMedicationModal', 'myMedicationModal', 'myMedicationDoseModal', 'edit_diagnosis', 'edit_operationtheatre', 'editModal', 'myModaledit', 'myTimelineEditModal', 'myModaldischarged', 'prescriptionview', 'prescriptionviewmanual', 'revisitModal', 'myvitalEditModal', 'findingview')
+        modal_click_disabled('view_ot_modal', 'myPaymentModal', 'myRefundModal', 'viewModal', 'add_chargeModal', 'editpayment_modal', 'add_operationtheatre', 'myTimelineModal', 'vitalModal', 'myaddMedicationModal', 'myMedicationModal', 'myMedicationDoseModal', 'edit_diagnosis', 'edit_operationtheatre', 'editModal', 'myModaledit', 'myTimelineEditModal', 'myModaldischarged', 'prescriptionview', 'prescriptionviewmanual', 'revisitModal', 'myvitalEditModal', 'findingview')
         initDatatable('ajaxlist','admin/patient/getvisitdatatable/'+ opdid);        
     }); 
 } ( jQuery ) )
@@ -5902,7 +5981,50 @@ function makeid(length) {
                 }
             });
         }));
+
+        $("#add_refund_form").on('submit', (function (e) {
+            e.preventDefault();            
+            $.ajax({
+                url: base_url + 'admin/bill/add_refund',
+                type: "POST",
+                data: new FormData(this),
+                dataType: 'json',
+                contentType: false,
+                cache: false,
+                processData: false,
+                beforeSend: function(){
+                    $("#add_refundbtn").btnLoading();
+                },
+                success: function (data) {
+                    if (data.status == "fail") {
+                        var message = "";
+                        $.each(data.error, function (index, value) {
+                            message += value;
+                        });
+                        errorMsg(message);
+                    } else {
+                        successMsg(data.message);
+                        window.location.reload(true);
+                    }
+                    $("#add_refundbtn").btnReset();
+                },
+                error: function () {
+                    $("#add_refundbtn").btnReset();
+                },  
+                complete: function(){
+                    $("#add_refundbtn").btnReset();
+                }
+            });
+        }));
     });
+
+    function addRefundModal() {
+        $('#add_refund_form').trigger("reset");
+        $("#refund_file").dropify();
+        $("#refund_payment_mode").val("cash").trigger('change');
+        $("#refund_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+        shModal('myRefundModal').show();
+    }
 
     function calculate() {
         var discount_percent = $("#discount_percent").val();
@@ -6080,6 +6202,18 @@ $("#pathologyOpt").select2({
       }else{
 
         $('.cheque_div').css("display", "none");
+      }
+    });
+
+    $(document).on('change', '.refund_payment_mode', function(){
+      var mode = $(this).val();
+
+      if(mode == "Cheque"){       
+         $('.filestyle', '#myRefundModal').dropify();
+         $(".date").trigger("change");
+         $('.refund_cheque_div').css("display", "block");
+      } else {
+         $('.refund_cheque_div').css("display", "none");
       }
     });
        

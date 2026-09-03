@@ -206,11 +206,11 @@ class Report_model extends CI_Model
             $search .= " and date_format(payment.date,'%Y-%m-%d') = '" . $start_date . "'";
         }
 
-        $sql = "SELECT `payment`.`billing_id`, `payment`.`id`, `payment`.`status`, `person`.`id` as `person_id`, `person`.`name`, `person`.`address` as `person_address`, `person`.`contact` as `person_contact`, `person`.`person_phone`, `patients`.`patient_name`, `patients`.`id` as `patient_id`, `type`.`name` as `type`, `payment`.`bill_amount`, `payment`.`percentage`, `payment`.`amount`, `prefixes`.`prefix`, payment.date, payment.created_at as `entry_date` FROM `referral_payment` `payment` LEFT JOIN `referral_type` `type` ON `type`.`id`=`payment`.`referral_type` INNER JOIN `prefixes` ON `type`.`prefixes_type`=`prefixes`.`type` JOIN `referral_person` `person` ON `person`.`id`=`payment`.`referral_person_id` LEFT JOIN `patients` ON `patients`.`id`=`payment`.`patient_id` where 1=1 " . $search;
+        $sql = "SELECT `payment`.`billing_id`, `payment`.`id`, `payment`.`status`, `payment`.`paid_by`, `paid_staff`.`name` as `paid_by_name`, `paid_staff`.`surname` as `paid_by_surname`, `paid_staff`.`employee_id` as `paid_by_employee_id`, `person`.`id` as `person_id`, `person`.`name`, `person`.`address` as `person_address`, `person`.`contact` as `person_contact`, `person`.`person_phone`, `patients`.`patient_name`, `patients`.`id` as `patient_id`, `type`.`name` as `type`, `payment`.`bill_amount`, `payment`.`percentage`, `payment`.`amount`, `prefixes`.`prefix`, payment.date, payment.created_at as `entry_date` FROM `referral_payment` `payment` LEFT JOIN `referral_type` `type` ON `type`.`id`=`payment`.`referral_type` INNER JOIN `prefixes` ON `type`.`prefixes_type`=`prefixes`.`type` JOIN `referral_person` `person` ON `person`.`id`=`payment`.`referral_person_id` LEFT JOIN `patients` ON `patients`.`id`=`payment`.`patient_id` LEFT JOIN `staff` `paid_staff` ON `paid_staff`.`id`=`payment`.`paid_by` where 1=1 " . $search;
         $this->datatables->query($sql)
 
-            ->searchable('person.name,patient_name,date,billing_id,percentage,bill_amount,amount,payment.status')
-            ->orderable('person.name,patient_name,date,billing_id,percentage,bill_amount,amount,payment.status')
+            ->searchable('person.name,patient_name,date,billing_id,percentage,bill_amount,amount,payment.status,paid_staff.name,paid_staff.surname')
+            ->orderable('person.name,patient_name,date,billing_id,payment.status,paid_staff.name,percentage,bill_amount,amount')
             ->query_where_enable(TRUE);
         return $this->datatables->generate('json');
     }

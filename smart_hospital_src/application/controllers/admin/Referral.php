@@ -210,12 +210,18 @@ class Referral extends Admin_Controller
                     $status_badge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa fa-clock-o me-1"></i> Unpaid</span>';
                 }
 
+                $paid_by_display = '-';
+                if ($is_paid && !empty($value->paid_by_name)) {
+                    $paid_by_display = html_escape(composeStaffNameByString($value->paid_by_name, $value->paid_by_surname, $value->paid_by_employee_id));
+                }
+
                 $row       = array();
                 $row[]     = $value->name;
                 $row[]     = composePatientName($value->patient_name, $value->patient_id);
                 $row[]     = $this->customlib->YYYYMMDDHisTodateFormat($value->date, $this->customlib->getHospitalTimeFormat());  
                 $row[]     = $value->prefix . $value->billing_id;
                 $row[]     = $status_badge;
+                $row[]     = $paid_by_display;
                 $row[]     = $value->percentage;
                 $row[]     = $value->bill_amount;
                 $row[]     = $value->amount;
@@ -223,6 +229,7 @@ class Referral extends Admin_Controller
             }
 
             $footer_row   = array();
+            $footer_row[] = "";
             $footer_row[] = "";
             $footer_row[] = "";
             $footer_row[] = "";

@@ -93,12 +93,13 @@ if (!empty($payment)) {
                                 </th>
                                 <th><?php echo $this->lang->line('payee'); ?></th>
                                 <th><?php echo $this->lang->line('patient_name'); ?></th>
-                                <th>Entry Date</th>
-                                <th class="text-end"><?php echo $this->lang->line('bill_no'); ?></th>
+                                <th class="text-center">Entry Date</th>
+                                <th class="text-center"><?php echo $this->lang->line('bill_no'); ?></th>
                                 <th class="text-end"><?php echo $this->lang->line('bill_amount').' ('. $currency_symbol .')'; ?></th>
                                 <th class="text-end"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
                                 <th class="text-end"><?php echo $this->lang->line('commission_amount').' ('. $currency_symbol .')'; ?></th>
                                 <th class="text-center"><?php echo $this->lang->line('status'); ?></th>
+                                <th><?php echo $this->lang->line('paid_by'); ?></th>
                                 <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
                                 <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
                                 <?php } ?>
@@ -119,8 +120,8 @@ if (!empty($payment)) {
 
                                 <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
                                 <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
-                                <td><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->customlib->getHospitalTimeFormat()); ?></td>
-                                <td class="text-end"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
+                                <td class="text-center"><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->customlib->getHospitalTimeFormat()); ?></td>
+                                <td class="text-center"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
                                 <td class="text-end"><?php echo amountFormat($value["bill_amount"]); ?></td>
                                 <td class="text-end"><?php echo html_escape($value["percentage"]); ?></td>
                                 <td class="text-end fw-bold"><?php echo html_escape($value["amount"]); ?></td>
@@ -130,6 +131,15 @@ if (!empty($payment)) {
                                     <?php } else { ?>
                                         <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa fa-clock-o me-1"></i> Unpaid</span>
                                     <?php } ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                    if ($is_paid && !empty($value['paid_by_name'])) {
+                                        echo html_escape(composeStaffNameByString($value['paid_by_name'], $value['paid_by_surname'], $value['paid_by_employee_id']));
+                                    } else {
+                                        echo '-';
+                                    }
+                                    ?>
                                 </td>
                                 <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
                                 <td class="text-end noExport">

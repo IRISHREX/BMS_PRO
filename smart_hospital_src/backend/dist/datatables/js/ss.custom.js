@@ -1,3 +1,114 @@
+function getHospitalExportName() {
+    return (typeof SH_APP_NAME !== 'undefined' && SH_APP_NAME) ? SH_APP_NAME : 'YOUR HOSPITAL NAME';
+}
+
+function applyDataTablePrintCustomization(win, exportTitle, $tbl) {
+    var hospitalName = getHospitalExportName();
+    var cleanTitle = $.trim(exportTitle || '') || $.trim($('.download_label').text() || 'Report');
+
+    // Remove any default H1
+    $(win.document.body).find('h1').remove();
+
+    // Insert Header Block matching standard hospital report design
+    var headerHtml = '<div style="text-align: center; margin-bottom: 12px; font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif;">' +
+        '<div style="font-size: 16px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px; margin-bottom: 4px;">' + hospitalName + '</div>' +
+        '<div style="font-size: 12px; font-weight: 700; color: #111;">' + cleanTitle + '</div>' +
+    '</div>';
+    $(win.document.body).prepend(headerHtml);
+
+    // Inject exact print CSS
+    var styleHtml = '<style>' +
+        '@media print {' +
+            '@page { size: auto; margin: 8mm 8mm 8mm 8mm; }' +
+            'body { margin: 0 !important; padding: 0 !important; background: #fff !important; font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif !important; color: #000 !important; }' +
+        '}' +
+        'body { font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif !important; color: #000 !important; padding: 10px !important; background: #fff !important; }' +
+        'table.dataTable, table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #333 !important; margin: 0 auto !important; font-size: 11px !important; font-family: inherit !important; }' +
+        'table.dataTable th, table.dataTable td, table th, table td { border: 1px solid #333 !important; padding: 4px 6px !important; font-size: 11px !important; line-height: 1.3 !important; color: #000 !important; vertical-align: middle !important; }' +
+        'table.dataTable th, table th { font-weight: 700 !important; background-color: #f8f9fa !important; color: #000 !important; text-align: left !important; }' +
+        'th.text-end, td.text-end { text-align: right !important; }' +
+        'th.text-center, td.text-center { text-align: center !important; }' +
+        'th.text-start, td.text-start { text-align: left !important; }' +
+        'a { color: #000 !important; text-decoration: none !important; }' +
+        '.badge { border: none !important; padding: 0 !important; background: transparent !important; color: #000 !important; font-weight: normal !important; font-size: 11px !important; }' +
+        '.badge i, .fa { display: none !important; }' +
+    '</style>';
+    $(win.document.head).append(styleHtml);
+
+    // Read column alignments from original table
+    var colAlignments = [];
+    if ($tbl && $tbl.length) {
+        $tbl.find('thead tr:first th:not(.noExport)').each(function() {
+            if ($(this).hasClass('text-end')) {
+                colAlignments.push('text-end');
+            } else if ($(this).hasClass('text-center')) {
+                colAlignments.push('text-center');
+            } else {
+                colAlignments.push('text-start');
+            }
+        });
+    }
+
+    if (colAlignments.length) {
+        $(win.document.body).find('table thead tr:first th').each(function(idx) {
+            if (colAlignments[idx]) {
+                $(this).removeClass('text-start text-center text-end display').addClass(colAlignments[idx]);
+            }
+        });
+        $(win.document.body).find('table tbody tr').each(function() {
+            $(this).find('td').each(function(idx) {
+                if (colAlignments[idx]) {
+                    $(this).removeClass('text-start text-center text-end display').addClass(colAlignments[idx]);
+                }
+            });
+        });
+    }
+}
+
+function applyDataTablePdfCustomization(doc, exportTitle) {
+    var hospitalName = getHospitalExportName();
+    var cleanTitle = $.trim(exportTitle || '') || $.trim($('.download_label').text() || 'Report');
+
+    if (doc.content && doc.content.length > 0 && doc.content[0].text) {
+        doc.content[0].text = '';
+    }
+
+    doc.content.splice(0, 0,
+        { text: hospitalName.toUpperCase(), fontSize: 13, bold: true, alignment: 'center', margin: [0, 0, 0, 3] },
+        { text: cleanTitle, fontSize: 10, bold: true, alignment: 'center', margin: [0, 0, 0, 8] }
+    );
+
+    var tableNode = null;
+    for (var i = 0; i < doc.content.length; i++) {
+        if (doc.content[i].table) {
+            tableNode = doc.content[i];
+            break;
+        }
+    }
+    if (tableNode) {
+        tableNode.table.widths = Array(tableNode.table.body[0].length + 1).join('*').split('');
+        tableNode.layout = {
+            hLineWidth: function(i, node) { return 0.5; },
+            vLineWidth: function(i, node) { return 0.5; },
+            hLineColor: function(i, node) { return '#333333'; },
+            vLineColor: function(i, node) { return '#333333'; },
+            paddingLeft: function(i, node) { return 4; },
+            paddingRight: function(i, node) { return 4; },
+            paddingTop: function(i, node) { return 3; },
+            paddingBottom: function(i, node) { return 3; }
+        };
+        if (tableNode.table.body.length > 0) {
+            for (var c = 0; c < tableNode.table.body[0].length; c++) {
+                tableNode.table.body[0][c].fillColor = '#f5f5f5';
+                tableNode.table.body[0][c].bold = true;
+                tableNode.table.body[0][c].fontSize = 8.5;
+            }
+        }
+    }
+    doc.defaultStyle.fontSize = 8;
+    doc.pageMargins = [15, 15, 15, 15];
+}
+
 $(document).ready(function () {
     $('.example').each(function () {
         var $tbl = $(this);
@@ -50,8 +161,25 @@ $(document).ready(function () {
                     text: '<i class="fa fa-file-pdf-o"></i>',
                     titleAttr: 'PDF',
                     title: exportTitle,
+                    customize: function (doc) {
+                        applyDataTablePdfCustomization(doc, exportTitle);
+                    },
                     exportOptions: {
-                    columns: ["thead th:not(.noExport)"]
+                    columns: ["thead th:not(.noExport)"],
+                    format: {
+                        body: function(data, row, column, node) {
+                            var $node = $(node);
+                            var $cb = $node.find('input[type="checkbox"]');
+                            if ($cb.length) {
+                                return $cb.prop('checked') ? 'Yes' : 'No';
+                            }
+                            var $badge = $node.find('.badge');
+                            if ($badge.length) {
+                                return $.trim($badge.text());
+                            }
+                            return $.trim($node.text());
+                        }
+                    }
                   }
                 },
 
@@ -60,30 +188,23 @@ $(document).ready(function () {
                     text: '<i class="fa fa-print"></i>',
                     titleAttr: 'Print',
                     title: exportTitle,
-                 customize: function ( win ) {
-
-                    $(win.document.body).find('th').addClass('display').css('text-align', 'left');
-                    $(win.document.body).find('td').addClass('display').css('text-align', 'left');
-                    $(win.document.body).find('table').addClass('display').css('font-size', '14px');
-                    // Only strip the H1 when it's the noisy document.title fallback (no real
-                    // export title set). A real heading comes from data-export-title (exportTitle)
-                    // or a .download_label — keep and centre it in either case.
-                    if (!$.trim(exportTitle || '') && !$.trim($('.download_label').text())) {
-                        $(win.document.body).find('h1').remove();
-                    } else {
-                        $(win.document.body).find('h1').css('text-align', 'center');
-                    }
-                },
-                     exportOptions: {
+                    customize: function ( win ) {
+                        applyDataTablePrintCustomization(win, exportTitle, $tbl);
+                    },
+                    exportOptions: {
                     columns: ["thead th:not(.noExport)"],
                     format: {
                         body: function(data, row, column, node) {
-                            // exportData strips HTML so checkboxes become empty — read DOM state directly.
-                            var $cb = $(node).find('input[type="checkbox"]');
+                            var $node = $(node);
+                            var $cb = $node.find('input[type="checkbox"]');
                             if ($cb.length) {
                                 return $cb.prop('checked') ? 'Yes' : 'No';
                             }
-                            return data;
+                            var $badge = $node.find('.badge');
+                            if ($badge.length) {
+                                return $.trim($badge.text());
+                            }
+                            return $.trim($node.text());
                         }
                     }
                   }
@@ -221,9 +342,26 @@ $(document).ready(function(){
                 titleAttr: 'PDF',
                 className: "btn-pdf",
                 title: exportTitle,
-                  exportOptions: {
-                    columns: ["thead th:not(.noExport)"]
-                  },
+                customize: function (doc) {
+                    applyDataTablePdfCustomization(doc, exportTitle);
+                },
+                exportOptions: {
+                    columns: ["thead th:not(.noExport)"],
+                    format: {
+                        body: function(data, row, column, node) {
+                            var $node = $(node);
+                            var $cb = $node.find('input[type="checkbox"]');
+                            if ($cb.length) {
+                                return $cb.prop('checked') ? 'Yes' : 'No';
+                            }
+                            var $badge = $node.find('.badge');
+                            if ($badge.length) {
+                                return $.trim($badge.text());
+                            }
+                            return $.trim($node.text());
+                        }
+                    }
+                },
 
             },
             {
@@ -233,29 +371,22 @@ $(document).ready(function(){
                 className: "btn-print",
                 title: exportTitle,
                 customize: function ( win ) {
-
-                    $(win.document.body).find('th').addClass('display').css('text-align', 'left');
-                    $(win.document.body).find('table').addClass('display').css('font-size', '14px');
-                     $(win.document.body).find('td').addClass('display').css('text-align', 'left');
-                    // Only strip the H1 when it's the noisy document.title fallback (no real
-                    // export title set). A real heading comes from data-export-title (exportTitle)
-                    // or a .download_label — keep and centre it in either case.
-                    if (!$.trim(exportTitle || '') && !$.trim($('.download_label').text())) {
-                        $(win.document.body).find('h1').remove();
-                    } else {
-                        $(win.document.body).find('h1').css('text-align', 'center');
-                    }
+                    applyDataTablePrintCustomization(win, exportTitle, $('.' + _selector));
                 },
                 exportOptions: {
                     columns: ["thead th:not(.noExport)"],
                     format: {
                         body: function(data, row, column, node) {
-                            // exportData strips HTML so checkboxes become empty — read DOM state directly.
-                            var $cb = $(node).find('input[type="checkbox"]');
+                            var $node = $(node);
+                            var $cb = $node.find('input[type="checkbox"]');
                             if ($cb.length) {
                                 return $cb.prop('checked') ? 'Yes' : 'No';
                             }
-                            return data;
+                            var $badge = $node.find('.badge');
+                            if ($badge.length) {
+                                return $.trim($badge.text());
+                            }
+                            return $.trim($node.text());
                         }
                     }
                   }

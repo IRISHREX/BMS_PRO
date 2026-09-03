@@ -39,7 +39,7 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
                         </tr>
                         <tr>
                             <th><?php echo $this->lang->line('patient'); ?></th>
-                            <td><?php echo (($head_result->patient_name || $head_result->patient_id) ? composePatientName($head_result->patient_name, $head_result->patient_id) : '-'); ?></td>
+                            <td><?php echo ($head_result->patient_name ?: '-'); ?></td>
                             <th><?php echo $this->lang->line('age'); ?></th>
                             <td><?php echo ($this->customlib->get_patient_current_age($head_result->patient_id) ?: '-'); ?></td>
                             <th><?php echo $this->lang->line('gender'); ?></th>
@@ -47,7 +47,7 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
                         </tr>
                         <tr>
                             <th><?php echo $this->lang->line('doctor_name'); ?></th>
-                            <td colspan="5"><?php echo ($head_result->doctor_name ?: '-'); ?></td>
+                            <td colspan="5"><?php echo (preg_replace('/\s*\([^)]*\)$/', '', $head_result->doctor_name) ?: '-'); ?></td>
                         </tr>
                     </table>
                 </div>

@@ -615,4 +615,17 @@ class Charge_model extends MY_Model
             ->row();
         return $result;
     }
+
+    public function getChargesByModule($module_shortcode)
+    {
+        $this->db->select('charges.id, charges.name, charges.standard_charge, charges.charge_category_id, charge_categories.name as charge_category_name, charge_categories.charge_type_id, charge_type_master.charge_type as charge_type_name');
+        $this->db->join('charge_categories', 'charge_categories.id = charges.charge_category_id', 'inner');
+        $this->db->join('charge_type_master', 'charge_categories.charge_type_id = charge_type_master.id', 'inner');
+        $this->db->join('charge_type_module', 'charge_type_module.charge_type_master_id = charge_type_master.id', 'inner');
+        $this->db->where('charge_type_module.module_shortcode', $module_shortcode);
+        $this->db->order_by('charges.name', 'asc');
+        $query = $this->db->get('charges');
+        return $query->result_array();
+    }
 }
+

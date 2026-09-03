@@ -184,11 +184,12 @@ class Referral_payment_model extends MY_Model
 
     public function get_payment($start_date = '', $end_date = '')
     {
-        $this->db->select("payment.date as date, payment.paid_date, payment.paid_by, payment.billing_id, payment.id, payment.status, payment.referral_type, person.name, person.contact, patients.patient_name, patients.id as patient_id, type.name as type, payment.bill_amount, payment.percentage, payment.amount, prefixes.prefix");
+        $this->db->select("payment.date as date, payment.paid_date, payment.paid_by, paid_staff.name as paid_by_name, paid_staff.surname as paid_by_surname, paid_staff.employee_id as paid_by_employee_id, payment.billing_id, payment.id, payment.status, payment.referral_type, person.name, person.contact, patients.patient_name, patients.id as patient_id, type.name as type, payment.bill_amount, payment.percentage, payment.amount, prefixes.prefix");
         $this->db->join("referral_type type", "type.id=payment.referral_type", "left");
         $this->db->join("prefixes", "type.prefixes_type=prefixes.type", "inner");
         $this->db->join("referral_person person", "person.id=payment.referral_person_id");
         $this->db->join("patients", "patients.id=payment.patient_id", "left");
+        $this->db->join("staff paid_staff", "paid_staff.id=payment.paid_by", "left");
 
         if ($start_date != '' && $end_date != '') {
             $this->db->where("date_format(payment.date,'%Y-%m-%d') >=", $start_date);

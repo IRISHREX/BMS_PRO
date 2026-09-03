@@ -98,6 +98,7 @@
   <script>
     var baseurl    = '<?php echo base_url(); ?>';
     var SH_BASE    = baseurl;
+    var SH_APP_NAME = <?php echo json_encode($this->customlib->getAppName() ?: 'Your Hospital Name'); ?>;
     var SH_CSRF_NAME  = '<?php echo $this->security->get_csrf_token_name(); ?>';
     var SH_CSRF_TOKEN = '<?php echo $this->security->get_csrf_hash(); ?>';
     <?php if (isset($user_data) && is_array($user_data)): ?>

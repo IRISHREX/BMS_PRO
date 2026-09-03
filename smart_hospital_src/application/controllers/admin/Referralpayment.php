@@ -58,6 +58,8 @@ class Referralpayment extends Admin_Controller
                 $entry_date = date('Y-m-d H:i:s');
             }
 
+            $status = $this->input->post("status", TRUE) ? $this->input->post("status", TRUE) : 'Unpaid';
+            $is_status_paid = (strtolower($status) === 'paid');
             $payment = array(
                 "referral_person_id" => $this->input->post("payee", TRUE),
                 "patient_id"         => $this->input->post("patient_id", TRUE),
@@ -66,7 +68,9 @@ class Referralpayment extends Admin_Controller
                 "bill_amount"        => $this->input->post("bill_amount", TRUE),
                 "percentage"         => $this->input->post("percentage", TRUE),
                 "amount"             => $this->input->post("commission_amount", TRUE),
-                "status"             => $this->input->post("status", TRUE) ? $this->input->post("status", TRUE) : 'Unpaid',
+                "status"             => $status,
+                "paid_date"          => $is_status_paid ? date('Y-m-d H:i:s') : null,
+                "paid_by"            => $is_status_paid ? $this->customlib->getLoggedInUserID() : null,
                 "date"               => $entry_date,
             );
 
@@ -243,13 +247,24 @@ class Referralpayment extends Admin_Controller
                 $edit_date = date('Y-m-d H:i:s');
             }
 
+            $edit_status = $this->input->post('edit_status', TRUE) ? $this->input->post('edit_status', TRUE) : 'Unpaid';
+            $is_status_paid = (strtolower($edit_status) === 'paid');
             $payment = array(
                 "id"         => $this->input->post('paymentid', TRUE),
                 "percentage" => $this->input->post('commission_percentage', TRUE),
                 "amount"     => $this->input->post('commission_amount', TRUE),
-                "status"     => $this->input->post('edit_status', TRUE) ? $this->input->post('edit_status', TRUE) : 'Unpaid',
+                "status"     => $edit_status,
                 "date"       => $edit_date,
             );
+            if ($is_status_paid) {
+                if (empty($existing['paid_by'])) {
+                    $payment['paid_by']   = $this->customlib->getLoggedInUserID();
+                    $payment['paid_date'] = date('Y-m-d H:i:s');
+                }
+            } else {
+                $payment['paid_by']   = null;
+                $payment['paid_date'] = null;
+            }
 
             $this->referral_payment_model->update($payment);
             $data = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));

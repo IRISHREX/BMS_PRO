@@ -2733,7 +2733,7 @@ class Patient_model extends MY_Model
 
     public function getPatientChargeById($id, $patient_id = null)
     {
-      $sql    = "SELECT * from (SELECT `charges`.*, `organisations_charges`.`id` as `org_charge_id`, `organisations_charges`.`org_id`, `organisations_charges`.`org_charge`, IFNULL(tax_category.percentage, 0) as `percentage`,IFNULL(patients.organisation_id,0) as patient_org_id,patients.insurance_validity  FROM `charges` LEFT JOIN `organisations_charges` ON `organisations_charges`.`charge_id` = `charges`.`id` LEFT join patients on `patients`.`organisation_id` = `organisations_charges`.`org_id` and patients.id= " . $this->db->escape($patient_id) . " LEFT JOIN `tax_category` ON `tax_category`.`id` = `charges`.`tax_category_id`        WHERE `charges`.`id` =  ".$this->db->escape($id).") d ORDER BY d.patient_org_id DESC LIMIT 1";
+      $sql    = "SELECT * from (SELECT `charges`.*, `charge_categories`.`name` as `charge_category_name`, `charge_categories`.`charge_type_id`, `charge_type_master`.`charge_type` as `charge_type_name`, `organisations_charges`.`id` as `org_charge_id`, `organisations_charges`.`org_id`, `organisations_charges`.`org_charge`, IFNULL(tax_category.percentage, 0) as `percentage`,IFNULL(patients.organisation_id,0) as patient_org_id,patients.insurance_validity  FROM `charges` LEFT JOIN `charge_categories` ON `charge_categories`.`id` = `charges`.`charge_category_id` LEFT JOIN `charge_type_master` ON `charge_type_master`.`id` = `charge_categories`.`charge_type_id` LEFT JOIN `organisations_charges` ON `organisations_charges`.`charge_id` = `charges`.`id` LEFT join patients on `patients`.`organisation_id` = `organisations_charges`.`org_id` and patients.id= " . $this->db->escape($patient_id) . " LEFT JOIN `tax_category` ON `tax_category`.`id` = `charges`.`tax_category_id`        WHERE `charges`.`id` =  ".$this->db->escape($id).") d ORDER BY d.patient_org_id DESC LIMIT 1";
        
         $query  = $this->db->query($sql);
 
@@ -2748,7 +2748,9 @@ class Patient_model extends MY_Model
 
     public function getChargeById($id, $orgid = 0)
     {
-        $this->db->select('charges.*,organisations_charges.id as org_charge_id, organisations_charges.org_id, organisations_charges.org_charge,IFNULL(tax_category.percentage,0) as `percentage` ');
+        $this->db->select('charges.*,charge_categories.name as charge_category_name,charge_categories.charge_type_id,charge_type_master.charge_type as charge_type_name,organisations_charges.id as org_charge_id, organisations_charges.org_id, organisations_charges.org_charge,IFNULL(tax_category.percentage,0) as `percentage` ');
+        $this->db->join('charge_categories', 'charge_categories.id = charges.charge_category_id', 'LEFT');
+        $this->db->join('charge_type_master', 'charge_type_master.id = charge_categories.charge_type_id', 'LEFT');
         $this->db->join('organisations_charges', 'charges.id = organisations_charges.charge_id and organisations_charges.org_id=' . $orgid, 'LEFT');
         $this->db->join('tax_category', 'tax_category.id = charges.tax_category_id', 'LEFT');
         $this->db->where('charges.id', $id);

@@ -119,16 +119,16 @@ $patient_demographics = "Gender: " . $gender_str . " / Age: " . $age_str;
                                                 <td style="text-align:left;"><?php echo $this->customlib->getSessionPrefixByType('radiology_billing').$result["id"]; ?></td>
                                             </tr>
                                             <tr>
-                                                <th style="text-align:left;"><?php echo $this->lang->line('patient_name'); ?> :</th>
-                                                <td style="text-align:left;"><?php echo $result["patient_name"]." (".$result["patient_unique_id"].")"; ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="2" style="text-align:left; font-size:10.5px; color:#0f172a; padding:2.5px 0; white-space:nowrap;">
-                                                    <span style="font-weight:normal; color:#475569;">Gender:</span> <strong style="font-weight:700; color:#0f172a;"><?php echo $gender_str; ?></strong>
-                                                    <span style="color:#94a3b8; margin:0 4px;">/</span>
-                                                    <span style="font-weight:normal; color:#475569;">Age:</span> <strong style="font-weight:700; color:#0f172a;"><?php echo $age_str; ?></strong>
-                                                </td>
-                                            </tr>
+                                                 <th style="text-align:left;"><?php echo $this->lang->line('patient_name'); ?> :</th>
+                                                 <td style="text-align:left;"><?php echo ($result["patient_name"] ?: '-'); ?></td>
+                                             </tr>
+                                             <tr>
+                                                 <td colspan="2" style="text-align:left; font-size:10.5px; color:#0f172a; padding:2.5px 0; white-space:nowrap;">
+                                                     <span style="font-weight:normal; color:#475569;">Gender:</span> <strong style="font-weight:700; color:#0f172a;"><?php echo $gender_str; ?></strong>
+                                                     <span style="color:#94a3b8; margin:0 4px;">/</span>
+                                                     <span style="font-weight:normal; color:#475569;">Age:</span> <strong style="font-weight:700; color:#0f172a;"><?php echo $age_str; ?></strong>
+                                                 </td>
+                                             </tr>
                                         </table>
                                     </td>
 
@@ -137,8 +137,12 @@ $patient_demographics = "Gender: " . $gender_str . " / Age: " . $age_str;
                                         <table class="sh-print-info-table">
                                             <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
                                             <tr>
-                                                <th style="text-align:left;"><?php echo $this->lang->line('doctor'); ?> :</th>
-                                                <td style="text-align:left;"><?php echo ($result["doctor_name"] ?: '-'); ?></td>
+                                                 <th style="text-align:left;"><?php echo $this->lang->line('consultant_doctor'); ?> :</th>
+                                                 <td style="text-align:left;"><?php echo (preg_replace('/\s*\([^)]*\)$/', '', $result["doctor_name"]) ?: '-'); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <th style="text-align:left;"><?php echo $this->lang->line('referred_by'); ?> :</th>
+                                                <td style="text-align:left;"><?php echo ($result["referral_person_name"] ?? '-'); ?></td>
                                             </tr>
                                             <tr>
                                                 <th style="text-align:left;"><?php echo $this->lang->line('phone'); ?> :</th>

@@ -2467,7 +2467,7 @@ $categorylist = $this->operationtheatre_model->category_list();
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('date'); ?> <small class="text-danger">*</small></label>
-                                    <input type="text" name="payment_date" id="date" class="form-control datetime">
+                                    <input type="text" name="payment_date" id="date" class="form-control datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?> <small class="text-danger">*</small></label>
@@ -2489,7 +2489,7 @@ $categorylist = $this->operationtheatre_model->category_list();
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1"><?php echo $this->lang->line('cheque_date'); ?> <small class="text-danger">*</small></label>
-                                            <input type="text" name="cheque_date" id="cheque_date" class="form-control date">
+                                            <input type="text" name="cheque_date" id="cheque_date" class="form-control date" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, false)); ?>">
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label mb-1"><?php echo $this->lang->line('attach_document'); ?></label>
@@ -2536,7 +2536,7 @@ $categorylist = $this->operationtheatre_model->category_list();
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('date'); ?> <small class="text-danger">*</small></label>
-                                    <input type="text" name="payment_date" id="refund_date" class="form-control datetime" autocomplete="off">
+                                    <input type="text" name="payment_date" id="refund_date" class="form-control datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>" autocomplete="off">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?> <small class="text-danger">*</small></label>
@@ -2558,7 +2558,7 @@ $categorylist = $this->operationtheatre_model->category_list();
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label mb-1"><?php echo $this->lang->line('cheque_date'); ?> <small class="text-danger">*</small></label>
-                                            <input type="text" name="cheque_date" id="refund_cheque_date" class="form-control date">
+                                            <input type="text" name="cheque_date" id="refund_cheque_date" class="form-control date" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, false)); ?>">
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label mb-1"><?php echo $this->lang->line('attach_document'); ?></label>
@@ -2877,12 +2877,14 @@ $categorylist = $this->operationtheatre_model->category_list();
                             <div class="p-2">
                                 <div class="row g-2">
                                     <div class="col-sm-2">
-                                        <label class="form-label"><?php echo $this->lang->line('charge_type'); ?> <small class="text-danger">*</small></label>
-                                        <select name="charge_type" id="add_charge_type" class="form-control form-control-sm charge_type select2">
+                                        <label class="form-label"><?php echo $this->lang->line('charge_name'); ?> <small class="text-danger">*</small></label>
+                                        <select name="charge_id" id="charge_id" class="form-control form-control-sm charge select2">
                                             <option value=""><?php echo $this->lang->line('select'); ?></option>
-                                            <?php foreach ($charge_type as $key => $value) { ?>
-                                            <option value="<?php echo $value->id; ?>"><?php echo $value->charge_type; ?></option>
-                                            <?php } ?>
+                                            <?php if (!empty($charge_list)) {
+                                                foreach ($charge_list as $charge_item) { ?>
+                                                <option value="<?php echo $charge_item['id']; ?>"><?php echo $charge_item['name']; ?></option>
+                                            <?php }
+                                            } ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-2">
@@ -2892,9 +2894,12 @@ $categorylist = $this->operationtheatre_model->category_list();
                                         </select>
                                     </div>
                                     <div class="col-sm-2">
-                                        <label class="form-label"><?php echo $this->lang->line('charge_name'); ?> <small class="text-danger">*</small></label>
-                                        <select name="charge_id" id="charge_id" class="form-control form-control-sm charge select2">
+                                        <label class="form-label"><?php echo $this->lang->line('charge_type'); ?> <small class="text-danger">*</small></label>
+                                        <select name="charge_type" id="add_charge_type" class="form-control form-control-sm charge_type select2">
                                             <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                            <?php foreach ($charge_type as $key => $value) { ?>
+                                            <option value="<?php echo $value->id; ?>"><?php echo $value->charge_type; ?></option>
+                                            <?php } ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-2">
@@ -3044,12 +3049,14 @@ $categorylist = $this->operationtheatre_model->category_list();
                             <div class="p-2">
                                 <div class="row g-2">
                                     <div class="col-sm-2">
-                                        <label class="form-label"><?php echo $this->lang->line('charge_type'); ?> <small class="text-danger">*</small></label>
-                                        <select name="charge_type" id="edit_charge_type" class="form-control form-control-sm charge_type select2">
+                                        <label class="form-label"><?php echo $this->lang->line('charge_name'); ?> <small class="text-danger">*</small></label>
+                                        <select name="charge_id" id="editcharge_id" class="form-control form-control-sm charge select2">
                                             <option value=""><?php echo $this->lang->line('select'); ?></option>
-                                            <?php foreach ($charge_type as $key => $value) { ?>
-                                            <option value="<?php echo $value->id; ?>"><?php echo $value->charge_type; ?></option>
-                                            <?php } ?>
+                                            <?php if (!empty($charge_list)) {
+                                                foreach ($charge_list as $charge_item) { ?>
+                                                <option value="<?php echo $charge_item['id']; ?>"><?php echo $charge_item['name']; ?></option>
+                                            <?php }
+                                            } ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-2">
@@ -3059,9 +3066,12 @@ $categorylist = $this->operationtheatre_model->category_list();
                                         </select>
                                     </div>
                                     <div class="col-sm-2">
-                                        <label class="form-label"><?php echo $this->lang->line('charge_name'); ?> <small class="text-danger">*</small></label>
-                                        <select name="charge_id" id="editcharge_id" class="form-control form-control-sm charge select2">
+                                        <label class="form-label"><?php echo $this->lang->line('charge_type'); ?> <small class="text-danger">*</small></label>
+                                        <select name="charge_type" id="edit_charge_type" class="form-control form-control-sm charge_type select2">
                                             <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                            <?php foreach ($charge_type as $key => $value) { ?>
+                                            <option value="<?php echo $value->id; ?>"><?php echo $value->charge_type; ?></option>
+                                            <?php } ?>
                                         </select>
                                     </div>
                                     <div class="col-sm-2">
@@ -4266,6 +4276,7 @@ $(function () {
         $("#total").val(total);
         $("#payment_file").dropify();
         $("#payment_patient_id").val(patient_id);
+        $("#date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
         shModal('myPaymentModal').show();
     }
 
@@ -4273,6 +4284,7 @@ $(function () {
         $('#add_refund_form').trigger("reset");
         $("#refund_file").dropify();
         $("#refund_payment_mode").val("cash").trigger('change');
+        $("#refund_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
         shModal('myRefundModal').show();
     }
 
@@ -4334,9 +4346,9 @@ $(function () {
     }
 
 $('#myChargesModal').on('hidden.bs.modal', function (e) {
-    $(".charge",$(this)).select2('destroy').val("").select2().find('option:not(:first)').remove();
-     $('.charge_type ',$(this)).select2('val', '');
-     $('.charge_category',$(this)).select2('destroy').val("").select2().find('option:not(:first)').remove();
+    $(".charge",$(this)).val("").trigger('change.select2');
+    $('.charge_type',$(this)).val("").trigger('change.select2');
+    $('.charge_category',$(this)).empty().append("<option value=''><?php echo $this->lang->line('select'); ?></option>").val("").trigger('change.select2');
 });
 
  $("#add_instruction").on('hidden.bs.modal', function (e) {
@@ -5890,26 +5902,27 @@ $('#myChargesModal').on('hidden.bs.modal', function (e) {
 	});
 
 	reset_form=(_modal_div)=>{
-                    _modal_div.find('#qty').val(1);
-                   $(".charge",_modal_div).select2('destroy').val("").select2().find('option:not(:first)').remove();
-                    _modal_div.find('#apply_charge').val("");
-                    _modal_div.find('.standard_charge').val("");
-                    _modal_div.find('.schedule_charge').val("");
-                    _modal_div.find('.charge_tax').val(0);                  
-                    _modal_div.find('.total').val(0);                
-                    _modal_div.find('.tax').val(0);
-                    _modal_div.find('.final_amount').val(0);
-                    _modal_div.find('.discount_percentage_amount').val(0);
-                    _modal_div.find('.discount_percentage_add_charge').val(0);
-                    _modal_div.find('.net_amount').val(0);
+        _modal_div.find('#qty').val(1);
+        _modal_div.find('#editqty').val(1);
+        $(".charge",_modal_div).val("").trigger("change.select2");
+        _modal_div.find('#apply_charge').val("");
+        _modal_div.find('.standard_charge').val("");
+        _modal_div.find('.schedule_charge').val("");
+        _modal_div.find('.charge_tax').val(0);                  
+        _modal_div.find('.total').val(0);                
+        _modal_div.find('.tax').val(0);
+        _modal_div.find('.final_amount').val(0);
+        _modal_div.find('.discount_percentage_amount').val(0);
+        _modal_div.find('.discount_percentage_add_charge').val(0);
+        _modal_div.find('.net_amount').val(0);
 	}
 
 	$(document).on('select2:select','.charge',function(){
 
         var charge=$(this).val();  
         let closetst_div        =     $(this).closest('div.modal');     
-        var charge              =     $(this).val();
         closetst_div.find('#qty').val(1);
+        closetst_div.find('#editqty').val(1);
 
         var orgid               =     $('#edit_organisation_id').val();  
         var patient_id          =     closetst_div.find("#patient_id").val();   
@@ -5928,12 +5941,23 @@ $('#myChargesModal').on('hidden.bs.modal', function (e) {
                         errorMsg(res.msg);
                     }
 
+                    // Auto populate Category & Type
+                    if (res.result.charge_category_id) {
+                        var $cat = closetst_div.find('.charge_category');
+                        $cat.html("<option value='" + res.result.charge_category_id + "'>" + res.result.charge_category_name + "</option>");
+                        $cat.val(res.result.charge_category_id).trigger('change.select2');
+                    }
+                    if (res.result.charge_type_id) {
+                        var $type = closetst_div.find('.charge_type');
+                        $type.val(res.result.charge_type_id).trigger('change.select2');
+                    }
+
+                    var quantity = closetst_div.find('.qty').val() || 1;
                     $('.total',closetst_div).val(parseFloat(res.result.standard_charge) * quantity);
                     $('.standard_charge',closetst_div).val(res.result.standard_charge);
-                    $('.schedule_charge',closetst_div).val(res.result.org_charge);
+                    $('.schedule_charge',closetst_div).val(res.result.org_charge || '');
                     $('.charge_tax',closetst_div).val(res.result.percentage);
                     var discount_percent = 0;
-                    var quantity=$('.qty',closetst_div).val();                   
                     if(res.display_tpa_charge==false){
                         var total_charge       =      res.result.standard_charge;
                         $('.total_charge',closetst_div).val(res.result.standard_charge);//added
@@ -5946,11 +5970,15 @@ $('#myChargesModal').on('hidden.bs.modal', function (e) {
                     $('.total',closetst_div).val(apply_charge);
                     var final_amount=apply_charge-discount_amount;
 
-                    $('.discount_percentage_add_charge').val((discount_percent).toFixed(2));//added
-                    $('.discount_percentage_amount').val((discount_amount).toFixed(2));//added
+                    closetst_div.find('.discount_percentage_add_charge').val((discount_percent).toFixed(2));//added
+                    closetst_div.find('.discount_percentage_amount').val((discount_amount).toFixed(2));//added
 
-                    $('.tax',closetst_div).val(((parseFloat(final_amount)*res.result.percentage)/100).toFixed(2));
-                    $('.net_amount',closetst_div).val((parseFloat(final_amount)+parseFloat((final_amount*res.result.percentage)/100)).toFixed(2));            
+                    closetst_div.find('.tax').val(((parseFloat(final_amount)*res.result.percentage)/100).toFixed(2));
+                    closetst_div.find('.net_amount').val((parseFloat(final_amount)+parseFloat((final_amount*res.result.percentage)/100)).toFixed(2));            
+
+                    if (closetst_div.attr('id') === 'myChargeseditModal') {
+                        update_edit_charge_amount(closetst_div);
+                    }
                 }
             }
         });
@@ -5962,20 +5990,20 @@ $('#myChargesModal').on('hidden.bs.modal', function (e) {
     });
 
     function reset_fields(modal_div){
-        modal_div.find('.charge_type').select2('destroy').val('').select2();
-        modal_div.find('.charge').select2('destroy').val('').select2().empty();
-        modal_div.find('.charge_category').select2('destroy').val('').select2().empty();        
-          $('.standard_charge').val('');
-          $('.schedule_charge').val('');
-          $('.discount_percentage_add_charge').val(0);
-          $('.discount_percentage_amount').val(0);
-          $('.charge_tax').val('');
-          $('.tax').val(0);
-          $('.total').val(0);
-          $('.net_amount').val(0);     
-          $('.qty').val(1);     
-          $('#preview_charges').html('');                   
-          $('.total_charge').val('0');                   
+        modal_div.find('.charge_type').val('').trigger('change.select2');
+        modal_div.find('.charge').val('').trigger('change.select2');
+        modal_div.find('.charge_category').empty().append("<option value=''><?php echo $this->lang->line('select'); ?></option>").val('').trigger('change.select2');        
+        $('.standard_charge').val('');
+        $('.schedule_charge').val('');
+        $('.discount_percentage_add_charge').val(0);
+        $('.discount_percentage_amount').val(0);
+        $('.charge_tax').val('');
+        $('.tax').val(0);
+        $('.total').val(0);
+        $('.net_amount').val(0);     
+        $('.qty').val(1);     
+        $('#preview_charges').html('');                   
+        $('.total_charge').val('0');                   
     }
 
     let update_edit_charge_amount=(object_model)=>{
@@ -6499,20 +6527,18 @@ $(".addcharges").click(function(){
                 $('#editdiscount').val(discount_amount);
                 $('#editcharge_tax').val(res.result.percentage);
                 var tax_charge=((res.result.apply_charge-discount_amount)*res.result.percentage)/100;
-                $('#edittax').val(tax_charge.toFixed(2));
                 $('#editpatient_charge_id').val(res.result.id);
                 $('textarea#enote').val(res.result.note);          
-                $('#edit_charge_type').select2('val',res.result.charge_type_master_id);
-
                 if(res.result.organisation_id==null  || res.result.organisation_id==''){
-                    $('#myChargeseditModal').find('#is_tpa').prop("checked",false);
-                    $('#edit_total_charge').val(res.result.standard_charge);//added
+                    $('#myChargeseditModal').find('#edit_is_tpa').prop("checked",false);
+                    $('#edit_total_charge').val(res.result.standard_charge);
                 }else{
-                    $('#myChargeseditModal').find('#is_tpa').prop("checked",true);
-                    $('#edit_total_charge').val(res.result.tpa_charge);//added
+                    $('#myChargeseditModal').find('#edit_is_tpa').prop("checked",true);
+                    $('#edit_total_charge').val(res.result.tpa_charge);
                 }
-                getcharge_category(res.result.charge_type_master_id,res.result.charge_category_id);
-                getchargecode(res.result.charge_category_id,res.result.charge_id);
+                $('#editcharge_id').val(res.result.charge_id).trigger('change.select2');
+                $('#editcharge_category').html("<option value='" + res.result.charge_category_id + "'>" + res.result.charge_category_name + "</option>").val(res.result.charge_category_id).trigger('change.select2');
+                $('#edit_charge_type').val(res.result.charge_type_master_id).trigger('change.select2');
           },
              error: function(xhr) { // if error occured
           alert("<?php echo $this->lang->line('error_occurred_please_try_again'); ?>");
@@ -6603,9 +6629,9 @@ function makeid(length) {
 
     function charge_reset(){    
         reset_form($('#myChargesModal'));
-        $("#charge_category",$('#myChargesModal')).select2('destroy').val('').select2().empty();
-        $("#add_charge_type",$('#myChargesModal')).select2('destroy').val('').select2();
-        $("#charge_id",$('#myChargesModal')).select2('destroy').val('').select2().empty();
+        $("#charge_category",$('#myChargesModal')).empty().append("<option value=''><?php echo $this->lang->line('select'); ?></option>").val('').trigger('change.select2');
+        $("#add_charge_type",$('#myChargesModal')).val('').trigger('change.select2');
+        $("#charge_id",$('#myChargesModal')).val('').trigger('change.select2');
         $(".datetime",$('#myChargesModal')).val('');
         $("#edit_note",$('#myChargesModal')).val('');
     }

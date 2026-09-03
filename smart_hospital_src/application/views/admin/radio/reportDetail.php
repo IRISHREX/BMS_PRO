@@ -27,8 +27,8 @@ $genderList = $this->customlib->getGender();
                                 <th><?php echo $this->lang->line('bill_date'); ?></th> 
                                 <th><?php echo $this->lang->line('patient_name'); ?></th>
                                 <th><?php echo $this->lang->line('generated_by'); ?></th>
-                                <th><?php echo $this->lang->line('reference_doctor'); ?></th>
-                                <th>Referral Person Name</th>
+                                <th><?php echo $this->lang->line('consultant_doctor'); ?></th>
+                                <th><?php echo $this->lang->line('referred_by'); ?></th>
                                 <th>Status</th>
                                 <?php
                                 if (!empty($fields)) {
@@ -624,7 +624,7 @@ foreach ($testlist as $dkey => $testlist_value) {
             dataType: 'json',
             success: function (res) {                
                 if (res) {
-                    $('#doctname').val(res.name + " " + res.surname + " (" + res.employee_id + ")");
+                    $('#doctname').val(res.name + " " + res.surname);
                 } else {
 
                 }
