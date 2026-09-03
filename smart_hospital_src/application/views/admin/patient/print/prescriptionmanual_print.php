@@ -52,6 +52,12 @@ if (!empty($raw_age)) {
     );
     $compact_age = preg_replace('/\s+/', '', $compact_age);
 }
+
+// Uploaded header resolution from Setup
+if (!isset($print_details)) {
+    $print_details = $this->printing_model->getheaderfooter('opdpre');
+}
+$uploaded_header_img = !empty($print_details['print_header']) ? $this->media_storage->getImageURL($print_details['print_header']) : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -136,6 +142,21 @@ if (!empty($raw_age)) {
         background: #fff;
         overflow: hidden;
         flex: 0 0 auto;
+    }
+    .presc-header-uploaded {
+        width: 100%;
+        overflow: hidden;
+        flex: 0 0 auto;
+        line-height: 0;
+        border-bottom: 2px solid #0088cc;
+        background: #fff;
+    }
+    .presc-uploaded-header-img {
+        width: 100%;
+        height: auto;
+        max-height: 120px;
+        object-fit: contain;
+        display: block;
     }
     .presc-header-top {
         background: #152836;
@@ -349,12 +370,12 @@ if (!empty($raw_age)) {
         margin-left: 4px;
     }
     .presc-rx-badge {
-        font-size: 28px;
-        font-weight: bold;
-        color: #d32f2f;
-        font-family: 'Times New Roman', Times, serif;
+        display: inline-block;
         line-height: 1;
         margin-bottom: 6px;
+    }
+    .presc-rx-icon {
+        display: block;
     }
 
     /* Bottom Emergency Notice Footer - Firmly Placed at Bottom */
@@ -397,70 +418,76 @@ if (!empty($raw_age)) {
 <body>
 
 <!-- Full-height Prescription Pad Container -->
-<div class="presc-pad-print">
+<div class="presc-pad-print no-global-print-footer">
     
     <!-- Dynamic Hospital Header Banner -->
-    <div class="presc-header-banner">
-        <div class="presc-header-top">
-            <!-- Curved Decorative Shapes -->
-            <svg class="presc-header-left-shapes" viewBox="0 0 140 56" preserveAspectRatio="none">
-                <!-- Green curved ribbon -->
-                <path d="M 0 0 L 140 0 C 120 25, 95 50, 58 56 L 0 56 Z" fill="#27ae60" />
-                <!-- Cyan curved ribbon -->
-                <path d="M 0 0 L 116 0 C 98 25, 78 50, 44 56 L 0 56 Z" fill="#00c0ef" />
-                <!-- Navy logo backdrop -->
-                <path d="M 0 0 L 92 0 C 78 25, 62 50, 32 56 L 0 56 Z" fill="#152836" />
-            </svg>
+    <?php if (!empty($uploaded_header_img)) { ?>
+        <div class="presc-header-uploaded">
+            <img src="<?php echo $uploaded_header_img; ?>" alt="Header" class="presc-uploaded-header-img">
+        </div>
+    <?php } else { ?>
+        <div class="presc-header-banner">
+            <div class="presc-header-top">
+                <!-- Curved Decorative Shapes -->
+                <svg class="presc-header-left-shapes" viewBox="0 0 140 56" preserveAspectRatio="none">
+                    <!-- Green curved ribbon -->
+                    <path d="M 0 0 L 140 0 C 120 25, 95 50, 58 56 L 0 56 Z" fill="#27ae60" />
+                    <!-- Cyan curved ribbon -->
+                    <path d="M 0 0 L 116 0 C 98 25, 78 50, 44 56 L 0 56 Z" fill="#00c0ef" />
+                    <!-- Navy logo backdrop -->
+                    <path d="M 0 0 L 92 0 C 78 25, 62 50, 32 56 L 0 56 Z" fill="#152836" />
+                </svg>
 
-            <!-- Dynamic Circular Logo Badge -->
-            <div class="presc-logo-wrap">
-                <?php if (!empty($h_logo_url)) { ?>
-                    <div class="presc-logo-circle-container">
-                        <img src="<?php echo $h_logo_url; ?>" alt="<?php echo html_escape($h_name); ?>" class="presc-logo-img">
-                    </div>
-                <?php } else { ?>
-                    <svg width="44" height="44" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="47" fill="#ffffff" stroke="#004467" stroke-width="4"/>
-                        <circle cx="50" cy="50" r="42" fill="#004467"/>
-                        <circle cx="50" cy="50" r="32" fill="#ffffff"/>
-                        <path id="textCircle" d="M 18,50 A 32,32 0 1,1 82,50" fill="none"/>
-                        <text font-size="7.5" font-weight="bold" fill="#ffffff" letter-spacing="0.5">
-                            <textPath href="#textCircle" startOffset="50%" text-anchor="middle">
-                                <?php echo html_escape(strtoupper(mb_strimwidth($h_name, 0, 32, ''))); ?>
-                            </textPath>
-                        </text>
-                        <g transform="translate(26, 38)">
-                            <path d="M 5 12 L 8 4 L 11 12 L 14 4 L 17 12" stroke="#d32f2f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                            <text x="23" y="12" font-size="14" font-weight="900" font-style="italic" fill="#004467" font-family="Arial, sans-serif">max</text>
-                            <path d="M 2 2 L 6 2 M 4 0 L 4 4" stroke="#d32f2f" stroke-width="1.5" stroke-linecap="round"/>
-                        </g>
-                        <text x="50" y="73" font-size="6.5" font-weight="bold" fill="#004467" text-anchor="middle" font-family="Arial, sans-serif">EST.-2024</text>
-                    </svg>
-                <?php } ?>
+                <!-- Dynamic Circular Logo Badge -->
+                <div class="presc-logo-wrap">
+                    <?php if (!empty($h_logo_url)) { ?>
+                        <div class="presc-logo-circle-container">
+                            <img src="<?php echo $h_logo_url; ?>" alt="<?php echo html_escape($h_name); ?>" class="presc-logo-img">
+                        </div>
+                    <?php } else { ?>
+                        <svg width="44" height="44" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="47" fill="#ffffff" stroke="#004467" stroke-width="4"/>
+                            <circle cx="50" cy="50" r="42" fill="#004467"/>
+                            <circle cx="50" cy="50" r="32" fill="#ffffff"/>
+                            <path id="textCircle" d="M 18,50 A 32,32 0 1,1 82,50" fill="none"/>
+                            <text font-size="7.5" font-weight="bold" fill="#ffffff" letter-spacing="0.5">
+                                <textPath href="#textCircle" startOffset="50%" text-anchor="middle">
+                                    <?php echo html_escape(strtoupper(mb_strimwidth($h_name, 0, 32, ''))); ?>
+                                </textPath>
+                            </text>
+                            <g transform="translate(26, 38)">
+                                <path d="M 5 12 L 8 4 L 11 12 L 14 4 L 17 12" stroke="#d32f2f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                <text x="23" y="12" font-size="14" font-weight="900" font-style="italic" fill="#004467" font-family="Arial, sans-serif">max</text>
+                                <path d="M 2 2 L 6 2 M 4 0 L 4 4" stroke="#d32f2f" stroke-width="1.5" stroke-linecap="round"/>
+                            </g>
+                            <text x="50" y="73" font-size="6.5" font-weight="bold" fill="#004467" text-anchor="middle" font-family="Arial, sans-serif">EST.-2024</text>
+                        </svg>
+                    <?php } ?>
+                </div>
+
+                <!-- Dynamic Hospital Title Center/Right -->
+                <div class="presc-header-title-wrap">
+                    <h1 class="presc-hospital-title"><?php echo html_escape($h_name); ?></h1>
+                </div>
             </div>
 
-            <!-- Dynamic Hospital Title Center/Right -->
-            <div class="presc-header-title-wrap">
-                <h1 class="presc-hospital-title"><?php echo html_escape($h_name); ?></h1>
+            <!-- Dynamic Sub-Header Address & Contact -->
+            <div class="presc-header-sub">
+                <div class="presc-header-address"><?php echo html_escape($h_address); ?></div>
+                <div class="presc-header-contact">
+                    <?php if (!empty($h_email)) { ?>
+                        Gmail :- <?php echo html_escape($h_email); ?>
+                    <?php } ?>
+                    <?php if (!empty($h_email) && !empty($h_phone)) { ?>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                    <?php } ?>
+                    <?php if (!empty($h_phone)) { ?>
+                        (M) <?php echo html_escape($h_phone); ?>
+                    <?php } ?>
+                </div>
             </div>
         </div>
-
-        <!-- Dynamic Sub-Header Address & Contact -->
-        <div class="presc-header-sub">
-            <div class="presc-header-address"><?php echo html_escape($h_address); ?></div>
-            <div class="presc-header-contact">
-                <?php if (!empty($h_email)) { ?>
-                    Gmail :- <?php echo html_escape($h_email); ?>
-                <?php } ?>
-                <?php if (!empty($h_email) && !empty($h_phone)) { ?>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                <?php } ?>
-                <?php if (!empty($h_phone)) { ?>
-                    (M) <?php echo html_escape($h_phone); ?>
-                <?php } ?>
-            </div>
-        </div>
-    </div>
+    <?php } ?>
 
     <!-- Doctor & Patient Details Row -->
     <div class="presc-top-box-print">
@@ -548,7 +575,11 @@ if (!empty($raw_age)) {
 
         <!-- Right Column: Rx Area -->
         <div class="presc-print-right">
-            <div class="presc-rx-badge">R<sub>x</sub></div>
+            <div class="presc-rx-badge" title="Prescription (Rx)">
+                <svg class="presc-rx-icon" width="30" height="36" viewBox="0 0 1000 1200" fill="#d32f2f">
+                    <path d="M 180,150 L 520,150 C 720,150 830,240 830,390 C 830,510 740,600 590,630 L 810,950 C 830,980 860,1000 900,1000 L 900,1050 L 710,1050 L 490,710 L 340,710 L 340,950 C 340,980 360,1000 410,1000 L 410,1050 L 120,1050 L 120,1000 C 170,1000 190,980 190,950 L 190,250 C 190,220 170,200 120,200 L 120,150 L 180,150 Z M 340,260 L 340,600 L 510,600 C 630,600 700,540 700,430 C 700,320 630,260 510,260 L 340,260 Z M 480,940 L 760,690 L 810,750 L 530,1000 Z"/>
+                </svg>
+            </div>
             <div style="flex: 1; height: 100%;"></div>
         </div>
     </div>

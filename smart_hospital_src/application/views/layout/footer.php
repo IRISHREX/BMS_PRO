@@ -848,32 +848,60 @@ $_poll_ms = $_poll_seconds * 1000;
 <script>
 /* Global popup() — opens print HTML in a hidden iframe and triggers the browser print dialog.
    Equivalent to the patient panel's layout/patient/footer.php version. */
-if (typeof popup === 'undefined') {
-    function popup(data) {
-        var base_url = '<?php echo base_url(); ?>';
-        var frame1 = $('<iframe />');
-        frame1[0].name = "frame1";
-        frame1.css({"position": "absolute", "top": "-1000000px"});
-        $("body").append(frame1);
-        var frameDoc = frame1[0].contentWindow
-            ? frame1[0].contentWindow
-            : (frame1[0].contentDocument.document ? frame1[0].contentDocument.document : frame1[0].contentDocument);
-        frameDoc.document.open();
-        frameDoc.document.write('<html><head><title></title>');
-        frameDoc.document.write('<link rel="preconnect" href="https://fonts.googleapis.com">');
-        frameDoc.document.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">');
-        frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/bootstrap5/css/bootstrap.min.css">');
-        frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/font-awesome.min.css">');
-        frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/all.css">');
-        frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/sh-print.css">');
-        frameDoc.document.write('</head><body onload="window.print()">');
-        frameDoc.document.write(data);
-        frameDoc.document.write('</body></html>');
-        frameDoc.document.close();
-        setTimeout(function () { frame1.remove(); }, 3000);
-        return true;
+function popup(data) {
+    var base_url = '<?php echo base_url(); ?>';
+    var userName = (typeof SH_USERNAME !== 'undefined' && SH_USERNAME) ? SH_USERNAME : '';
+    
+    // Check if data is ANY prescription (manual prescription, OPD, IPD, findings, etc.)
+    var isPrescription = false;
+    if (typeof data === 'string') {
+        var lowerData = data.toLowerCase();
+        if (
+            lowerData.indexOf('presc') !== -1 ||
+            lowerData.indexOf('prescription') !== -1 ||
+            lowerData.indexOf('r<sub>x</sub>') !== -1 ||
+            lowerData.indexOf('finding') !== -1 ||
+            lowerData.indexOf('antenatal') !== -1 ||
+            lowerData.indexOf('no-global-print-footer') !== -1
+        ) {
+            isPrescription = true;
+        }
     }
+
+    var footerHtml = '';
+    if (!isPrescription) {
+        footerHtml = '<div class="sh-global-print-footer">' +
+            '<span>' + (userName ? 'Printed by ' + userName : '') + '</span>' +
+            '<span>Received by: _______________</span>' +
+        '</div>';
+    }
+
+    var frame1 = $('<iframe />');
+    frame1[0].name = "frame1";
+    frame1.css({"position": "absolute", "top": "-1000000px"});
+    $("body").append(frame1);
+    var frameDoc = frame1[0].contentWindow
+        ? frame1[0].contentWindow
+        : (frame1[0].contentDocument.document ? frame1[0].contentDocument.document : frame1[0].contentDocument);
+    frameDoc.document.open();
+    frameDoc.document.write('<html><head><title></title>');
+    frameDoc.document.write('<link rel="preconnect" href="https://fonts.googleapis.com">');
+    frameDoc.document.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">');
+    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/bootstrap5/css/bootstrap.min.css">');
+    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/font-awesome.min.css">');
+    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/all.css">');
+    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/sh-print.css">');
+    frameDoc.document.write('</head><body onload="window.print()">');
+    frameDoc.document.write(data);
+    if (footerHtml) {
+        frameDoc.document.write(footerHtml);
+    }
+    frameDoc.document.write('</body></html>');
+    frameDoc.document.close();
+    setTimeout(function () { frame1.remove(); }, 3000);
+    return true;
 }
+window.popup = popup;
 </script>
 <!-- Bed Status Modal (populated via getbedstatus() AJAX) -->
 <div class="modal fade sh-modal sh-modal-accent" id="bedStatusModal" tabindex="-1" aria-labelledby="bedStatusModalLabel" aria-hidden="true">

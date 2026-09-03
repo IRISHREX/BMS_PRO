@@ -85,7 +85,7 @@ if (!empty($payment)) {
                 </form>
                 <div class="table-responsive mailbox-messages overflow-visible-lg">
                     <div class="download_label"><?php echo $this->lang->line('referral_payment_list'); ?></div>
-                    <table class="table table-hover table-striped table-bordered example">
+                    <table class="table table-hover table-striped table-bordered example" data-pdf-widths="20%,14%,14%,11%,10%,7%,8%,7%,9%">
                         <thead>
                             <tr>
                                 <th class="noExport text-center" style="width: 35px;">
@@ -93,11 +93,11 @@ if (!empty($payment)) {
                                 </th>
                                 <th><?php echo $this->lang->line('payee'); ?></th>
                                 <th><?php echo $this->lang->line('patient_name'); ?></th>
-                                <th class="text-center">Entry Date</th>
-                                <th class="text-center"><?php echo $this->lang->line('bill_no'); ?></th>
-                                <th class="text-end"><?php echo $this->lang->line('bill_amount').' ('. $currency_symbol .')'; ?></th>
-                                <th class="text-end"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
-                                <th class="text-end"><?php echo $this->lang->line('commission_amount').' ('. $currency_symbol .')'; ?></th>
+                                <th class="text-center text-nowrap">Entry Date</th>
+                                <th class="text-center text-nowrap"><?php echo $this->lang->line('bill_no'); ?></th>
+                                <th class="text-end text-nowrap"><?php echo $this->lang->line('bill_amount').' ('. $currency_symbol .')'; ?></th>
+                                <th class="text-end text-nowrap"><?php echo $this->lang->line('commission_percentage'); ?> (%)</th>
+                                <th class="text-end text-nowrap"><?php echo $this->lang->line('commission_amount').' ('. $currency_symbol .')'; ?></th>
                                 <th class="text-center"><?php echo $this->lang->line('status'); ?></th>
                                 <th><?php echo $this->lang->line('paid_by'); ?></th>
                                 <?php if ( ($this->rbac->hasPrivilege('referral_payment', 'can_edit')) || ($this->rbac->hasPrivilege('referral_payment', 'can_delete'))  ) { ?>
@@ -119,12 +119,12 @@ if (!empty($payment)) {
                                 </td>
 
                                 <td class="mailbox-name"><a href="#" data-bs-toggle="popover" class="detail_popover"><?php echo html_escape($value['name']) ?></a></td>
-                                <td><?php echo composePatientName($value["patient_name"],$value["patient_id"]); ?></td>
-                                <td class="text-center"><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->customlib->getHospitalTimeFormat()); ?></td>
-                                <td class="text-center"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
-                                <td class="text-end"><?php echo amountFormat($value["bill_amount"]); ?></td>
-                                <td class="text-end"><?php echo html_escape($value["percentage"]); ?></td>
-                                <td class="text-end fw-bold"><?php echo html_escape($value["amount"]); ?></td>
+                                <td><?php echo html_escape($value["patient_name"]); ?></td>
+                                <td class="text-center text-nowrap"><?php echo $this->customlib->YYYYMMDDHisTodateFormat($value['date'], $this->customlib->getHospitalTimeFormat()); ?></td>
+                                <td class="text-center text-nowrap"><?php echo html_escape($value["prefix"]).(int)$value["billing_id"]; ?></td>
+                                <td class="text-end text-nowrap"><?php echo amountFormat($value["bill_amount"]); ?></td>
+                                <td class="text-end text-nowrap"><?php echo html_escape($value["percentage"]); ?></td>
+                                <td class="text-end text-nowrap fw-bold"><?php echo html_escape($value["amount"]); ?></td>
                                 <td class="text-center">
                                     <?php if ($is_paid) { ?>
                                         <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa fa-check-circle me-1"></i> Paid</span>
@@ -135,7 +135,7 @@ if (!empty($payment)) {
                                 <td>
                                     <?php 
                                     if ($is_paid && !empty($value['paid_by_name'])) {
-                                        echo html_escape(composeStaffNameByString($value['paid_by_name'], $value['paid_by_surname'], $value['paid_by_employee_id']));
+                                        echo html_escape(trim($value['paid_by_name'] . ' ' . $value['paid_by_surname']));
                                     } else {
                                         echo '-';
                                     }

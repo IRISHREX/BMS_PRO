@@ -2,6 +2,10 @@ function getHospitalExportName() {
     return (typeof SH_APP_NAME !== 'undefined' && SH_APP_NAME) ? SH_APP_NAME : 'YOUR HOSPITAL NAME';
 }
 
+function getHospitalExportUserName() {
+    return (typeof SH_USERNAME !== 'undefined' && SH_USERNAME) ? SH_USERNAME : '';
+}
+
 function applyDataTablePrintCustomization(win, exportTitle, $tbl) {
     var hospitalName = getHospitalExportName();
     var cleanTitle = $.trim(exportTitle || '') || $.trim($('.download_label').text() || 'Report');
@@ -19,25 +23,33 @@ function applyDataTablePrintCustomization(win, exportTitle, $tbl) {
     // Inject exact print CSS
     var styleHtml = '<style>' +
         '@media print {' +
-            '@page { size: auto; margin: 8mm 8mm 8mm 8mm; }' +
-            'body { margin: 0 !important; padding: 0 !important; background: #fff !important; font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif !important; color: #000 !important; }' +
+            '@page { size: auto; margin: 8mm 8mm 14mm 8mm; }' +
+            'body { margin: 0 !important; padding: 0 0 25px 0 !important; background: #fff !important; font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif !important; color: #000 !important; }' +
+            '.print-page-footer { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; background: #fff !important; padding: 4px 0 !important; font-size: 9.5px !important; color: #555 !important; font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif !important; }' +
         '}' +
-        'body { font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif !important; color: #000 !important; padding: 10px !important; background: #fff !important; }' +
+        'body { font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif !important; color: #000 !important; padding: 10px 10px 35px 10px !important; background: #fff !important; }' +
         'table.dataTable, table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #333 !important; margin: 0 auto !important; font-size: 11px !important; font-family: inherit !important; }' +
         'table.dataTable th, table.dataTable td, table th, table td { border: 1px solid #333 !important; padding: 4px 6px !important; font-size: 11px !important; line-height: 1.3 !important; color: #000 !important; vertical-align: middle !important; }' +
         'table.dataTable th, table th { font-weight: 700 !important; background-color: #f8f9fa !important; color: #000 !important; text-align: left !important; }' +
         'th.text-end, td.text-end { text-align: right !important; }' +
         'th.text-center, td.text-center { text-align: center !important; }' +
         'th.text-start, td.text-start { text-align: left !important; }' +
+        '.text-nowrap, th.nowrap, td.nowrap, th.text-nowrap, td.text-nowrap { white-space: nowrap !important; }' +
         'a { color: #000 !important; text-decoration: none !important; }' +
         '.badge { border: none !important; padding: 0 !important; background: transparent !important; color: #000 !important; font-weight: normal !important; font-size: 11px !important; }' +
         '.badge i, .fa { display: none !important; }' +
+        '.print-page-footer { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; background: #fff; padding: 6px 10px; font-size: 9.5px; color: #555; box-sizing: border-box; font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif; }' +
     '</style>';
     $(win.document.head).append(styleHtml);
 
-    // Read column alignments from original table
+    // Read column alignments and widths from original table
     var colAlignments = [];
+    var colWidths = [];
     if ($tbl && $tbl.length) {
+        var rawWidths = $tbl.attr('data-pdf-widths') || $tbl.data('pdfWidths');
+        if (rawWidths) {
+            colWidths = rawWidths.toString().split(',').map(function(s) { return $.trim(s); });
+        }
         $tbl.find('thead tr:first th:not(.noExport)').each(function() {
             if ($(this).hasClass('text-end')) {
                 colAlignments.push('text-end');
@@ -54,6 +66,9 @@ function applyDataTablePrintCustomization(win, exportTitle, $tbl) {
             if (colAlignments[idx]) {
                 $(this).removeClass('text-start text-center text-end display').addClass(colAlignments[idx]);
             }
+            if (colWidths.length && colWidths[idx]) {
+                $(this).css('width', colWidths[idx]);
+            }
         });
         $(win.document.body).find('table tbody tr').each(function() {
             $(this).find('td').each(function(idx) {
@@ -63,9 +78,16 @@ function applyDataTablePrintCustomization(win, exportTitle, $tbl) {
             });
         });
     }
+
+    var userName = getHospitalExportUserName();
+    var footerHtml = '<div class="print-page-footer" style="display: flex; justify-content: space-between; align-items: center; font-size: 9.5px; color: #555; font-family: \'Inter\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif; line-height: 1;">' +
+        '<span>' + (userName ? 'Printed by ' + userName : '') + '</span>' +
+        '<span>Received by: _______________</span>' +
+    '</div>';
+    $(win.document.body).append(footerHtml);
 }
 
-function applyDataTablePdfCustomization(doc, exportTitle) {
+function applyDataTablePdfCustomization(doc, exportTitle, $tbl) {
     var hospitalName = getHospitalExportName();
     var cleanTitle = $.trim(exportTitle || '') || $.trim($('.download_label').text() || 'Report');
 
@@ -86,7 +108,56 @@ function applyDataTablePdfCustomization(doc, exportTitle) {
         }
     }
     if (tableNode) {
-        tableNode.table.widths = Array(tableNode.table.body[0].length + 1).join('*').split('');
+        var customWidths = null;
+        if ($tbl && $tbl.length) {
+            var rawWidths = $tbl.attr('data-pdf-widths') || $tbl.data('pdfWidths');
+            if (rawWidths) {
+                customWidths = rawWidths.toString().split(',').map(function(s) {
+                    s = $.trim(s);
+                    if (/^\d+(\.\d+)?$/.test(s)) {
+                        return parseFloat(s);
+                    }
+                    return s;
+                });
+            } else {
+                var thWidths = [];
+                $tbl.find('thead tr:first th:not(.noExport)').each(function() {
+                    var w = $(this).attr('data-pdf-width') || $(this).data('pdfWidth');
+                    if (w) {
+                        w = $.trim(w.toString());
+                        if (/^\d+(\.\d+)?$/.test(w)) {
+                            w = parseFloat(w);
+                        }
+                        thWidths.push(w);
+                    } else {
+                        thWidths.push('*');
+                    }
+                });
+                if (thWidths.some(function(w) { return w !== '*'; })) {
+                    customWidths = thWidths;
+                }
+            }
+        }
+
+        if (customWidths && customWidths.length === tableNode.table.body[0].length) {
+            tableNode.table.widths = customWidths;
+        } else {
+            tableNode.table.widths = Array(tableNode.table.body[0].length + 1).join('*').split('');
+        }
+
+        var colAlignments = [];
+        if ($tbl && $tbl.length) {
+            $tbl.find('thead tr:first th:not(.noExport)').each(function() {
+                if ($(this).hasClass('text-end')) {
+                    colAlignments.push('right');
+                } else if ($(this).hasClass('text-center')) {
+                    colAlignments.push('center');
+                } else {
+                    colAlignments.push('left');
+                }
+            });
+        }
+
         tableNode.layout = {
             hLineWidth: function(i, node) { return 0.5; },
             vLineWidth: function(i, node) { return 0.5; },
@@ -102,11 +173,42 @@ function applyDataTablePdfCustomization(doc, exportTitle) {
                 tableNode.table.body[0][c].fillColor = '#f5f5f5';
                 tableNode.table.body[0][c].bold = true;
                 tableNode.table.body[0][c].fontSize = 8.5;
+                if (colAlignments[c]) {
+                    tableNode.table.body[0][c].alignment = colAlignments[c];
+                }
+            }
+            for (var r = 1; r < tableNode.table.body.length; r++) {
+                for (var c = 0; c < tableNode.table.body[r].length; c++) {
+                    if (colAlignments[c]) {
+                        tableNode.table.body[r][c].alignment = colAlignments[c];
+                    }
+                }
             }
         }
     }
+
+    var userName = getHospitalExportUserName();
     doc.defaultStyle.fontSize = 8;
-    doc.pageMargins = [15, 15, 15, 15];
+    doc.pageMargins = [15, 15, 15, 25];
+    doc.footer = function(currentPage, pageCount) {
+        return {
+            columns: [
+                {
+                    text: userName ? ('Printed by ' + userName) : '',
+                    alignment: 'left',
+                    fontSize: 7.5,
+                    color: '#666666'
+                },
+                {
+                    text: 'Received by: _______________',
+                    alignment: 'right',
+                    fontSize: 7.5,
+                    color: '#666666'
+                }
+            ],
+            margin: [15, 8, 15, 0]
+        };
+    };
 }
 
 $(document).ready(function () {
@@ -162,7 +264,7 @@ $(document).ready(function () {
                     titleAttr: 'PDF',
                     title: exportTitle,
                     customize: function (doc) {
-                        applyDataTablePdfCustomization(doc, exportTitle);
+                        applyDataTablePdfCustomization(doc, exportTitle, $tbl);
                     },
                     exportOptions: {
                     columns: ["thead th:not(.noExport)"],
@@ -343,7 +445,7 @@ $(document).ready(function(){
                 className: "btn-pdf",
                 title: exportTitle,
                 customize: function (doc) {
-                    applyDataTablePdfCustomization(doc, exportTitle);
+                    applyDataTablePdfCustomization(doc, exportTitle, $('.'+_selector));
                 },
                 exportOptions: {
                     columns: ["thead th:not(.noExport)"],

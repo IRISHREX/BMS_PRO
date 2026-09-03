@@ -19,7 +19,7 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
             <div class="print-area">
 
                 <!-- ① Document title -->
-                <div class="sh-print-title"><?php echo $this->lang->line('antenatal_finding'); ?></div>
+                <div class="sh-print-title no-global-print-footer"><?php echo $this->lang->line('antenatal_finding'); ?></div>
 
                 <!-- ② Patient info block -->
                 <div class="sh-print-info-block">

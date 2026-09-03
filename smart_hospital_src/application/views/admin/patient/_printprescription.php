@@ -22,7 +22,7 @@ include(APPPATH . 'views/admin/shared/_print_css.php');
         <tr>
             <td>
                 <div class="content-body sh-px-12" >
-                    <div class="print-area">
+                    <div class="print-area no-global-print-footer">
 
                         <!-- ① Document title -->
                         <div class="sh-print-title"><?php echo $this->lang->line('prescription'); ?></div>

@@ -394,6 +394,31 @@ function delete_recordByIdReload(url) {
 <script type="text/javascript">
 function popup(data, winload) {
     winload = winload || false;
+    var userName = (typeof SH_USERNAME !== 'undefined' && SH_USERNAME) ? SH_USERNAME : '';
+    
+    var isPrescription = false;
+    if (typeof data === 'string') {
+        var lowerData = data.toLowerCase();
+        if (
+            lowerData.indexOf('presc') !== -1 ||
+            lowerData.indexOf('prescription') !== -1 ||
+            lowerData.indexOf('r<sub>x</sub>') !== -1 ||
+            lowerData.indexOf('finding') !== -1 ||
+            lowerData.indexOf('antenatal') !== -1 ||
+            lowerData.indexOf('no-global-print-footer') !== -1
+        ) {
+            isPrescription = true;
+        }
+    }
+
+    var footerHtml = '';
+    if (!isPrescription) {
+        footerHtml = '<div class="sh-global-print-footer">' +
+            '<span>' + (userName ? 'Printed by ' + userName : '') + '</span>' +
+            '<span>Received by: _______________</span>' +
+        '</div>';
+    }
+
     var newWin = window.open('', 'Print-Window');
     newWin.document.open();
     newWin.document.write('<html><head><title></title>');
@@ -407,11 +432,15 @@ function popup(data, winload) {
     newWin.document.write('</head>');
     newWin.document.write('<body onload="window.print()">');
     newWin.document.write(data);
+    if (footerHtml) {
+        newWin.document.write(footerHtml);
+    }
     newWin.document.write('</body></html>');
     newWin.document.close();
     setTimeout(function() { newWin.close(); if (winload) { window.location.reload(true); } }, 5000);
     return true;
 }
+window.popup = popup;
 </script>
 
 <!-- Flash messages from session (CI flash data → toastr) -->

@@ -53,6 +53,12 @@ if (!empty($raw_age)) {
     $compact_age = preg_replace('/\s+/', '', $compact_age);
 }
 
+// Uploaded header resolution from Setup
+if (!isset($print_details)) {
+    $print_details = $this->printing_model->getheaderfooter('opdpre');
+}
+$uploaded_header_img = !empty($print_details['print_header']) ? $this->media_storage->getImageURL($print_details['print_header']) : '';
+
 $print_date_only = date($this->customlib->getHospitalDateFormat(true, false));
 ?>
 
@@ -75,6 +81,21 @@ $print_date_only = date($this->customlib->getHospitalDateFormat(true, false));
     background: #fff;
     overflow: hidden;
     flex: 0 0 auto;
+}
+.presc-header-uploaded-modal {
+    width: 100%;
+    overflow: hidden;
+    flex: 0 0 auto;
+    line-height: 0;
+    border-bottom: 2px solid #0088cc;
+    background: #fff;
+}
+.presc-uploaded-header-img-modal {
+    width: 100%;
+    height: auto;
+    max-height: 120px;
+    object-fit: contain;
+    display: block;
 }
 .presc-header-top-modal {
     background: #152836;
@@ -283,12 +304,12 @@ $print_date_only = date($this->customlib->getHospitalDateFormat(true, false));
     box-sizing: border-box;
 }
 .presc-rx-badge {
-    font-size: 30px;
-    font-weight: bold;
-    color: #d32f2f;
-    font-family: 'Times New Roman', Times, serif;
+    display: inline-block;
     line-height: 1;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+}
+.presc-rx-icon {
+    display: block;
 }
 
 /* Footer Section */
@@ -327,69 +348,75 @@ $print_date_only = date($this->customlib->getHospitalDateFormat(true, false));
 </style>
 
 <!-- Prescription Design Applied -->
-<div class="presc-pad-container mx-2">
-    <!-- Dynamic Header Banner -->
-    <div class="presc-header-banner-modal">
-        <div class="presc-header-top-modal">
-            <!-- Curved Decorative Shapes -->
-            <svg class="presc-header-left-shapes-modal" viewBox="0 0 150 58" preserveAspectRatio="none">
-                <!-- Green curved ribbon -->
-                <path d="M 0 0 L 150 0 C 130 26, 100 52, 60 58 L 0 58 Z" fill="#27ae60" />
-                <!-- Cyan curved ribbon -->
-                <path d="M 0 0 L 125 0 C 105 26, 85 52, 48 58 L 0 58 Z" fill="#00c0ef" />
-                <!-- Navy logo backdrop -->
-                <path d="M 0 0 L 100 0 C 85 26, 70 52, 35 58 L 0 58 Z" fill="#152836" />
-            </svg>
+<div class="presc-pad-container mx-2 no-global-print-footer">
+    <!-- Dynamic Hospital Header Banner -->
+    <?php if (!empty($uploaded_header_img)) { ?>
+        <div class="presc-header-uploaded-modal">
+            <img src="<?php echo $uploaded_header_img; ?>" alt="Header" class="presc-uploaded-header-img-modal">
+        </div>
+    <?php } else { ?>
+        <div class="presc-header-banner-modal">
+            <div class="presc-header-top-modal">
+                <!-- Curved Decorative Shapes -->
+                <svg class="presc-header-left-shapes-modal" viewBox="0 0 150 58" preserveAspectRatio="none">
+                    <!-- Green curved ribbon -->
+                    <path d="M 0 0 L 150 0 C 130 26, 100 52, 60 58 L 0 58 Z" fill="#27ae60" />
+                    <!-- Cyan curved ribbon -->
+                    <path d="M 0 0 L 125 0 C 105 26, 85 52, 48 58 L 0 58 Z" fill="#00c0ef" />
+                    <!-- Navy logo backdrop -->
+                    <path d="M 0 0 L 100 0 C 85 26, 70 52, 35 58 L 0 58 Z" fill="#152836" />
+                </svg>
 
-            <!-- Dynamic Circular Logo Badge -->
-            <div class="presc-logo-wrap-modal">
-                <?php if (!empty($h_logo_url)) { ?>
-                    <div class="presc-logo-circle-container-modal">
-                        <img src="<?php echo $h_logo_url; ?>" alt="<?php echo html_escape($h_name); ?>" class="presc-logo-img-modal">
-                    </div>
-                <?php } else { ?>
-                    <svg width="48" height="48" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="47" fill="#ffffff" stroke="#004467" stroke-width="4"/>
-                        <circle cx="50" cy="50" r="42" fill="#004467"/>
-                        <circle cx="50" cy="50" r="32" fill="#ffffff"/>
-                        <path id="textCircleModal" d="M 18,50 A 32,32 0 1,1 82,50" fill="none"/>
-                        <text font-size="7.5" font-weight="bold" fill="#ffffff" letter-spacing="0.5">
-                            <textPath href="#textCircleModal" startOffset="50%" text-anchor="middle">
-                                <?php echo html_escape(strtoupper(mb_strimwidth($h_name, 0, 32, ''))); ?>
-                            </textPath>
-                        </text>
-                        <g transform="translate(26, 38)">
-                            <path d="M 5 12 L 8 4 L 11 12 L 14 4 L 17 12" stroke="#d32f2f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                            <text x="23" y="12" font-size="14" font-weight="900" font-style="italic" fill="#004467" font-family="Arial, sans-serif">max</text>
-                            <path d="M 2 2 L 6 2 M 4 0 L 4 4" stroke="#d32f2f" stroke-width="1.5" stroke-linecap="round"/>
-                        </g>
-                        <text x="50" y="73" font-size="6.5" font-weight="bold" fill="#004467" text-anchor="middle" font-family="Arial, sans-serif">EST.-2024</text>
-                    </svg>
-                <?php } ?>
+                <!-- Dynamic Circular Logo Badge -->
+                <div class="presc-logo-wrap-modal">
+                    <?php if (!empty($h_logo_url)) { ?>
+                        <div class="presc-logo-circle-container-modal">
+                            <img src="<?php echo $h_logo_url; ?>" alt="<?php echo html_escape($h_name); ?>" class="presc-logo-img-modal">
+                        </div>
+                    <?php } else { ?>
+                        <svg width="48" height="48" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="47" fill="#ffffff" stroke="#004467" stroke-width="4"/>
+                            <circle cx="50" cy="50" r="42" fill="#004467"/>
+                            <circle cx="50" cy="50" r="32" fill="#ffffff"/>
+                            <path id="textCircleModal" d="M 18,50 A 32,32 0 1,1 82,50" fill="none"/>
+                            <text font-size="7.5" font-weight="bold" fill="#ffffff" letter-spacing="0.5">
+                                <textPath href="#textCircleModal" startOffset="50%" text-anchor="middle">
+                                    <?php echo html_escape(strtoupper(mb_strimwidth($h_name, 0, 32, ''))); ?>
+                                </textPath>
+                            </text>
+                            <g transform="translate(26, 38)">
+                                <path d="M 5 12 L 8 4 L 11 12 L 14 4 L 17 12" stroke="#d32f2f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                <text x="23" y="12" font-size="14" font-weight="900" font-style="italic" fill="#004467" font-family="Arial, sans-serif">max</text>
+                                <path d="M 2 2 L 6 2 M 4 0 L 4 4" stroke="#d32f2f" stroke-width="1.5" stroke-linecap="round"/>
+                            </g>
+                            <text x="50" y="73" font-size="6.5" font-weight="bold" fill="#004467" text-anchor="middle" font-family="Arial, sans-serif">EST.-2024</text>
+                        </svg>
+                    <?php } ?>
+                </div>
+
+                <!-- Dynamic Hospital Title Center/Right -->
+                <div class="presc-header-title-wrap-modal">
+                    <h1 class="presc-hospital-title-modal"><?php echo html_escape($h_name); ?></h1>
+                </div>
             </div>
 
-            <!-- Dynamic Hospital Title Center/Right -->
-            <div class="presc-header-title-wrap-modal">
-                <h1 class="presc-hospital-title-modal"><?php echo html_escape($h_name); ?></h1>
+            <!-- Dynamic Sub-Header Address & Contact -->
+            <div class="presc-header-sub-modal">
+                <div class="presc-header-address-modal"><?php echo html_escape($h_address); ?></div>
+                <div class="presc-header-contact-modal">
+                    <?php if (!empty($h_email)) { ?>
+                        Gmail :- <?php echo html_escape($h_email); ?>
+                    <?php } ?>
+                    <?php if (!empty($h_email) && !empty($h_phone)) { ?>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                    <?php } ?>
+                    <?php if (!empty($h_phone)) { ?>
+                        (M) <?php echo html_escape($h_phone); ?>
+                    <?php } ?>
+                </div>
             </div>
         </div>
-
-        <!-- Dynamic Sub-Header Address & Contact -->
-        <div class="presc-header-sub-modal">
-            <div class="presc-header-address-modal"><?php echo html_escape($h_address); ?></div>
-            <div class="presc-header-contact-modal">
-                <?php if (!empty($h_email)) { ?>
-                    Gmail :- <?php echo html_escape($h_email); ?>
-                <?php } ?>
-                <?php if (!empty($h_email) && !empty($h_phone)) { ?>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                <?php } ?>
-                <?php if (!empty($h_phone)) { ?>
-                    (M) <?php echo html_escape($h_phone); ?>
-                <?php } ?>
-            </div>
-        </div>
-    </div>
+    <?php } ?>
 
     <!-- Top Box: Dynamic Doctor Details (Left) & Patient Details (Right) -->
     <div class="presc-top-box">
@@ -479,7 +506,11 @@ $print_date_only = date($this->customlib->getHospitalDateFormat(true, false));
 
         <!-- Right Column: Rx Area for Doctor -->
         <div class="presc-right-col">
-            <div class="presc-rx-badge">R<sub>x</sub></div>
+            <div class="presc-rx-badge" title="Prescription (Rx)">
+                <svg class="presc-rx-icon" width="32" height="38" viewBox="0 0 1000 1200" fill="#d32f2f">
+                    <path d="M 180,150 L 520,150 C 720,150 830,240 830,390 C 830,510 740,600 590,630 L 810,950 C 830,980 860,1000 900,1000 L 900,1050 L 710,1050 L 490,710 L 340,710 L 340,950 C 340,980 360,1000 410,1000 L 410,1050 L 120,1050 L 120,1000 C 170,1000 190,980 190,950 L 190,250 C 190,220 170,200 120,200 L 120,150 L 180,150 Z M 340,260 L 340,600 L 510,600 C 630,600 700,540 700,430 C 700,320 630,260 510,260 L 340,260 Z M 480,940 L 760,690 L 810,750 L 530,1000 Z"/>
+                </svg>
+            </div>
             <div class="presc-writing-area">
                 <!-- Blank prescription space for doctor -->
             </div>
