@@ -1989,26 +1989,42 @@ class Customlib
     {
         $data = [];
         $code = $admission_no;
-        //load library
-        $this->CI->load->library('zend');
-        //load in folder Zend
-        $this->CI->zend->load('Zend/Barcode');
-        //generate barcode
-        $imageResource = Zend_Barcode::factory('code128', 'image', array('text' => $code, 'barHeight' => 20), array())->draw();
-        $barcode_dir = $this->CI->customlib->getFolderPath().'uploads/patient_id_card/barcodes/';
-        if (!is_dir($barcode_dir)) {
-            mkdir($barcode_dir, 0755, true);
+        $barcode = '';
+
+        try {
+            //load library
+            $this->CI->load->library('zend');
+            //load in folder Zend
+            $this->CI->zend->load('Zend/Barcode');
+            //generate barcode
+            if (function_exists('gd_info') || extension_loaded('gd')) {
+                $imageResource = Zend_Barcode::factory('code128', 'image', array('text' => $code, 'barHeight' => 20), array())->draw();
+                $barcode_dir = $this->CI->customlib->getFolderPath().'uploads/patient_id_card/barcodes/';
+                if (!is_dir($barcode_dir)) {
+                    mkdir($barcode_dir, 0755, true);
+                }
+                imagepng($imageResource, $barcode_dir . $admission_no . '.png');
+                $barcode = 'uploads/patient_id_card/barcodes/' . $admission_no . '.png';
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Barcode generation failed: ' . $e->getMessage());
+        } catch (\Throwable $t) {
+            log_message('error', 'Barcode generation failed: ' . $t->getMessage());
         }
-        imagepng($imageResource, $barcode_dir . $admission_no . '.png');
-        $barcode = 'uploads/patient_id_card/barcodes/' . $admission_no . '.png';
 
         //=============qrcode=================
-        $this->CI->load->library('QR_Code');
-        $path = $this->CI->customlib->getFolderPath().'uploads/patient_id_card/qrcode/';
-        if (!is_dir($path)) {
-            mkdir($path, 0755, true);
+        try {
+            $this->CI->load->library('QR_Code');
+            $path = $this->CI->customlib->getFolderPath().'uploads/patient_id_card/qrcode/';
+            if (!is_dir($path)) {
+                mkdir($path, 0755, true);
+            }
+            $qrcode = $this->CI->qr_code->generate($path, $code, $admission_no);
+        } catch (\Exception $e) {
+            log_message('error', 'QR code generation failed: ' . $e->getMessage());
+        } catch (\Throwable $t) {
+            log_message('error', 'QR code generation failed: ' . $t->getMessage());
         }
-        $qrcode = $this->CI->qr_code->generate($path, $code, $admission_no);
 
         if ($default_return_code == "barcode") {
             return $barcode;
@@ -2022,34 +2038,51 @@ class Customlib
     {  
         $data = [];
         $code = $employee_id;
-        //load library
-        $this->CI->load->library('zend');
-        //load in folder Zend
-        $this->CI->zend->load('Zend/Barcode');
-        //generate barcode
-        $imageResource = Zend_Barcode::factory('code128', 'image', array('text' => $code, 'barHeight' => 20), array())->draw();
-        // QR files are standard web assets, so they must always be written beneath
-        // the public application root (the same location Media_storage serves).
+        $barcode = '';
         $storage_root = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR;
-        $barcode_dir = $storage_root . 'uploads/staff_id_card/barcodes/';
-        if ((!is_dir($barcode_dir) && !@mkdir($barcode_dir, 0755, true)) || !is_writable($barcode_dir)) {
-            $storage_root = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR;
-            $barcode_dir  = $storage_root . 'uploads/staff_id_card/barcodes/';
-            if (!is_dir($barcode_dir)) {
-                @mkdir($barcode_dir, 0755, true);
-            }
-        }
-        imagepng($imageResource, $barcode_dir . $staff_id . '.png');
-        $barcode = 'uploads/staff_id_card/barcodes/' . $staff_id . '.png';
-        //=============qrcode=================
-        $this->CI->load->library('QR_Code');
 
-        $path = $storage_root . 'uploads/staff_id_card/qrcode/';
-        if (!is_dir($path)) {
-            mkdir($path, 0755, true);
+        try {
+            //load library
+            $this->CI->load->library('zend');
+            //load in folder Zend
+            $this->CI->zend->load('Zend/Barcode');
+            //generate barcode
+            if (function_exists('gd_info') || extension_loaded('gd')) {
+                $imageResource = Zend_Barcode::factory('code128', 'image', array('text' => $code, 'barHeight' => 20), array())->draw();
+                // QR files are standard web assets, so they must always be written beneath
+                // the public application root (the same location Media_storage serves).
+                $barcode_dir = $storage_root . 'uploads/staff_id_card/barcodes/';
+                if ((!is_dir($barcode_dir) && !@mkdir($barcode_dir, 0755, true)) || !is_writable($barcode_dir)) {
+                    $storage_root = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR;
+                    $barcode_dir  = $storage_root . 'uploads/staff_id_card/barcodes/';
+                    if (!is_dir($barcode_dir)) {
+                        @mkdir($barcode_dir, 0755, true);
+                    }
+                }
+                imagepng($imageResource, $barcode_dir . $staff_id . '.png');
+                $barcode = 'uploads/staff_id_card/barcodes/' . $staff_id . '.png';
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Staff barcode generation failed: ' . $e->getMessage());
+        } catch (\Throwable $t) {
+            log_message('error', 'Staff barcode generation failed: ' . $t->getMessage());
         }
-        
-        $qrcode =   $this->CI->qr_code->generate($path,$code,$staff_id);
+
+        //=============qrcode=================
+        try {
+            $this->CI->load->library('QR_Code');
+
+            $path = $storage_root . 'uploads/staff_id_card/qrcode/';
+            if (!is_dir($path)) {
+                mkdir($path, 0755, true);
+            }
+            
+            $qrcode =   $this->CI->qr_code->generate($path,$code,$staff_id);
+        } catch (\Exception $e) {
+            log_message('error', 'Staff QR code generation failed: ' . $e->getMessage());
+        } catch (\Throwable $t) {
+            log_message('error', 'Staff QR code generation failed: ' . $t->getMessage());
+        }
 
         if ($default_return_code == "barcode") {
             return $barcode;

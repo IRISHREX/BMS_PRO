@@ -97,8 +97,14 @@ class Qrattendance_model extends CI_Model
         // First punch. We deliberately do not depend on role schedules: manual attendance
         // uses the same Present default and every active staff member can use the terminal.
         if (!$attendance) {
-        $present = $this->db->select('id')->where('key_value', 'present')->where('is_active', 'yes')
-            ->get('staff_attendance_type')->row_array();
+            $present = $this->db->select('id')
+                ->group_start()
+                    ->where('long_lang_name', 'present')
+                    ->or_where('type', 'Present')
+                    ->or_where('id', 1)
+                ->group_end()
+                ->where('is_active', 'yes')
+                ->get('staff_attendance_type')->row_array();
             if (!$present) {
                 return array('status' => 0, 'message' => 'No active Present attendance type is configured.');
             }
