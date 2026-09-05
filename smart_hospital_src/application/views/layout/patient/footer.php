@@ -413,9 +413,17 @@ function popup(data, winload) {
 
     var footerHtml = '';
     if (!isPrescription) {
-        footerHtml = '<div class="sh-global-print-footer">' +
-            '<span>' + (userName ? 'Printed by ' + userName : '') + '</span>' +
-            '<span>Received by: _______________</span>' +
+        footerHtml = '<div class="sh-global-print-footer" style="position: fixed; bottom: 0; left: 0; right: 0; width: 100%; background: #fff; padding: 6px 10px; box-sizing: border-box;">' +
+            '<table width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; border: none; font-size: 9.5px; color: #555;">' +
+                '<tr>' +
+                    '<td style="text-align: left; vertical-align: middle; border: none;">' + 
+                        (userName ? 'Printed by ' + userName : '') + 
+                    '</td>' +
+                    '<td style="text-align: right; vertical-align: middle; border: none;">' + 
+                        'Received by: _______________' + 
+                    '</td>' +
+                '</tr>' +
+            '</table>' +
         '</div>';
     }
 
