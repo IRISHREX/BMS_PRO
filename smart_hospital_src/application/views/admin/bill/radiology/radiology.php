@@ -268,7 +268,7 @@ foreach ($testlist as $dkey => $testlist_value) {
                     $('#assigntestModal .modal-body').html(res.page);
                   
                      $('#assigntestModal .filestyle').dropify();
-                     $(".test_name").select2();
+                     $('#assigntestModal .modal-body').find('.select2').select2();
                      updateDate();
                     shModal('assigntestModal').show();
                        createModal.removeClass('modal_loading');

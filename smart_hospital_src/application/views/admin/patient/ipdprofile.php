@@ -2467,7 +2467,7 @@ $categorylist = $this->operationtheatre_model->category_list();
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('date'); ?> <small class="text-danger">*</small></label>
-                                    <input type="text" name="payment_date" id="date" class="form-control datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>">
+                                    <input type="text" name="payment_date" id="add_payment_date" class="form-control datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label mb-1"><?php echo $this->lang->line('amount') . ' (' . $currency_symbol . ')'; ?> <small class="text-danger">*</small></label>
@@ -4271,22 +4271,45 @@ $(function () {
 
 <script type="text/javascript">   
     function addpaymentModal() {
+        $('#add_payment').trigger("reset");
+        $(".dropify-clear").trigger("click");
         var total = $("#charge_total").val();
         var patient_id = '<?php echo $result["id"] ?>';
         $("#total").val(total);
         $("#payment_file").dropify();
         $("#payment_patient_id").val(patient_id);
-        $("#date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+        if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+            SHPicker.setDate('#add_payment_date', new Date());
+        } else {
+            $("#add_payment_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+        }
         shModal('myPaymentModal').show();
     }
 
     function addRefundModal() {
         $('#add_refund_form').trigger("reset");
+        $(".dropify-clear").trigger("click");
         $("#refund_file").dropify();
         $("#refund_payment_mode").val("cash").trigger('change');
-        $("#refund_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+        if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+            SHPicker.setDate('#refund_date', new Date());
+        } else {
+            $("#refund_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+        }
         shModal('myRefundModal').show();
     }
+
+    $('#myPaymentModal').on('show.bs.modal', function () {
+        if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+            SHPicker.setDate('#add_payment_date', new Date());
+        }
+    });
+
+    $('#myRefundModal').on('show.bs.modal', function () {
+        if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+            SHPicker.setDate('#refund_date', new Date());
+        }
+    });
 
     function addmedicationModal() {
         shModal('myaddMedicationModal').show();
@@ -6416,8 +6439,7 @@ $(".addtimeline").click(function(){
 });
 
 $(".addpayment").click(function(){      
-    $('#add_payment').trigger("reset");
-    $(".dropify-clear").trigger("click");
+    addpaymentModal();
 });
 
 $(".addcharges").click(function(){      

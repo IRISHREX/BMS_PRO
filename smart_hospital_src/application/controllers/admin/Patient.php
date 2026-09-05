@@ -8136,6 +8136,26 @@ This Function is used to Import Multiple Patient Records
         $data['result']           = $this->patient_model->getIpdDetails($ipdid);
         $data['hospital_setting'] = $this->setting_model->get();
         $data['print_details']    = $this->printing_model->get('', 'ipd');
+
+        $data['admitted_by'] = '';
+        if (!empty($data['result']['generated_by'])) {
+            $staff_admitted = $this->staff_model->get($data['result']['generated_by']);
+            if (!empty($staff_admitted)) {
+                $data['admitted_by'] = trim($staff_admitted['name'] . ' ' . $staff_admitted['surname']);
+            }
+        }
+
+        $data['discharged_by'] = '';
+        if (!empty($data['result']['ipd_discharge']) && $data['result']['ipd_discharge'] == 'yes') {
+            $discharge_card = $this->patient_model->get_dischargeCard(array('ipd_details_id' => $ipdid));
+            if (!empty($discharge_card['discharge_by'])) {
+                $staff_discharged = $this->staff_model->get($discharge_card['discharge_by']);
+                if (!empty($staff_discharged)) {
+                    $data['discharged_by'] = trim($staff_discharged['name'] . ' ' . $staff_discharged['surname']);
+                }
+            }
+        }
+
         $page                     = $this->load->view('admin/patient/_printIpdAdmissionForm', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
     }
@@ -8148,6 +8168,26 @@ This Function is used to Import Multiple Patient Records
         $data['paymentDetails']   = $this->transaction_model->IPDPatientPayments($ipdid);
         $data['hospital_setting'] = $this->setting_model->get();
         $data['print_details']    = $this->printing_model->get('', 'ipd');
+
+        $data['admitted_by'] = '';
+        if (!empty($data['result']['generated_by'])) {
+            $staff_admitted = $this->staff_model->get($data['result']['generated_by']);
+            if (!empty($staff_admitted)) {
+                $data['admitted_by'] = trim($staff_admitted['name'] . ' ' . $staff_admitted['surname']);
+            }
+        }
+
+        $data['discharged_by'] = '';
+        if (!empty($data['result']['ipd_discharge']) && $data['result']['ipd_discharge'] == 'yes') {
+            $discharge_card = $this->patient_model->get_dischargeCard(array('ipd_details_id' => $ipdid));
+            if (!empty($discharge_card['discharge_by'])) {
+                $staff_discharged = $this->staff_model->get($discharge_card['discharge_by']);
+                if (!empty($staff_discharged)) {
+                    $data['discharged_by'] = trim($staff_discharged['name'] . ' ' . $staff_discharged['surname']);
+                }
+            }
+        }
+
         $page                     = $this->load->view('admin/patient/_printIpdFinalBill', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
     }

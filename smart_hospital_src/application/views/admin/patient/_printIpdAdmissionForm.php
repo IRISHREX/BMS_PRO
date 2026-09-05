@@ -41,6 +41,9 @@ $under_care = !empty($result['refference']) ? $result['refference'] : 'N/A';
 $tpa = !empty($result['organisation_name']) ? $result['organisation_name'] : 'N/A';
 $insurance_id = !empty($result['insurance_id']) ? $result['insurance_id'] : '';
 
+$admitted_by_str = !empty($admitted_by) ? $admitted_by : '-';
+$discharged_by_str = !empty($discharged_by) ? $discharged_by : '-';
+
 // Hospital info
 $hosp_name = !empty($hospital_setting[0]['name']) ? $hospital_setting[0]['name'] : 'CHANDPUR NURSING HOME';
 $hosp_address = !empty($hospital_setting[0]['address']) ? $hospital_setting[0]['address'] : 'CHANDPUR BORDER, CHANDPUR, PAKUR, JHARKHAND, PIN-816107';
@@ -54,7 +57,6 @@ $hosp_email = !empty($hospital_setting[0]['email']) ? $hospital_setting[0]['emai
     <title>Admission Form - <?php echo html_escape($clean_patient_name); ?></title>
     <style type="text/css">
         @page {
-            size: A4 portrait;
             margin: 8mm 10mm 8mm 10mm;
         }
         body {
@@ -277,8 +279,8 @@ $hosp_email = !empty($hospital_setting[0]['email']) ? $hospital_setting[0]['emai
 
     <!-- ════════════════ PAGE 1 ════════════════ -->
     <?php if (!empty($print_details[0]['print_header'])) { ?>
-        <div style="width: 100%; overflow: hidden; margin-bottom: 8px; max-height: 72px;">
-            <img src="<?php echo $this->media_storage->getImageURL($print_details[0]['print_header']); ?>" style="width: 100%; height: auto; display: block; margin-bottom: -22px;">
+        <div style="width: 100%; margin-bottom: 8px;">
+            <img src="<?php echo $this->media_storage->getImageURL($print_details[0]['print_header']); ?>" style="width: 100%; height: auto; display: block;">
         </div>
     <?php } else { ?>
         <div class="hosp-header">
@@ -333,7 +335,9 @@ $hosp_email = !empty($hospital_setting[0]['email']) ? $hospital_setting[0]['emai
         </tr>
         <tr>
             <td class="lbl">Doctor :</td>
-            <td class="val" colspan="3"><strong><?php echo html_escape($doctor_name); ?></strong></td>
+            <td class="val"><strong><?php echo html_escape($doctor_name); ?></strong></td>
+            <td class="lbl">Admitted By :</td>
+            <td class="val"><strong><?php echo html_escape($admitted_by_str); ?></strong></td>
         </tr>
     </table>
 
@@ -428,7 +432,7 @@ $hosp_email = !empty($hospital_setting[0]['email']) ? $hospital_setting[0]['emai
             </tr>
             <tr>
                 <td colspan="2"><strong>Under Care Doctor :</strong> </td>
-                <td><strong>Case Type :</strong> <?php echo html_escape(strtoupper($case_type)); ?></td>
+                <td><strong>Admitted By :</strong> <?php echo html_escape($admitted_by_str); ?></td>
             </tr>
         </table>
         <table style="width: 100%; font-size: 10px; border-collapse: collapse; margin-bottom: 8px;">
@@ -451,7 +455,7 @@ $hosp_email = !empty($hospital_setting[0]['email']) ? $hospital_setting[0]['emai
     </div>
 
     <!-- Front Office Executive Signature Outside Box -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 90px; margin-bottom: 8px; font-size: 10px; font-weight: bold;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 35px; margin-bottom: 8px; font-size: 10px; font-weight: bold;">
         <div>Signature of the Front Office Executive :</div>
         <div style="margin-right: 100px">DATE :</div>
     </div>
@@ -466,8 +470,8 @@ $hosp_email = !empty($hospital_setting[0]['email']) ? $hospital_setting[0]['emai
     <div class="page-break"></div>
 
     <?php if (!empty($print_details[0]['print_header'])) { ?>
-        <div style="width: 100%; overflow: hidden; margin-bottom: 8px; margin-top: 8px; max-height: 72px;">
-            <img src="<?php echo $this->media_storage->getImageURL($print_details[0]['print_header']); ?>" style="width: 100%; height: auto; display: block; margin-bottom: -22px;">
+        <div style="width: 100%; margin-bottom: 8px;">
+            <img src="<?php echo $this->media_storage->getImageURL($print_details[0]['print_header']); ?>" style="width: 100%; height: auto; display: block;">
         </div>
     <?php } else { ?>
         <div class="hosp-header" style="margin-top: 10px;">
@@ -526,13 +530,17 @@ $hosp_email = !empty($hospital_setting[0]['email']) ? $hospital_setting[0]['emai
             <td class="lbl">ID/PASSPORT NO :</td>
             <td class="val"><?php echo html_escape($id_passport_no); ?></td>
         </tr>
+        <tr>
+            <td class="lbl">DISCHARGED BY :</td>
+            <td class="val" colspan="3"><strong><?php echo html_escape($discharged_by_str); ?></strong></td>
+        </tr>
     </table>
 
     <!-- Dotted Checklist Lines Page 2 -->
-    <div style="font-size: 10px; line-height: 1.8; margin-top: 8px;">
+    <div style="font-size: 10px; line-height: 1.6; margin-top: 8px;">
         <div class="dot-item"># (a) Date of first attendance for treatment ................................................................................................................................................</div>
         <div class="dot-item">(b) Date and Time of Admission......................................................................................................................................................</div>
-        <div class="dot-item">(c) Date and Time of Discharge.....................................................................................................................................................</div>
+        <div class="dot-item">(c) Date and Time of Discharge: <?php echo html_escape(!empty($result['discharge_date']) && $result['discharge_date'] != '0000-00-00 00:00:00' && $result['discharge_date'] != '0000-00-00' ? (strpos($result['discharge_date'], ':') !== false ? date('d-M-Y h:i:s A', strtotime($result['discharge_date'])) : date('d-M-Y', strtotime($result['discharge_date']))) : '....................................................................'); ?> &nbsp;&nbsp;&nbsp;&nbsp; Discharged By: <?php echo html_escape($discharged_by_str); ?></div>
         <div class="dot-item">(d) Date and Time of Death..........................................................................................................................................................</div>
         <div class="dot-item" style="margin-top: 4px;"># In case of delivery of the patients ....................................................................................................................................................</div>
         <div class="dot-item">(a) Date and Time of delivery...........................................................................................................................................................</div>

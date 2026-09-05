@@ -690,13 +690,22 @@ class Customlib
 
     public function getTimeZone()
     {
+        if (isset($this->CI->setting_model)) {
+            $setting_result = $this->CI->setting_model->get();
+            if (!empty($setting_result[0]['timezone'])) {
+                return $setting_result[0]['timezone'];
+            }
+        }
         $admin = $this->CI->session->userdata('hospitaladmin');
-        if ($admin) {
+        if ($admin && !empty($admin['timezone'])) {
             return $admin['timezone'];
         } else if ($this->CI->session->userdata('patient')) {
             $student = $this->CI->session->userdata('patient');
-            return $student['timezone'];
+            if (!empty($student['timezone'])) {
+                return $student['timezone'];
+            }
         }
+        return 'Asia/Kolkata';
     }
 
     public function getHospitalTimeFormat()

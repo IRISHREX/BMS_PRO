@@ -56,7 +56,7 @@
                                                         <div class="col-sm-6">
                                                             <div class="mb-3">
                                                                 <label for="exampleInputFile">
-                                                                   <?php echo $this->lang->line('referral') . " " . $this->lang->line('doctor'); ?></label>
+                                                                   <?php echo $this->lang->line('consultant_doctor'); ?></label>
                                                                 <div><select name='consultant_doctor' id="consultant_doctor" onchange="get_Docname(this.value)" class="form-control select2 w-100" <?php
 if ($disable_option == true) {
     echo "disabled";

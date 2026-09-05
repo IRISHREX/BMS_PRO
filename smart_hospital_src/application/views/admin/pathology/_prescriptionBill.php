@@ -172,7 +172,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                 <div class="row g-2">
                     <div class="col-sm-6">
                         <div class="mb-3">
-                            <label><?php echo $this->lang->line('referral_doctor'); ?></label>
+                            <label><?php echo $this->lang->line('consultant_doctor'); ?></label>
                             <select name="consultant_doctor" id="consultant_doctor" onchange="get_Docname(this.value)" class="form-control consultant_doctor select2 w-100">
                                 <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 <?php foreach ($doctors as $dkey => $dvalue) { ?>

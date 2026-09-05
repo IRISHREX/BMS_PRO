@@ -316,8 +316,7 @@ foreach ($testlist as $dkey => $testlist_value) {
                     $('#assigntestModal #billno').val(res.bill_no);
                     $('#assigntestModal .modal-body').html(res.page);                  
                     $('#assigntestModal .filestyle').dropify();
-                    $(".test_name").select2();
-                    $(".consultant_doctor").select2();
+                    $('#assigntestModal .modal-body').find('.select2').select2();
                     updateDate();
                     shModal('assigntestModal').show();
                     createModal.removeClass('modal_loading');
@@ -363,7 +362,7 @@ foreach ($testlist as $dkey => $testlist_value) {
                     $("#bill .patient_list_ajax").append(option).trigger('change');
                     $('#assigntestModal .modal-body').html(res.page);
                   
-                    $('#assigntestModal .modal-body').find('.test_name').select2();
+                    $('#assigntestModal .modal-body').find('.select2').select2();
                     $('#assigntestModal .filestyle').dropify();
                     SHPicker.setDate('#txtDate10', new Date(res.radiology_date));
                     updateDate();
@@ -922,7 +921,7 @@ foreach ($testlist as $dkey => $testlist_value) {
 					$('#assigntestModal .modal-body').html(res.page);
 					$('#assigntestModal .filestyle').dropify();
 					$('#case_reference_id').val(res.case_reference_id);
-					$('.test_name').select2();
+					$('#assigntestModal .modal-body').find('.select2').select2();
 
 					if(res.record_available == 1){        
 						var option = new Option(res.patient_name+" ("+res.patient_id+")", res.patient_id, true, true);

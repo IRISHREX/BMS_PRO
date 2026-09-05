@@ -372,8 +372,7 @@ foreach ($testlist as $dkey => $testlist_value) {
                   $('#assigntestModal .modal-body').html(res.page);
                    $('.filestyle','#assigntestModal').dropify();
                     updateDate();
-                  $(".test_name").select2();
-                  $(".consultant_doctor").select2();
+                   $('#assigntestModal .modal-body').find('.select2').select2();
                shModal('assigntestModal').show();
                   createModal.removeClass('modal_loading');
                 },
@@ -455,7 +454,7 @@ foreach ($testlist as $dkey => $testlist_value) {
                     $('.filestyle','#assigntestModal').dropify();                    
                     SHPicker.setDate('#txtDate10', new Date(res.pathology_date));
                     updateDate();
-                    $('#assigntestModal .modal-body').find('.test_name').select2();
+                    $('#assigntestModal .modal-body').find('.select2').select2();
                     shModal('viewDetailReportModal').hide();
                     shModal('assigntestModal').show();                   
                     var option = new Option(res.patient_name, res.patient_id, true, true);
@@ -1244,7 +1243,7 @@ function updateDate(){
 						$('#case_reference_id').val(res.case_reference_id);
 						$('.filestyle','#assigntestModal').dropify();
 						// $("#addpatient_id").select2("val", '');
-						$(".test_name").select2();
+						$('#assigntestModal .modal-body').find('.select2').select2();
 						updateDate();
 						update_amount(modal_prescription_);
 						total_rows=(res.total_rows <= 0) ? 1:res.total_rows;

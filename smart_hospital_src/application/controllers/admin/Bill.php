@@ -892,6 +892,16 @@ class Bill extends Admin_Controller
                 $payment_date = $this->customlib->dateFormatToYYYYMMDDHis($raw_payment_date, $this->time_format);
             } else {
                 $payment_date = $this->customlib->dateFormatToYYYYMMDD($raw_payment_date);
+                if (!empty($payment_date)) {
+                    $payment_date .= " " . date("H:i:s");
+                }
+            }
+            if (!empty($payment_date)) {
+                if (substr($payment_date, -8) === '00:00:00' || strpos($raw_payment_date, ':') === false) {
+                    $payment_date = substr($payment_date, 0, 10) . " " . date("H:i:s");
+                } elseif (substr($payment_date, -2) === '00') {
+                    $payment_date = substr($payment_date, 0, 17) . date('s');
+                }
             }
             $cheque_date  = $this->customlib->dateFormatToYYYYMMDD($this->input->post("cheque_date", TRUE));
             $amount       = $this->input->post('amount', TRUE);

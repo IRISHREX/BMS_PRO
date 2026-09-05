@@ -80,7 +80,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                 <div class="row g-2">
                     <div class="col-sm-4">
                         <div class="mb-3">
-                            <label><?php echo $this->lang->line('referral_doctor'); ?></label>
+                            <label><?php echo $this->lang->line('consultant_doctor'); ?></label>
                             <select name='consultant_doctor' id="consultant_doctor" onchange="get_Docname(this.value)" class="form-control consultant_doctor select2">
                                 <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 <?php foreach ($doctors as $dkey => $dvalue) { ?>
@@ -99,7 +99,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                     </div>
                     <div class="col-sm-4">
                         <div class="mb-3">
-                            <label>Referral Person</label>
+                            <label><?php echo $this->lang->line('referred_by'); ?></label>
                             <select name='referral_person_id' id="referral_person_id" class="form-control select2">
                                 <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 <?php foreach ($referral_person_list as $dkey => $dvalue) { ?>
@@ -192,3 +192,9 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
     </div>
 
 </div><!--./flex-->
+<script>
+$(document).ready(function() {
+    $('#assigntestModal .modal-body').find('.select2').select2();
+});
+</script>
+

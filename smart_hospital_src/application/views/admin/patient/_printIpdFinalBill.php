@@ -9,12 +9,10 @@ $case_ref_no = !empty($result['case_reference_id']) ? $result['case_reference_id
 $admission_date = !empty($result['date']) ? date('d-M-Y h:i:s A', strtotime($result['date'])) : '';
 
 $discharge_date = '-';
-if (!empty($result['discharge_date'])) {
-    $discharge_date = date('d-M-Y', strtotime($result['discharge_date']));
-} elseif (!empty($result['ipd_discharge']) && $result['ipd_discharge'] == 'yes') {
-    $discharge_date = date('d-M-Y');
+if (!empty($result['discharge_date']) && $result['discharge_date'] != '0000-00-00 00:00:00' && $result['discharge_date'] != '0000-00-00') {
+    $discharge_date = (strpos($result['discharge_date'], ':') !== false) ? date('d-M-Y h:i:s A', strtotime($result['discharge_date'])) : date('d-M-Y', strtotime($result['discharge_date']));
 } else {
-    $discharge_date = date('d-M-Y');
+    $discharge_date = '-';
 }
 
 $reg_no = !empty($result['patient_unique_id']) ? $result['patient_unique_id'] : $result['patient_id'];
@@ -30,6 +28,8 @@ $occupation = !empty($result['occupation']) ? $result['occupation'] : '';
 $nationality = !empty($result['nationality']) ? $result['nationality'] : 'INDIAN';
 $doctor_name = !empty($result['name']) ? 'DR . ' . strtoupper(trim($result['name'] . ' ' . $result['surname'])) : '';
 $case_type = !empty($result['case_type']) ? $result['case_type'] : '';
+$admitted_by_str = !empty($admitted_by) ? $admitted_by : '-';
+$discharged_by_str = !empty($discharged_by) ? $discharged_by : '-';
 
 $hosp_name = isset($hospital_setting[0]['name']) ? $hospital_setting[0]['name'] : '';
 $hosp_address = isset($hospital_setting[0]['address']) ? $hospital_setting[0]['address'] : '';
@@ -48,15 +48,22 @@ if (!empty($charges)) {
     }
 }
 
-$total_received = 0;
+$total_paid = 0;
+$total_refund = 0;
 if (!empty($paymentDetails)) {
     foreach ($paymentDetails as $p) {
-        $total_received += (float)$p['amount'];
+        $amt = (float)$p['amount'];
+        if (isset($p['type']) && $p['type'] == 'refund') {
+            $total_refund += $amt;
+        } else {
+            $total_paid += $amt;
+        }
     }
 }
 
 $net_amount = $total_bill - $total_discount;
-$due_amount = $net_amount - $total_received;
+$net_paid = $total_paid - $total_refund;
+$due_amount = $net_amount - $net_paid;
 ?>
 <!DOCTYPE html>
 <html>
@@ -66,7 +73,6 @@ $due_amount = $net_amount - $total_received;
     <style>
         @media print {
             @page {
-                size: A4 portrait;
                 margin: 8mm 6mm 8mm 6mm;
             }
             body {
@@ -266,7 +272,6 @@ $due_amount = $net_amount - $total_received;
 
         /* Footer */
         .print-footer {
-            border-top: 1px solid #000;
             padding-top: 4px;
             margin-top: 40px;
             font-size: 9.5px;
@@ -279,8 +284,8 @@ $due_amount = $net_amount - $total_received;
 
     <!-- Header -->
     <?php if (!empty($print_details[0]['print_header'])) { ?>
-        <div style="width: 100%; overflow: hidden; margin-bottom: 8px; max-height: 72px;">
-            <img src="<?php echo $this->media_storage->getImageURL($print_details[0]['print_header']); ?>" style="width: 100%; height: auto; display: block; margin-bottom: -22px;">
+        <div style="width: 100%; margin-bottom: 8px;">
+            <img src="<?php echo $this->media_storage->getImageURL($print_details[0]['print_header']); ?>" style="width: 100%; height: auto; display: block;">
         </div>
     <?php } else { ?>
         <div class="hosp-header">
@@ -347,6 +352,10 @@ $due_amount = $net_amount - $total_received;
             <td style="width: 50%;">ADMISSION DATE : <?php echo html_escape($admission_date); ?></td>
             <td style="width: 50%;">DISCHARGE DATE : <?php echo html_escape($discharge_date); ?></td>
         </tr>
+        <tr>
+            <td style="width: 50%;">ADMITTED BY : <?php echo html_escape($admitted_by_str); ?></td>
+            <td style="width: 50%;">DISCHARGED BY : <?php echo html_escape($discharged_by_str); ?></td>
+        </tr>
     </table>
 
     <!-- Bill Summary Table -->
@@ -355,8 +364,8 @@ $due_amount = $net_amount - $total_received;
         <thead>
             <tr>
                 <th style="width: 20%;">Date</th>
-                <th style="width: 55%;">Charge Details</th>
-                <th style="width: 25%; text-align: right;">Amount (Rs )</th>
+                <th style="width: 55%;">Charge / Transaction Details</th>
+                <th style="width: 25%; text-align: right;">Amount (<?php echo $currency_symbol; ?>)</th>
             </tr>
         </thead>
         <tbody>
@@ -375,31 +384,58 @@ $due_amount = $net_amount - $total_received;
                     <td style="text-align: right;">0.00</td>
                 </tr>
             <?php endif; ?>
+
+            <?php if (!empty($paymentDetails)): ?>
+                <tr class="item-row" style="background-color: #f7fafc; font-weight: bold;">
+                    <td colspan="3" style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 6px 8px;">Payments &amp; Refunds</td>
+                </tr>
+                <?php foreach ($paymentDetails as $p): ?>
+                    <?php 
+                        $is_ref = (isset($p['type']) && $p['type'] == 'refund');
+                        $tr_id = $this->customlib->getSessionPrefixByType('transaction_id') . $p['id'];
+                        $mode = !empty($p['payment_mode']) ? ucfirst($p['payment_mode']) : '';
+                        $pdate = !empty($p['payment_date']) ? $this->customlib->YYYYMMDDHisTodateFormat($p['payment_date'], $this->customlib->getHospitalTimeFormat()) : '';
+                        $label = $is_ref ? "Refund (" . $tr_id . " - " . $mode . ")" : "Payment Received (" . $tr_id . " - " . $mode . ")";
+                        if (!empty($p['note'])) { $label .= " - " . $p['note']; }
+                    ?>
+                    <tr class="item-row">
+                        <td><?php echo html_escape($pdate); ?></td>
+                        <td><?php echo html_escape($label); ?></td>
+                        <td style="text-align: right; <?php if ($is_ref) { echo 'color: #c53030;'; } ?>">
+                            <?php echo ($is_ref ? '- ' : '') . number_format((float)$p['amount'], 2, '.', ''); ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 
     <!-- Final Calculations -->
     <table class="calc-table">
         <tr>
-            <td style="width: 50%; border-right: none;" rowspan="5"></td>
+            <td style="width: 50%; border-right: none;" rowspan="6"></td>
             <td class="calc-lbl" style="width: 25%;">Total Bill Amount</td>
-            <td class="calc-val" style="width: 25%;">Rs <?php echo number_format($total_bill, 2, '.', ''); ?></td>
+            <td class="calc-val" style="width: 25%;"><?php echo $currency_symbol; ?> <?php echo number_format($total_bill, 2, '.', ''); ?></td>
         </tr>
         <tr>
             <td class="calc-lbl">(Less) dct</td>
-            <td class="calc-val">Rs <?php echo number_format($total_discount, 2, '.', ''); ?></td>
+            <td class="calc-val"><?php echo $currency_symbol; ?> <?php echo number_format($total_discount, 2, '.', ''); ?></td>
         </tr>
         <tr>
             <td class="calc-lbl highlight-lbl">NET AMOUNT</td>
-            <td class="calc-val highlight-val">Rs <?php echo number_format($net_amount, 2, '.', ''); ?></td>
+            <td class="calc-val highlight-val"><?php echo $currency_symbol; ?> <?php echo number_format($net_amount, 2, '.', ''); ?></td>
         </tr>
         <tr>
             <td class="calc-lbl highlight-lbl">Amount Received</td>
-            <td class="calc-val highlight-val">Rs <?php echo number_format($total_received, 2, '.', ''); ?></td>
+            <td class="calc-val highlight-val"><?php echo $currency_symbol; ?> <?php echo number_format($total_paid, 2, '.', ''); ?></td>
+        </tr>
+        <tr>
+            <td class="calc-lbl highlight-lbl">Total Refund</td>
+            <td class="calc-val highlight-val"><?php echo $currency_symbol; ?> <?php echo number_format($total_refund, 2, '.', ''); ?></td>
         </tr>
         <tr>
             <td class="calc-lbl highlight-lbl">DUE AMOUNT</td>
-            <td class="calc-val highlight-val">Rs <?php echo number_format($due_amount, 2, '.', ''); ?></td>
+            <td class="calc-val highlight-val"><?php echo $currency_symbol; ?> <?php echo number_format($due_amount, 2, '.', ''); ?></td>
         </tr>
     </table>
 

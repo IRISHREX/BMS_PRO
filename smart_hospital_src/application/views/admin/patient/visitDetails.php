@@ -3252,7 +3252,7 @@ $case_reference_id=$result['case_reference_id'];
                                 <div class="row g-2">
                                     <div class="col-md-6">
                                         <label class="form-label"><?php echo $this->lang->line('date'); ?></label><small class="req"> *</small>
-                                        <input type="text" name="payment_date" id="date" class="form-control form-control-sm datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>" autocomplete="off">
+                                        <input type="text" name="payment_date" id="opd_payment_date" class="form-control form-control-sm datetime" readonly="readonly" style="pointer-events: none; background-color: #e9ecef;" value="<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>" autocomplete="off">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label"><?php echo $this->lang->line('amount') . " (" . $currency_symbol . ")"; ?></label><small class="req"> *</small>
@@ -6020,11 +6020,28 @@ function makeid(length) {
 
     function addRefundModal() {
         $('#add_refund_form').trigger("reset");
+        $(".dropify-clear").trigger("click");
         $("#refund_file").dropify();
         $("#refund_payment_mode").val("cash").trigger('change');
-        $("#refund_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+        if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+            SHPicker.setDate('#refund_date', new Date());
+        } else {
+            $("#refund_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+        }
         shModal('myRefundModal').show();
     }
+
+    $('#myPaymentModal').on('show.bs.modal', function () {
+        if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+            SHPicker.setDate('#opd_payment_date', new Date());
+        }
+    });
+
+    $('#myRefundModal').on('show.bs.modal', function () {
+        if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+            SHPicker.setDate('#refund_date', new Date());
+        }
+    });
 
     function calculate() {
         var discount_percent = $("#discount_percent").val();
@@ -6132,6 +6149,13 @@ function makeid(length) {
     });
 
 $(document).on('click','.addpayment',function(){     
+       $('form#add_payment').trigger("reset");
+       $(".dropify-clear").trigger("click");
+       if (window.SHPicker && typeof SHPicker.setDate === 'function') {
+           SHPicker.setDate('#opd_payment_date', new Date());
+       } else {
+           $("#opd_payment_date").val('<?php echo date($this->customlib->getHospitalDateFormat(true, true)); ?>');
+       }
        shModal('myPaymentModal').show();
        $(".cheque_div").css("display","none");
 });
