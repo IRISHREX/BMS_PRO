@@ -8138,8 +8138,9 @@ This Function is used to Import Multiple Patient Records
         $data['print_details']    = $this->printing_model->get('', 'ipd');
 
         $data['admitted_by'] = '';
-        if (!empty($data['result']['generated_by'])) {
-            $staff_admitted = $this->staff_model->get($data['result']['generated_by']);
+        $admitted_by_id = !empty($data['result']['ipd_generated_by']) ? $data['result']['ipd_generated_by'] : (!empty($data['result']['generated_by']) ? $data['result']['generated_by'] : '');
+        if (!empty($admitted_by_id)) {
+            $staff_admitted = $this->staff_model->get($admitted_by_id);
             if (!empty($staff_admitted)) {
                 $data['admitted_by'] = trim($staff_admitted['name'] . ' ' . $staff_admitted['surname']);
             }
@@ -8170,8 +8171,9 @@ This Function is used to Import Multiple Patient Records
         $data['print_details']    = $this->printing_model->get('', 'ipd');
 
         $data['admitted_by'] = '';
-        if (!empty($data['result']['generated_by'])) {
-            $staff_admitted = $this->staff_model->get($data['result']['generated_by']);
+        $admitted_by_id = !empty($data['result']['ipd_generated_by']) ? $data['result']['ipd_generated_by'] : (!empty($data['result']['generated_by']) ? $data['result']['generated_by'] : '');
+        if (!empty($admitted_by_id)) {
+            $staff_admitted = $this->staff_model->get($admitted_by_id);
             if (!empty($staff_admitted)) {
                 $data['admitted_by'] = trim($staff_admitted['name'] . ' ' . $staff_admitted['surname']);
             }
