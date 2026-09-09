@@ -455,10 +455,12 @@ class Transaction_model extends MY_Model
                 $condition .= " AND (transactions.pathology_billing_id IS NOT NULL OR LOWER(transactions.section) = 'pathology')";
             } elseif ($dep_lower == 'radiology') {
                 $condition .= " AND (transactions.radiology_billing_id IS NOT NULL OR LOWER(transactions.section) = 'radiology')";
-            } elseif ($dep_lower == 'blood_bank') {
+            } elseif ($dep_lower == 'blood_bank' || $dep_lower == 'blood bank') {
                 $condition .= " AND (transactions.blood_issue_id IS NOT NULL OR transactions.blood_donor_cycle_id IS NOT NULL OR LOWER(transactions.section) LIKE '%blood%')";
             } elseif ($dep_lower == 'ambulance') {
                 $condition .= " AND (transactions.ambulance_call_id IS NOT NULL OR LOWER(transactions.section) = 'ambulance')";
+            } elseif ($dep_lower == 'general') {
+                $condition .= " AND transactions.appointment_id IS NULL AND transactions.opd_id IS NULL AND transactions.ipd_id IS NULL AND transactions.pharmacy_bill_basic_id IS NULL AND transactions.pathology_billing_id IS NULL AND transactions.radiology_billing_id IS NULL AND transactions.blood_issue_id IS NULL AND transactions.blood_donor_cycle_id IS NULL AND transactions.ambulance_call_id IS NULL";
             }
         }
 

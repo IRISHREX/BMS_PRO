@@ -136,60 +136,79 @@ class Transaction extends Admin_Controller
         $this->session->set_userdata('sub_menu', 'reports/finance');
         $this->session->set_userdata('subsub_menu', 'reports/transaction/dailytransactionreport');
 
-        $data['title'] = 'title';
-        $this->form_validation->set_rules('date_from', $this->lang->line('date_from'), 'trim|required|xss_clean');
-        $this->form_validation->set_rules('date_to', $this->lang->line('date_to'), 'trim|required|xss_clean');
-        
-        if ($this->form_validation->run() == false) {
-            $msg = array(
-                'date_from' => form_error('date_from'),
-                'date_to'   => form_error('date_to'),
-            );
-            $json_array = array('status' => 'fail', 'error' => $msg, 'message' => '');
-        } else {
-            $date_from = $this->customlib->dateFormatToYYYYMMDD($this->input->post('date_from'));
-            $date_to   = $this->customlib->dateFormatToYYYYMMDD($this->input->post('date_to'));
+        $data['title']      = 'title';
+        $data["searchlist"] = $this->search_type;
 
-            $reportdata = $this->transaction_model->getTransactionBetweenDate($date_from, $date_to, 'all');
-            $start_date = strtotime($date_from);
-            $end_date   = strtotime($date_to);
-            $date_array = array();
-            for ($i = $start_date; $i <= $end_date; $i += 86400) {
-                $date_array[date('Y-m-d', $i)] = array('amount' => 0, 'refund_amount' => 0, 'online_transaction' => 0, 'offline_transaction' => 0, 'total_transaction' => 0);
+        $search_type = $this->input->post('search_type');
+        $date_from   = $this->input->post('date_from');
+        $date_to     = $this->input->post('date_to');
+
+        if ($this->input->server('REQUEST_METHOD') == 'POST') {
+            $this->form_validation->set_rules('search_type', $this->lang->line('search_type'), 'trim|required|xss_clean');
+            if ($search_type == 'period') {
+                $this->form_validation->set_rules('date_from', $this->lang->line('date_from'), 'trim|required|xss_clean');
+                $this->form_validation->set_rules('date_to', $this->lang->line('date_to'), 'trim|required|xss_clean');
             }
 
-            if (!empty($reportdata)) {
-                foreach ($reportdata as $key => $value) {
-                    if ($value->type == 'payment') {
-                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount']            = $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount'] + $value->amount;
-                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] + 1;
+            if ($this->form_validation->run() == true) {
+                if ($search_type == 'period') {
+                    $start_date_str = $this->customlib->dateFormatToYYYYMMDD($date_from);
+                    $end_date_str   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+                } else {
+                    $dates          = $this->customlib->get_betweendate($search_type);
+                    $start_date_str = $dates['from_date'];
+                    $end_date_str   = $dates['to_date'];
+                }
 
-                        if ($value->payment_mode == "Online") {
-                            $date_array[date('Y-m-d', strtotime($value->payment_date))]['online_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['online_transaction'] + $value->amount;
-                        } else {
-                            $date_array[date('Y-m-d', strtotime($value->payment_date))]['offline_transaction'] = $date_array[date('Y-m-d', strtotime($value->payment_date))]['offline_transaction'] + $value->amount;
+                $data['search_type'] = $search_type;
+
+                $reportdata = $this->transaction_model->getTransactionBetweenDate($start_date_str, $end_date_str, 'all');
+                $start_date = strtotime($start_date_str);
+                $end_date   = strtotime($end_date_str);
+                $date_array = array();
+                for ($i = $start_date; $i <= $end_date; $i += 86400) {
+                    $date_array[date('Y-m-d', $i)] = array('amount' => 0, 'refund_amount' => 0, 'online_transaction' => 0, 'offline_transaction' => 0, 'total_transaction' => 0);
+                }
+
+                if (!empty($reportdata)) {
+                    foreach ($reportdata as $key => $value) {
+                        if ($value->type == 'payment') {
+                            $d = date('Y-m-d', strtotime($value->payment_date));
+                            if (isset($date_array[$d])) {
+                                $date_array[$d]['amount']            += $value->amount;
+                                $date_array[$d]['total_transaction'] += 1;
+
+                                if ($value->payment_mode == "Online") {
+                                    $date_array[$d]['online_transaction'] += $value->amount;
+                                } else {
+                                    $date_array[$d]['offline_transaction'] += $value->amount;
+                                }
+                            }
+                        } elseif ($value->type == 'refund') {
+                            $d = date('Y-m-d', strtotime($value->payment_date));
+                            if (isset($date_array[$d])) {
+                                $date_array[$d]['refund_amount']     += $value->amount;
+                                $date_array[$d]['amount']            -= $value->amount;
+                                $date_array[$d]['total_transaction'] += 1;
+                            }
                         }
-                    } elseif ($value->type == 'refund') {
-                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['refund_amount'] += $value->amount;
-                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['amount'] -= $value->amount;
-                        $date_array[date('Y-m-d', strtotime($value->payment_date))]['total_transaction'] += 1;
                     }
                 }
-            }
 
-            $dt_data = array();
-            foreach ($date_array as $dt_key => $dt_value) {
-                $row                        = array();
-                $row['date']                = $dt_key;
-                $row['total_transaction']   = $dt_value['total_transaction'];
-                $row['online_transaction']  = $dt_value['online_transaction'];
-                $row['offline_transaction'] = $dt_value['offline_transaction'];
-                $row['refund_amount']       = $dt_value['refund_amount'];
-                $row['amount']              = $dt_value['amount'];
-                $dt_data[]                  = $row;
-            }
+                $dt_data = array();
+                foreach ($date_array as $dt_key => $dt_value) {
+                    $row                        = array();
+                    $row['date']                = $dt_key;
+                    $row['total_transaction']   = $dt_value['total_transaction'];
+                    $row['online_transaction']  = $dt_value['online_transaction'];
+                    $row['offline_transaction'] = $dt_value['offline_transaction'];
+                    $row['refund_amount']       = $dt_value['refund_amount'];
+                    $row['amount']              = $dt_value['amount'];
+                    $dt_data[]                  = $row;
+                }
 
-            $data['result'] = $dt_data;
+                $data['result'] = $dt_data;
+            }
         }
 
         $data['module'] = 'reports';
@@ -205,22 +224,32 @@ class Transaction extends Admin_Controller
             return;
         }
 
-        $date_from_post = $this->input->post('date_from', TRUE);
-        $date_to_post   = $this->input->post('date_to', TRUE);
+        $search_type = $this->input->post('search_type', TRUE);
+        $date_from   = $this->input->post('date_from', TRUE);
+        $date_to     = $this->input->post('date_to', TRUE);
 
-        if (empty($date_from_post)) {
-            $date_from_post = date($this->customlib->getHospitalDateFormat());
+        if ($search_type == 'period') {
+            if (empty($date_from)) {
+                $date_from = date($this->customlib->getHospitalDateFormat());
+            }
+            if (empty($date_to)) {
+                $date_to = date($this->customlib->getHospitalDateFormat());
+            }
+            $start_date_str = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date_str   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+        } else {
+            if (!empty($search_type)) {
+                $dates = $this->customlib->get_betweendate($search_type);
+            } else {
+                $dates = $this->customlib->get_betweendate('this_year');
+            }
+            $start_date_str = $dates['from_date'];
+            $end_date_str   = $dates['to_date'];
         }
-        if (empty($date_to_post)) {
-            $date_to_post = date($this->customlib->getHospitalDateFormat());
-        }
 
-        $date_from = $this->customlib->dateFormatToYYYYMMDD($date_from_post);
-        $date_to   = $this->customlib->dateFormatToYYYYMMDD($date_to_post);
-
-        $reportdata = $this->transaction_model->getTransactionBetweenDate($date_from, $date_to, 'all');
-        $start_date = strtotime($date_from);
-        $end_date   = strtotime($date_to);
+        $reportdata = $this->transaction_model->getTransactionBetweenDate($start_date_str, $end_date_str, 'all');
+        $start_date = strtotime($start_date_str);
+        $end_date   = strtotime($end_date_str);
         $date_array = array();
         for ($i = $start_date; $i <= $end_date; $i += 86400) {
             $date_array[date('Y-m-d', $i)] = array('amount' => 0, 'refund_amount' => 0, 'online_transaction' => 0, 'offline_transaction' => 0, 'total_transaction' => 0);
@@ -259,7 +288,13 @@ class Transaction extends Admin_Controller
             }
         }
 
-        $report_subtitle = "Daily Transaction Report [From: " . date('d-M-Y', $start_date) . " To: " . date('d-M-Y', $end_date) . "]";
+        if ($search_type == 'period' && !empty($start_date_str) && !empty($end_date_str)) {
+            $duration_label = "From: " . date('d-M-Y', $start_date) . " To: " . date('d-M-Y', $end_date);
+        } else {
+            $duration_label = !empty($search_type) ? (isset($this->search_type[$search_type]) ? $this->search_type[$search_type] : ucfirst(str_replace('_', ' ', $search_type))) : 'This Year';
+        }
+
+        $report_subtitle = "Daily Transaction Report [Duration: " . $duration_label . "]";
 
         $print_rows         = array();
         $total_transactions = 0;
@@ -377,12 +412,17 @@ class Transaction extends Admin_Controller
 
     public function gettransactionbydate()
     {
-        if (!$this->rbac->hasPrivilege('daily_transaction_report', 'can_view')) {
+        if (!$this->rbac->hasPrivilege('daily_transaction_report', 'can_view') && !$this->rbac->hasPrivilege('department_wise_transaction_report', 'can_view')) {
             access_denied();
         }
         $date          = $this->input->post('date');
+        $department    = $this->input->post('department');
         $data['title'] = 'title';
-        $result         = $this->transaction_model->getTransactionBetweenDate($date, $date, 'all');
+        if (!empty($department) && $department != 'all') {
+            $result    = $this->transaction_model->getDepartmentWiseTransactionList($date, $date, $department);
+        } else {
+            $result    = $this->transaction_model->getTransactionBetweenDate($date, $date, 'all');
+        }
         $data['result'] = $result;
         $page           = $this->load->view('admin/transaction/_gettransactionbydate', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
@@ -390,13 +430,19 @@ class Transaction extends Admin_Controller
 
     public function print_collection_list()
     {
-        if (!$this->rbac->hasPrivilege('daily_transaction_report', 'can_view')) {
+        if (!$this->rbac->hasPrivilege('daily_transaction_report', 'can_view') && !$this->rbac->hasPrivilege('department_wise_transaction_report', 'can_view')) {
             echo json_encode(array('status' => 'fail', 'message' => 'Access Denied'));
             return;
         }
 
-        $date   = $this->input->post('date');
-        $result = $this->transaction_model->getTransactionBetweenDate($date, $date, 'all');
+        $date       = $this->input->post('date');
+        $department = $this->input->post('department');
+
+        if (!empty($department) && $department != 'all') {
+            $result = $this->transaction_model->getDepartmentWiseTransactionList($date, $date, $department);
+        } else {
+            $result = $this->transaction_model->getTransactionBetweenDate($date, $date, 'all');
+        }
 
         $hospital_name = 'YOUR HOSPITAL NAME';
         if (isset($this->setting_model)) {
@@ -407,7 +453,8 @@ class Transaction extends Admin_Controller
         }
 
         $date_formatted = !empty($date) ? date('d-M-Y', strtotime($date)) : '-';
-        $report_subtitle = "Daily Collection List [Date: " . $date_formatted . "]";
+        $dept_title = (!empty($department) && $department != 'all') ? ' (' . ucfirst(str_replace('_', ' ', $department)) . ')' : '';
+        $report_subtitle = "Collection List [Date: " . $date_formatted . $dept_title . "]";
 
         $print_rows   = array();
         $total_amount = 0;
@@ -677,59 +724,110 @@ class Transaction extends Admin_Controller
             $end_date   = $dates['to_date'];
         }
 
-        $reportdata = $this->transaction_model->departmentWiseTransactionRecord($start_date, $end_date, $department);
-        $reportdata = json_decode($reportdata);
-        $dt_data    = array();
-        $total_amount = 0;
+        $records = $this->transaction_model->getDepartmentWiseTransactionList($start_date, $end_date, $department);
 
-        if (!empty($reportdata->data)) {
-            $trans_prefix = $this->customlib->getSessionPrefixByType('transaction_id');
-            foreach ($reportdata->data as $value) {
+        $grouped = array();
+        if (!empty($records)) {
+            foreach ($records as $value) {
+                $d = !empty($value->payment_date) ? date('Y-m-d', strtotime($value->payment_date)) : '';
+                if (empty($d)) {
+                    continue;
+                }
+                $dept_name = !empty($value->department) ? $value->department : 'General';
+                $dept_slug = strtolower(str_replace(' ', '_', $dept_name));
+                $group_key = $d . '_' . $dept_slug;
+
+                if (!isset($grouped[$group_key])) {
+                    $grouped[$group_key] = array(
+                        'raw_date'          => $d,
+                        'department_name'   => $dept_name,
+                        'department_slug'   => $dept_slug,
+                        'total_transaction' => 0,
+                        'paid_amount'       => 0,
+                        'refund_amount'     => 0,
+                        'net_amount'        => 0,
+                    );
+                }
+
                 $amt = (float)$value->amount;
+                $grouped[$group_key]['total_transaction'] += 1;
                 if ($value->type == 'refund') {
-                    $total_amount -= $amt;
-                    $amt_display = '<span class="text-danger">-' . number_format($amt, 2) . '</span>';
+                    $grouped[$group_key]['refund_amount'] += $amt;
+                    $grouped[$group_key]['net_amount']    -= $amt;
                 } else {
-                    $total_amount += $amt;
-                    $amt_display = number_format($amt, 2);
+                    $grouped[$group_key]['paid_amount']   += $amt;
+                    $grouped[$group_key]['net_amount']    += $amt;
                 }
-
-                $clean_patient = preg_replace('/\s*\([^)]*\)$/', '', $value->patient_name ?? '');
-
-                $ref_prefix = '';
-                if (!empty($value->ward)) {
-                    $ref_prefix = $this->customlib->getSessionPrefixByType($value->ward);
-                }
-                $ref_display = !empty($value->reference) ? $ref_prefix . $value->reference : '-';
-
-                $row   = array();
-                $row[] = !empty($value->payment_date) ? '<span style="white-space: nowrap;">' . $this->customlib->YYYYMMDDTodateFormat($value->payment_date) . '</span>' : '-';
-                $row[] = '<span style="white-space: nowrap;">' . $trans_prefix . $value->id . '</span>';
-                $row[] = !empty($value->department) ? $value->department : '-';
-                $row[] = !empty($clean_patient) ? $clean_patient : '-';
-                $row[] = '<span style="white-space: nowrap;">' . $ref_display . '</span>';
-                $row[] = !empty($value->payment_mode) ? $this->lang->line(strtolower($value->payment_mode)) : '-';
-                $row[] = '<span style="white-space: nowrap;">' . $amt_display . '</span>';
-
-                $dt_data[] = $row;
             }
+        }
 
+        uasort($grouped, function ($a, $b) {
+            $cmp = strcmp($b['raw_date'], $a['raw_date']);
+            if ($cmp === 0) {
+                return strcmp($a['department_name'], $b['department_name']);
+            }
+            return $cmp;
+        });
+
+        $dt_data          = array();
+        $total_trans_sum  = 0;
+        $total_paid_sum   = 0;
+        $total_refund_sum = 0;
+        $total_net_sum    = 0;
+
+        foreach ($grouped as $item) {
+            $raw_date   = $item['raw_date'];
+            $dept_name  = $item['department_name'];
+            $dept_slug  = $item['department_slug'];
+            $trans_cnt  = $item['total_transaction'];
+            $paid_amt   = $item['paid_amount'];
+            $ref_amt    = $item['refund_amount'];
+            $net_amt    = $item['net_amount'];
+
+            $total_trans_sum  += $trans_cnt;
+            $total_paid_sum   += $paid_amt;
+            $total_refund_sum += $ref_amt;
+            $total_net_sum    += $net_amt;
+
+            $date_formatted = $this->customlib->YYYYMMDDTodateFormat($raw_date);
+
+            $action_btn = '<button type="button" class="btn btn-secondary btn-sm dept_collection" data-bs-toggle="tooltip" data-date="' . $raw_date . '" data-department="' . $dept_slug . '" data-department-name="' . html_escape($dept_name) . '" title="' . $this->lang->line('view_collection') . '" autocomplete="off"><i class="fa fa-list"></i></button>';
+
+            $row   = array();
+            $row[] = '<span style="white-space: nowrap;">' . $date_formatted . '</span>';
+            $row[] = html_escape($dept_name);
+            $row[] = $trans_cnt;
+            $row[] = '<span style="white-space: nowrap;">' . number_format($paid_amt, 2) . '</span>';
+            $row[] = '<span style="white-space: nowrap;">' . ($ref_amt > 0 ? '<span class="text-danger">-' . number_format($ref_amt, 2) . '</span>' : number_format(0, 2)) . '</span>';
+            $row[] = '<span style="white-space: nowrap;' . ($net_amt < 0 ? ' color: #c00;' : '') . '">' . ($net_amt < 0 ? '-' : '') . number_format(abs($net_amt), 2) . '</span>';
+            $row[] = $action_btn;
+
+            $dt_data[] = $row;
+        }
+
+        if (!empty($dt_data)) {
             $footer_row   = array();
             $footer_row[] = "";
+            $footer_row[] = "<b>" . $this->lang->line('total') . "</b>";
+            $footer_row[] = "<b>" . $total_trans_sum . "</b>";
+            $footer_row[] = "<b>" . $currency_symbol . number_format($total_paid_sum, 2) . "</b>";
+            $footer_row[] = "<b>" . ($total_refund_sum > 0 ? '<span class="text-danger">-' . number_format($total_refund_sum, 2) . '</span>' : number_format(0, 2)) . "</b>";
+            $footer_row[] = "<b>" . $currency_symbol . number_format($total_net_sum, 2) . "</b>";
             $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "<b>" . $this->lang->line('total_amount') . "</b>:";
-            $footer_row[] = "<b>" . $currency_symbol . number_format($total_amount, 2) . "</b>";
             $dt_data[]    = $footer_row;
         }
 
         $json_data = array(
-            "draw"            => intval($reportdata->draw ?? 1),
-            "recordsTotal"    => intval($reportdata->recordsTotal ?? 0),
-            "recordsFiltered" => intval($reportdata->recordsFiltered ?? 0),
-            "data"            => $dt_data,
+            "draw"                   => 1,
+            "recordsTotal"           => count($dt_data),
+            "recordsFiltered"        => count($dt_data),
+            "data"                   => $dt_data,
+            "total_paid"             => $total_paid_sum,
+            "total_paid_formatted"   => $currency_symbol . ' ' . number_format($total_paid_sum, 2),
+            "total_refund"           => $total_refund_sum,
+            "total_refund_formatted" => $currency_symbol . ' ' . number_format($total_refund_sum, 2),
+            "net_amount"             => $total_net_sum,
+            "net_amount_formatted"   => $currency_symbol . ' ' . number_format($total_net_sum, 2),
         );
         echo json_encode($json_data);
     }
@@ -780,52 +878,88 @@ class Transaction extends Admin_Controller
 
         $report_subtitle = "Department Wise Transaction Report [Department: " . $dept_label . " | Duration: " . $duration_label . "]";
 
-        $print_rows   = array();
-        $total_amount = 0;
-        $total_refund = 0;
-
+        $grouped = array();
         if (!empty($records)) {
-            $trans_prefix = $this->customlib->getSessionPrefixByType('transaction_id');
             foreach ($records as $value) {
+                $d = !empty($value->payment_date) ? date('Y-m-d', strtotime($value->payment_date)) : '';
+                if (empty($d)) {
+                    continue;
+                }
+                $dept_name = !empty($value->department) ? $value->department : 'General';
+                $dept_slug = strtolower(str_replace(' ', '_', $dept_name));
+                $group_key = $d . '_' . $dept_slug;
+
+                if (!isset($grouped[$group_key])) {
+                    $grouped[$group_key] = array(
+                        'raw_date'          => $d,
+                        'department'        => $dept_name,
+                        'total_transaction' => 0,
+                        'paid_amount'       => 0,
+                        'refund_amount'     => 0,
+                        'net_amount'        => 0,
+                    );
+                }
+
                 $amt = (float)$value->amount;
-                $is_refund = ($value->type == 'refund');
-
-                if ($is_refund) {
-                    $total_refund += $amt;
-                    $amt_display = '-' . number_format($amt, 2);
+                $grouped[$group_key]['total_transaction'] += 1;
+                if ($value->type == 'refund') {
+                    $grouped[$group_key]['refund_amount'] += $amt;
+                    $grouped[$group_key]['net_amount']    -= $amt;
                 } else {
-                    $total_amount += $amt;
-                    $amt_display = number_format($amt, 2);
+                    $grouped[$group_key]['paid_amount']   += $amt;
+                    $grouped[$group_key]['net_amount']    += $amt;
                 }
-
-                $clean_patient = preg_replace('/\s*\([^)]*\)$/', '', $value->patient_name ?? '');
-
-                $ref_prefix = '';
-                if (!empty($value->ward)) {
-                    $ref_prefix = $this->customlib->getSessionPrefixByType($value->ward);
-                }
-                $ref_display = !empty($value->reference) ? $ref_prefix . $value->reference : '-';
-
-                $print_rows[] = array(
-                    'date'           => !empty($value->payment_date) ? date('d-M-Y', strtotime($value->payment_date)) : '-',
-                    'transaction_id' => $trans_prefix . $value->id,
-                    'department'     => !empty($value->department) ? $value->department : '-',
-                    'patient_name'   => !empty($clean_patient) ? $clean_patient : '-',
-                    'reference_no'   => $ref_display,
-                    'payment_mode'   => !empty($value->payment_mode) ? $this->lang->line(strtolower($value->payment_mode)) : '-',
-                    'amount'         => $amt_display,
-                    'is_refund'      => $is_refund,
-                );
             }
         }
 
-        $data['hospital_name']   = $hospital_name;
-        $data['report_subtitle'] = $report_subtitle;
-        $data['print_rows']      = $print_rows;
-        $data['total_amount']    = $total_amount;
-        $data['total_refund']    = $total_refund;
-        $data['net_amount']      = $total_amount - $total_refund;
-        $data['currency_symbol'] = $this->customlib->getHospitalCurrencyFormat();
+        uasort($grouped, function ($a, $b) {
+            $cmp = strcmp($b['raw_date'], $a['raw_date']);
+            if ($cmp === 0) {
+                return strcmp($a['department'], $b['department']);
+            }
+            return $cmp;
+        });
+
+        $print_rows         = array();
+        $total_transactions = 0;
+        $total_paid         = 0;
+        $total_refund       = 0;
+        $net_amount         = 0;
+
+        foreach ($grouped as $item) {
+            $trans = (int)$item['total_transaction'];
+            $paid  = (float)$item['paid_amount'];
+            $ref   = (float)$item['refund_amount'];
+            $net   = (float)$item['net_amount'];
+
+            $total_transactions += $trans;
+            $total_paid         += $paid;
+            $total_refund       += $ref;
+            $net_amount         += $net;
+
+            $date_disp = date('d-M-Y', strtotime($item['raw_date']));
+
+            $print_rows[] = array(
+                'date'              => $date_disp,
+                'department'        => $item['department'],
+                'total_transaction' => $trans,
+                'paid_amount'       => number_format($paid, 2),
+                'paid_val'          => $paid,
+                'refund_amount'     => ($ref > 0 ? '-' : '') . number_format($ref, 2),
+                'refund_val'        => $ref,
+                'net_amount'        => number_format($net, 2),
+                'net_val'           => $net,
+            );
+        }
+
+        $data['hospital_name']      = $hospital_name;
+        $data['report_subtitle']    = $report_subtitle;
+        $data['print_rows']         = $print_rows;
+        $data['total_transactions'] = $total_transactions;
+        $data['total_paid']         = $total_paid;
+        $data['total_refund']       = $total_refund;
+        $data['net_amount']         = $net_amount;
+        $data['currency_symbol']    = $this->customlib->getHospitalCurrencyFormat();
 
         $html = $this->load->view('admin/transaction/_printDepartmentWiseTransactionReport', $data, true);
         echo json_encode(array('status' => 'success', 'html' => $html));

@@ -132,7 +132,7 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
             <thead>
                 <tr>
                     <th class="col-date">Date</th>
-                    <th class="col-ref">Refrence</th>
+                    <th class="col-ref">Transaction ID</th>
                     <th class="col-dept">Department</th>
                     <th class="col-patient">Patient Name</th>
                     <th class="col-staff">Collected By</th>
@@ -146,7 +146,7 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
                 <?php foreach ($print_rows as $row) { ?>
                     <tr>
                         <td class="col-date t-left nowrap"><?php echo html_escape($row['date']); ?></td>
-                        <td class="col-ref t-left nowrap"><?php echo html_escape($row['reference']); ?></td>
+                        <td class="col-ref t-left nowrap"><?php echo html_escape($row['transaction_id'] ?? $row['reference']); ?></td>
                         <td class="col-dept t-left"><?php echo html_escape($row['department']); ?></td>
                         <td class="col-patient t-left"><?php echo html_escape($row['patient_name']); ?></td>
                         <td class="col-staff t-left"><?php echo html_escape($row['collected_by']); ?></td>
@@ -159,7 +159,7 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
 
                 <!-- Summary rows rendered strictly once at the end of the report (last page) -->
                 <tr class="summary-row">
-                    <td colspan="7" class="summary-title">Net Amount</td>
+                    <td colspan="7" class="summary-title">Total Amount</td>
                     <td colspan="2" class="summary-val"><?php echo number_format($sum_amount, 2); ?></td>
                 </tr>
                 <tr class="summary-row">
@@ -167,7 +167,7 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
                     <td colspan="2" class="summary-val"><?php echo number_format($total_refund, 2); ?></td>
                 </tr>
                 <tr class="summary-row summary-highlight">
-                    <td colspan="7" class="summary-title">Total Income</td>
+                    <td colspan="7" class="summary-title">Net Amount</td>
                     <td colspan="2" class="summary-val"><?php echo number_format($total_income, 2); ?></td>
                 </tr>
             </tbody>

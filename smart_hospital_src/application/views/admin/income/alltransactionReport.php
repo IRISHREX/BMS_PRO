@@ -15,6 +15,37 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                 </div>
             </div>
             <div class="card-body pb-0">
+                <!-- 3 KPI Cards above filters -->
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <div class="kpi">
+                            <div class="ic blue"><i class="fa fa-money"></i></div>
+                            <div>
+                                <div class="val" id="kpi_total_amount"><?php echo $currency_symbol; ?> 0.00</div>
+                                <div class="lbl"><?php echo $this->lang->line('total_amount') ?: 'Total Amount'; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="kpi">
+                            <div class="ic red"><i class="fa fa-undo"></i></div>
+                            <div>
+                                <div class="val" id="kpi_total_refund"><?php echo $currency_symbol; ?> 0.00</div>
+                                <div class="lbl"><?php echo ($this->lang->line('total_refund') == 'Total Refund') ? 'Total Refunded' : ($this->lang->line('total_refund') ?: 'Total Refunded'); ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="kpi">
+                            <div class="ic teal"><i class="fa fa-calculator"></i></div>
+                            <div>
+                                <div class="val" id="kpi_net_amount"><?php echo $currency_symbol; ?> 0.00</div>
+                                <div class="lbl"><?php echo $this->lang->line('net_amount') ?: 'Net Amount'; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <form id="form1" action="" method="post">
                     <div class="row">
                         <?php echo $this->customlib->getCSRF(); ?>
@@ -24,7 +55,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                                 <select class="form-control" name="search_type" id="search_type_select" onchange="showdate(this.value)">
                                     <option value=""><?php echo $this->lang->line('select') ?></option>
                                     <?php foreach ($searchlist as $key => $search) { ?>
-                                        <option value="<?php echo $key ?>" <?php if ((isset($search_type)) && ($search_type == $key)) { echo "selected"; } ?>><?php echo $search ?></option>
+                                        <option value="<?php echo $key ?>" <?php if ((isset($search_type)) && ($search_type == $key)) { echo "selected"; } elseif (!isset($search_type) && $key == 'this_year') { echo "selected"; } ?>><?php echo $search ?></option>
                                     <?php } ?>
                                 </select>
                                 <span class="text-danger" id="error_search_type"><?php echo form_error('search_type'); ?></span>
@@ -90,6 +121,7 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         <th id="collection-generated-clm"></th>
                         <th><?php echo $this->lang->line('payment_type'); ?></th>
                         <th><?php echo $this->lang->line('payment_mode'); ?></th>
+                        <th class="text-end"><?php echo $this->lang->line('refund_amount') . " (" . $currency_symbol . ")"; ?></th>
                         <th class="text-end"><?php echo $this->lang->line('amount') . " (" . $currency_symbol . ")"; ?></th>
                     </thead>
                     <tbody>
@@ -117,6 +149,27 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
     'use strict';
 
     var isPrinting = false;
+
+    function updateKpiCards(data) {
+        var currency = '<?php echo $currency_symbol; ?>';
+        if (data) {
+            if (data.total_amount_formatted !== undefined) {
+                $('#kpi_total_amount').text(data.total_amount_formatted);
+            } else if (data.total_amount !== undefined) {
+                $('#kpi_total_amount').text(currency + ' ' + parseFloat(data.total_amount).toFixed(2));
+            }
+            if (data.total_refund_formatted !== undefined) {
+                $('#kpi_total_refund').text(data.total_refund_formatted);
+            } else if (data.total_refund !== undefined) {
+                $('#kpi_total_refund').text(currency + ' ' + parseFloat(data.total_refund).toFixed(2));
+            }
+            if (data.net_amount_formatted !== undefined) {
+                $('#kpi_net_amount').text(data.net_amount_formatted);
+            } else if (data.net_amount !== undefined) {
+                $('#kpi_net_amount').text(currency + ' ' + parseFloat(data.net_amount).toFixed(2));
+            }
+        }
+    }
 
     function printAllTransactionReport() {
         if (isPrinting) {
@@ -158,6 +211,12 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
     $(document).ready(function () {
         emptyDatatable('allajaxlist', 'data');
 
+        $(document).off('xhr.dt', '.allajaxlist').on('xhr.dt', '.allajaxlist', function (e, settings, json, xhr) {
+            if (json) {
+                updateKpiCards(json);
+            }
+        });
+
         $(document).off('click', '#btn_print_txn_report').on('click', '#btn_print_txn_report', function(e) {
             e.preventDefault();
             printAllTransactionReport();
@@ -196,7 +255,8 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                             [
                                 { "sWidth": "90px",  "aTargets": [0], 'sClass': 'dt-body-left' },
                                 { "sWidth": "150px", "aTargets": [1], 'sClass': 'dt-body-left' },
-                                { "sWidth": "150px", "aTargets": [-1], 'sClass': 'dt-body-right' }
+                                { "sWidth": "120px", "aTargets": [-2], 'sClass': 'dt-body-right text-end' },
+                                { "sWidth": "120px", "aTargets": [-1], 'sClass': 'dt-body-right text-end' }
                             ]);
 
                         $('#btn_print_txn_report').removeClass('d-none');
@@ -222,6 +282,9 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                 }
             });
         }));
+
+        // Initial search load
+        $('#form1').trigger('submit');
     });
 } ( jQuery ) );
 </script>

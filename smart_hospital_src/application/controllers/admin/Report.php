@@ -350,14 +350,90 @@ class Report extends Admin_Controller
             access_denied();
         }
         $this->session->set_userdata('top_menu', 'Reports');
-        $this->session->set_userdata('sub_menu', 'reports/report');
+        $this->session->set_userdata('sub_menu', 'reports/finance');
         $this->session->set_userdata('subsub_menu', 'admin/report/balanceamountreport');
-        $data['modules_type']   =  $modules_type= $this->input->post('modules_type');
-        $data['patient_id']     =  $patient_id= $this->input->post('patient_id');
-        $data['patient_name']   =  $patient_name= $this->input->post('patient_name');
-        $data['balance_data']   = $this->report_model->getmodulewisebalance_report($modules_type,$patient_id);
+
+        $search_type = $this->input->post('search_type', TRUE);
+        if (empty($search_type)) {
+            $search_type = 'this_year';
+        }
+        $data['search_type'] = $search_type;
+        $today               = $this->customlib->YYYYMMDDTodateFormat(date('Y-m-d'));
+        $data['date_from']   = $this->input->post('date_from', TRUE) ?: $today;
+        $data['date_to']     = $this->input->post('date_to', TRUE) ?: $today;
+
+        $start_date = null;
+        $end_date   = null;
+
+        if ($search_type == 'today') {
+            $start_date = date('Y-m-d');
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'this_week') {
+            $start_date = date('Y-m-d', strtotime('monday this week'));
+            $end_date   = date('Y-m-d', strtotime('sunday this week'));
+        } elseif ($search_type == 'last_week') {
+            $start_date = date('Y-m-d', strtotime('monday last week'));
+            $end_date   = date('Y-m-d', strtotime('sunday last week'));
+        } elseif ($search_type == 'this_month') {
+            $start_date = date('Y-m-01');
+            $end_date   = date('Y-m-t');
+        } elseif ($search_type == 'last_month') {
+            $start_date = date('Y-m-01', strtotime('first day of last month'));
+            $end_date   = date('Y-m-t', strtotime('last day of last month'));
+        } elseif ($search_type == 'last_3_month') {
+            $start_date = date('Y-m-d', strtotime('-3 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_6_month') {
+            $start_date = date('Y-m-d', strtotime('-6 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_12_month') {
+            $start_date = date('Y-m-d', strtotime('-12 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_year') {
+            $start_date = date('Y-m-d', strtotime('first day of january last year'));
+            $end_date   = date('Y-m-d', strtotime('last day of december last year'));
+        } elseif ($search_type == 'this_year') {
+            $start_date = date('Y-01-01');
+            $end_date   = date('Y-12-31');
+        } elseif ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($data['date_from']);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($data['date_to']);
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$start_date) ||
+                !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$end_date)) {
+                $start_date = null;
+                $end_date   = null;
+            }
+        }
+        // all_time: start_date and end_date remain null
+
+        $data['modules_type']   = $modules_type = $this->input->post('modules_type');
+        $data['patient_id']     = $patient_id   = $this->input->post('patient_id');
+        $data['patient_name']   = $patient_name = $this->input->post('patient_name');
+        $data['balance_data']   = $this->report_model->getmodulewisebalance_report($modules_type, $patient_id, $start_date, $end_date);
         $data["modules"]        = $this->customlib->get_modules();
-        $data['module'] = 'reports';
+        $data["searchlist"]     = $this->search_type;
+        $data['module']         = 'reports';
+
+        // Compute 4 KPIs
+        $kpi_net_amount     = 0;
+        $kpi_paid_amount    = 0;
+        $kpi_refund_amount  = 0;
+        $kpi_balance_amount = 0;
+
+        if (!empty($data['balance_data'])) {
+            foreach ($data['balance_data'] as $row) {
+                $kpi_net_amount     += (float)$row['net_amount'];
+                $kpi_paid_amount    += (float)$row['paid_amount'];
+                $kpi_refund_amount  += (float)$row['refund_amount'];
+                $kpi_balance_amount += ((float)$row['net_amount'] - (float)$row['paid_amount'] + (float)$row['refund_amount']);
+            }
+        }
+
+        $data['kpi_net_amount']     = $kpi_net_amount;
+        $data['kpi_paid_amount']    = $kpi_paid_amount;
+        $data['kpi_refund_amount']  = $kpi_refund_amount;
+        $data['kpi_balance_amount'] = abs($kpi_balance_amount);
+
         $this->load->view('layout/header', $data);
         $this->load->view('admin/report/balanceamountreport', $data);
         $this->load->view('layout/footer', $data);
@@ -373,8 +449,54 @@ class Report extends Admin_Controller
         $modules_type = $this->input->post('modules_type');
         $patient_id   = $this->input->post('patient_id');
         $patient_name = $this->input->post('patient_name');
+        $search_type  = $this->input->post('search_type');
+        $date_from    = $this->input->post('date_from');
+        $date_to      = $this->input->post('date_to');
 
-        $balance_data = $this->report_model->getmodulewisebalance_report($modules_type, $patient_id);
+        $start_date = null;
+        $end_date   = null;
+
+        if ($search_type == 'today') {
+            $start_date = date('Y-m-d');
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'this_week') {
+            $start_date = date('Y-m-d', strtotime('monday this week'));
+            $end_date   = date('Y-m-d', strtotime('sunday this week'));
+        } elseif ($search_type == 'last_week') {
+            $start_date = date('Y-m-d', strtotime('monday last week'));
+            $end_date   = date('Y-m-d', strtotime('sunday last week'));
+        } elseif ($search_type == 'this_month') {
+            $start_date = date('Y-m-01');
+            $end_date   = date('Y-m-t');
+        } elseif ($search_type == 'last_month') {
+            $start_date = date('Y-m-01', strtotime('first day of last month'));
+            $end_date   = date('Y-m-t', strtotime('last day of last month'));
+        } elseif ($search_type == 'last_3_month') {
+            $start_date = date('Y-m-d', strtotime('-3 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_6_month') {
+            $start_date = date('Y-m-d', strtotime('-6 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_12_month') {
+            $start_date = date('Y-m-d', strtotime('-12 months'));
+            $end_date   = date('Y-m-d');
+        } elseif ($search_type == 'last_year') {
+            $start_date = date('Y-m-d', strtotime('first day of january last year'));
+            $end_date   = date('Y-m-d', strtotime('last day of december last year'));
+        } elseif ($search_type == 'this_year') {
+            $start_date = date('Y-01-01');
+            $end_date   = date('Y-12-31');
+        } elseif ($search_type == 'period') {
+            $start_date = $this->customlib->dateFormatToYYYYMMDD($date_from);
+            $end_date   = $this->customlib->dateFormatToYYYYMMDD($date_to);
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$start_date) ||
+                !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$end_date)) {
+                $start_date = null;
+                $end_date   = null;
+            }
+        }
+
+        $balance_data = $this->report_model->getmodulewisebalance_report($modules_type, $patient_id, $start_date, $end_date);
         $modules      = $this->customlib->get_modules();
 
         $hospital_name = 'YOUR HOSPITAL NAME';
@@ -397,7 +519,11 @@ class Report extends Admin_Controller
         }
 
         $patient_label = !empty($patient_name) ? preg_replace('/\s*\([^)]*\)$/', '', trim($patient_name)) : 'All';
-        $report_subtitle = "Balance Amount Report [Head: " . $module_label . "] For Patient: " . $patient_label;
+        $subtitle_dates = '';
+        if (!empty($start_date) && !empty($end_date)) {
+            $subtitle_dates = " From " . date('d-M-Y', strtotime($start_date)) . " To " . date('d-M-Y', strtotime($end_date));
+        }
+        $report_subtitle = "Balance Amount Report [Head: " . $module_label . "]" . $subtitle_dates . " For Patient: " . $patient_label;
 
         $print_rows           = array();
         $total_amount         = 0;
@@ -445,9 +571,15 @@ class Report extends Admin_Controller
                 $discount_pct = ($tot != 0) ? ($disc * 100) / $tot : 0;
                 $tax_pct = (($tot - $disc) != 0) ? ($tax * 100) / ($tot - $disc) : 0;
 
+                $print_date = '-';
+                if (!empty($val['bill_date']) && $val['bill_date'] != '0000-00-00' && $val['bill_date'] != '0000-00-00 00:00:00') {
+                    $print_date = $this->customlib->YYYYMMDDTodateFormat($val['bill_date']);
+                }
+
                 $print_rows[] = array(
                     'bill_no'        => $bill_no,
                     'case_id'        => $case_id,
+                    'date'           => $print_date,
                     'patient_name'   => $p_name,
                     'generated_by'   => $gen_by,
                     'doctor_name'    => $doc_name,
@@ -457,7 +589,7 @@ class Report extends Admin_Controller
                     'net_amount'     => number_format($net, 2),
                     'paid_amount'    => number_format($paid, 2),
                     'refund_amount'  => number_format($ref, 2),
-                    'balance_amount' => number_format($bal, 2),
+                    'balance_amount' => number_format(abs($bal), 2),
                 );
             }
         }
@@ -471,7 +603,7 @@ class Report extends Admin_Controller
         $data['total_net_amount']     = $total_net_amount;
         $data['total_paid_amount']    = $total_paid_amount;
         $data['total_refund_amount']  = $total_refund_amount;
-        $data['total_balance_amount'] = $total_balance_amount;
+        $data['total_balance_amount'] = abs($total_balance_amount);
         $data['currency_symbol']      = $this->customlib->getHospitalCurrencyFormat();
 
         $html = $this->load->view('admin/report/_printBalanceAmountReport', $data, true);

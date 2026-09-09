@@ -614,15 +614,19 @@ class Income extends Admin_Controller
 
         $transactiondata = json_decode($transactiondata);
         $dt_data         = array();
-        $total_amount    = 0;
 
         if (!empty($transactiondata->data)) {
             foreach ($transactiondata->data as $key => $value) {
-				if($value->type != 'refund'){
-					$total_amount += $value->amount;
-				}else{
-					$total_amount -= $value->amount;
-				}
+                $raw_amt   = abs((float)$value->amount);
+                $is_refund = (isset($value->type) && strtolower($value->type) === 'refund');
+
+                if ($is_refund) {
+                    $refund_amount_disp = number_format($raw_amt, 2, '.', '');
+                    $amount_disp        = '';
+                } else {
+                    $refund_amount_disp = '';
+                    $amount_disp        = number_format((float)$value->amount, 2, '.', '');
+                }
 
                 if (!empty($value->ward) && !in_array($value->ward, ['income', 'expenses'])) {
                     $ward = $this->customlib->getSessionPrefixbyType($value->ward);
@@ -653,15 +657,6 @@ class Income extends Admin_Controller
                 } else {
                     $payment_mode = '';
                 }
-                if (!empty($value->amount)) {
-					if($value->type != 'refund'){
-						$amount = $value->amount;
-					}else{
-						$amount = '-'.$value->amount;
-					}
-                } else {
-                    $amount = '';
-                }
                 if (!empty($value->patient_id)) {
                     $patient_id = " (" . $value->patient_id . ")";
                 } else {
@@ -689,28 +684,41 @@ class Income extends Admin_Controller
                 $row[]     = composeStaffNameByString($value->name, $value->surname, $value->employee_id);
                 $row[]     = $type;
                 $row[]     = $payment_mode;
-                $row[]     = $amount;
+                $row[]     = $refund_amount_disp;
+                $row[]     = $amount_disp;
                 $dt_data[] = $row;
             }
-			
-            $footer_row   = array();
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "";
-            $footer_row[] = "<b>" . $this->lang->line('total_amount') . "</b>" . ':';
-            $footer_row[] = "<b>" . $currency_symbol . (number_format($total_amount, 2, '.', '')) . "<br/>";
-            $dt_data[]    = $footer_row;
         }
 
+        // Calculate full-scope summary totals for KPI cards across the entire selected range
+        $summary_records = $this->transaction_model->getAllTransactionReportPrintData($start_date, $end_date, $search['collect_staff'], $search['modules_select']);
+        $total_amount    = 0;
+        $total_refund    = 0;
+
+        if (!empty($summary_records)) {
+            foreach ($summary_records as $rec) {
+                $rec_amt   = abs((float)$rec['amount']);
+                $is_refund = (isset($rec['type']) && strtolower($rec['type']) === 'refund');
+                if ($is_refund) {
+                    $total_refund += $rec_amt;
+                } else {
+                    $total_amount += (float)$rec['amount'];
+                }
+            }
+        }
+        $net_amount = $total_amount - $total_refund;
+
         $json_data = array(
-            "draw"            => intval($transactiondata->draw),
-            "recordsTotal"    => intval($transactiondata->recordsTotal),
-            "recordsFiltered" => intval($transactiondata->recordsFiltered),
-            "data"            => $dt_data,
+            "draw"                   => intval($transactiondata->draw),
+            "recordsTotal"           => intval($transactiondata->recordsTotal),
+            "recordsFiltered"        => intval($transactiondata->recordsFiltered),
+            "data"                   => $dt_data,
+            "total_amount"           => number_format($total_amount, 2, '.', ''),
+            "total_refund"           => number_format($total_refund, 2, '.', ''),
+            "net_amount"             => number_format($net_amount, 2, '.', ''),
+            "total_amount_formatted" => $currency_symbol . number_format($total_amount, 2, '.', ''),
+            "total_refund_formatted" => $currency_symbol . number_format($total_refund, 2, '.', ''),
+            "net_amount_formatted"   => $currency_symbol . number_format($net_amount, 2, '.', ''),
         );
         echo json_encode($json_data);
     }
@@ -773,33 +781,23 @@ class Income extends Admin_Controller
 
         if (!empty($raw_records)) {
             foreach ($raw_records as $val) {
-                $amt = abs((float)$val['amount']);
+                $amt       = abs((float)$val['amount']);
                 $is_refund = (strtolower($val['type'] ?? '') === 'refund');
-
-                $sum_amount += $amt;
 
                 if ($is_refund) {
                     $total_refund += $amt;
                     $refund_display = number_format($amt, 2);
+                    $amount_display = '';
                 } else {
+                    $sum_amount += (float)$val['amount'];
                     $refund_display = '';
+                    $amount_display = number_format((float)$val['amount'], 2);
                 }
 
                 $date_disp = !empty($val['payment_date']) ? date('d-M-Y', strtotime($val['payment_date'])) : '';
 
-                if (!empty($val['ward']) && !in_array($val['ward'], array('income', 'expenses'))) {
-                    $ward_prefix = $this->customlib->getSessionPrefixbyType($val['ward']);
-                } else {
-                    $ward_prefix = '';
-                }
-
-                if (!empty($val['reference'])) {
-                    $ref_disp = $ward_prefix . $val['reference'];
-                } elseif (!empty($val['id'])) {
-                    $ref_disp = (string)$val['id'];
-                } else {
-                    $ref_disp = '-';
-                }
+                $txn_prefix = $this->customlib->getSessionPrefixByType('transaction_id');
+                $txn_id_disp = !empty($val['id']) ? $txn_prefix . $val['id'] : '-';
 
                 $dept_disp = !empty($val['section']) ? $val['section'] : 'Billing';
 
@@ -813,15 +811,16 @@ class Income extends Admin_Controller
                 $mode_disp = !empty($val['payment_mode']) ? ucfirst($val['payment_mode']) : 'Cash';
 
                 $print_rows[] = array(
-                    'date'          => $date_disp,
-                    'reference'     => $ref_disp,
-                    'department'    => $dept_disp,
-                    'patient_name'  => $patient_disp,
-                    'collected_by'  => $staff_disp,
-                    'payment_type'  => $type_disp,
-                    'patient_mode'  => $mode_disp,
-                    'refund_amount' => $refund_display,
-                    'amount'        => number_format($amt, 2),
+                    'date'           => $date_disp,
+                    'transaction_id' => $txn_id_disp,
+                    'reference'      => $txn_id_disp,
+                    'department'     => $dept_disp,
+                    'patient_name'   => $patient_disp,
+                    'collected_by'   => $staff_disp,
+                    'payment_type'   => $type_disp,
+                    'patient_mode'   => $mode_disp,
+                    'refund_amount'  => $refund_display,
+                    'amount'         => $amount_display,
                 );
             }
         }

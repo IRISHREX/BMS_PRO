@@ -20,15 +20,27 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
                         <?php echo $this->customlib->getCSRF(); ?>
                         <div class="col-sm-6 col-md-3">
                             <div class="mb-3">
+                                <label><?php echo $this->lang->line('search_type'); ?></label><small class="req"> *</small>
+                                <select class="form-control" name="search_type" onchange="showdate(this.value)">
+                                    <option value=""><?php echo $this->lang->line('select') ?></option>
+                                    <?php foreach ($searchlist as $key => $search) { ?>
+                                        <option value="<?php echo $key ?>" <?php if ((isset($search_type)) && ($search_type == $key)) { echo "selected"; } elseif (!isset($search_type) && $key == 'this_year') { echo "selected"; } ?>><?php echo $search ?></option>
+                                    <?php } ?>
+                                </select>
+                                <span class="text-danger" id="error_search_type"><?php echo form_error('search_type'); ?></span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3 <?php if (!isset($search_type) || $search_type != 'period') { echo 'd-none'; } ?>" id="fromdate">
+                            <div class="mb-3">
                                 <label><?php echo $this->lang->line('date_from'); ?></label><small class="req"> *</small>
-                                <input id="date_from" name="date_from" type="text" class="form-control start_date" value="<?php echo set_value('date_from', date($this->customlib->getHospitalDateFormat())); ?>" />
+                                <input id="date_from" name="date_from" type="text" class="form-control date start_date" value="<?php echo set_value('date_from', date($this->customlib->getHospitalDateFormat())); ?>" />
                                 <span class="text-danger" id="error_date_from"><?php echo form_error('date_from'); ?></span>
                             </div>
                         </div>
-                        <div class="col-sm-6 col-md-3">
+                        <div class="col-sm-6 col-md-3 <?php if (!isset($search_type) || $search_type != 'period') { echo 'd-none'; } ?>" id="todate">
                             <div class="mb-3">
                                 <label><?php echo $this->lang->line('date_to'); ?></label><small class="req"> *</small>
-                                <input id="date_to" name="date_to" type="text" class="form-control end_date" value="<?php echo set_value('date_to', date($this->customlib->getHospitalDateFormat())); ?>" />
+                                <input id="date_to" name="date_to" type="text" class="form-control date end_date" value="<?php echo set_value('date_to', date($this->customlib->getHospitalDateFormat())); ?>" />
                                 <span class="text-danger" id="error_date_to"><?php echo form_error('date_to'); ?></span>
                             </div>
                         </div>
@@ -103,6 +115,16 @@ $currency_symbol = $this->customlib->getHospitalCurrencyFormat();
 </div>
 
 <script type="text/javascript">
+function showdate(value) {
+    if (value == 'period') {
+        $('#fromdate').removeClass('d-none');
+        $('#todate').removeClass('d-none');
+    } else {
+        $('#fromdate').addClass('d-none');
+        $('#todate').addClass('d-none');
+    }
+}
+
 var isPrinting = false;
 
 function printDailyTransactionReport() {

@@ -81,13 +81,12 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
         border-right: 1px solid #777 !important;
     }
 
-    .dwtr-table .col-date    { width: 12.0% !important; }
-    .dwtr-table .col-id      { width: 12.0% !important; }
-    .dwtr-table .col-dept    { width: 14.0% !important; }
-    .dwtr-table .col-patient { width: 22.0% !important; }
-    .dwtr-table .col-ref     { width: 14.0% !important; }
-    .dwtr-table .col-mode    { width: 12.0% !important; }
-    .dwtr-table .col-amt     { width: 14.0% !important; text-align: right !important; }
+    .dwtr-table .col-date    { width: 15.0% !important; }
+    .dwtr-table .col-dept    { width: 20.0% !important; }
+    .dwtr-table .col-trans   { width: 15.0% !important; text-align: center !important; }
+    .dwtr-table .col-paid    { width: 16.0% !important; text-align: right !important; }
+    .dwtr-table .col-refund  { width: 16.0% !important; text-align: right !important; }
+    .dwtr-table .col-net     { width: 18.0% !important; text-align: right !important; }
 
     .dwtr-table td.t-center { text-align: center !important; }
     .dwtr-table td.t-left   { text-align: left !important; }
@@ -132,45 +131,53 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
             <thead>
                 <tr>
                     <th class="col-date">Date</th>
-                    <th class="col-id">Transaction ID</th>
                     <th class="col-dept">Department</th>
-                    <th class="col-patient">Patient Name</th>
-                    <th class="col-ref">Reference No</th>
-                    <th class="col-mode">Payment Mode</th>
-                    <th class="col-amt">Amount (<?php echo $currency_symbol; ?>)</th>
+                    <th class="col-trans">Total Transaction</th>
+                    <th class="col-paid">Paid Amount (<?php echo $currency_symbol; ?>)</th>
+                    <th class="col-refund">Refund Amount (<?php echo $currency_symbol; ?>)</th>
+                    <th class="col-net">Net Amount (<?php echo $currency_symbol; ?>)</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($print_rows as $row) { ?>
                     <tr>
                         <td class="col-date t-left nowrap"><?php echo html_escape($row['date']); ?></td>
-                        <td class="col-id t-left nowrap"><?php echo html_escape($row['transaction_id']); ?></td>
                         <td class="col-dept t-left"><?php echo html_escape($row['department']); ?></td>
-                        <td class="col-patient t-left"><?php echo html_escape($row['patient_name']); ?></td>
-                        <td class="col-ref t-left nowrap"><?php echo html_escape($row['reference_no']); ?></td>
-                        <td class="col-mode t-left nowrap"><?php echo html_escape($row['payment_mode']); ?></td>
-                        <td class="col-amt t-right nowrap <?php echo (!empty($row['is_refund'])) ? 'negative-amt' : ''; ?>">
-                            <?php echo html_escape($row['amount']); ?>
+                        <td class="col-trans t-center nowrap"><?php echo html_escape($row['total_transaction']); ?></td>
+                        <td class="col-paid t-right nowrap">
+                            <?php echo html_escape($row['paid_amount']); ?>
+                        </td>
+                        <td class="col-refund t-right nowrap <?php echo ($row['refund_val'] > 0) ? 'negative-amt' : ''; ?>">
+                            <?php echo html_escape($row['refund_amount']); ?>
+                        </td>
+                        <td class="col-net t-right nowrap <?php echo ($row['net_val'] < 0) ? 'negative-amt' : ''; ?>">
+                            <?php echo html_escape($row['net_amount']); ?>
                         </td>
                     </tr>
                 <?php } ?>
 
                 <!-- Summary rows rendered strictly once at the end of the report (last page only) -->
                 <tr class="summary-row">
-                    <td colspan="6" class="summary-title">Total Amount</td>
-                    <td class="summary-val">
-                        <?php echo number_format($total_amount ?? 0, 2); ?>
+                    <td colspan="5" class="summary-title">Total Transactions</td>
+                    <td class="summary-val t-right">
+                        <?php echo number_format($total_transactions ?? 0); ?>
                     </td>
                 </tr>
                 <tr class="summary-row">
-                    <td colspan="6" class="summary-title">Total Refund</td>
-                    <td class="summary-val <?php echo (isset($total_refund) && $total_refund > 0) ? 'negative-amt' : ''; ?>">
+                    <td colspan="5" class="summary-title">Total Paid</td>
+                    <td class="summary-val t-right">
+                        <?php echo number_format($total_paid ?? 0, 2); ?>
+                    </td>
+                </tr>
+                <tr class="summary-row">
+                    <td colspan="5" class="summary-title">Total Refund</td>
+                    <td class="summary-val t-right <?php echo (isset($total_refund) && $total_refund > 0) ? 'negative-amt' : ''; ?>">
                         <?php echo (isset($total_refund) && $total_refund > 0 ? '-' : '') . number_format($total_refund ?? 0, 2); ?>
                     </td>
                 </tr>
                 <tr class="summary-row">
-                    <td colspan="6" class="summary-title">Net Amount</td>
-                    <td class="summary-val <?php echo (isset($net_amount) && $net_amount < 0) ? 'negative-amt' : ''; ?>">
+                    <td colspan="5" class="summary-title">Overall Net Amount</td>
+                    <td class="summary-val t-right <?php echo (isset($net_amount) && $net_amount < 0) ? 'negative-amt' : ''; ?>">
                         <?php echo number_format($net_amount ?? 0, 2); ?>
                     </td>
                 </tr>

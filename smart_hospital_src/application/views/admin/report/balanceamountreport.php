@@ -14,9 +14,84 @@ $genderList = $this->customlib->getGender();
                 </button>
             </div>
             <div class="card-body pb-0">
+                <!-- 4 KPI Cards above filters -->
+                <div class="row mb-3">
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="kpi">
+                            <div class="ic blue"><i class="fa fa-calculator"></i></div>
+                            <div>
+                                <div class="val" id="kpi_net_amount"><?php echo $currency_symbol . ' ' . amountFormat($kpi_net_amount); ?></div>
+                                <div class="lbl"><?php echo $this->lang->line('total_net_amount') ?: 'Total Net Amount'; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="kpi">
+                            <div class="ic green"><i class="fa fa-money"></i></div>
+                            <div>
+                                <div class="val" id="kpi_paid_amount"><?php echo $currency_symbol . ' ' . amountFormat($kpi_paid_amount); ?></div>
+                                <div class="lbl"><?php echo $this->lang->line('total_paid') ?: 'Total Paid'; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="kpi">
+                            <div class="ic red"><i class="fa fa-undo"></i></div>
+                            <div>
+                                <div class="val" id="kpi_refund_amount"><?php echo $currency_symbol . ' ' . amountFormat($kpi_refund_amount); ?></div>
+                                <div class="lbl"><?php echo $this->lang->line('total_refund') ?: 'Total Refund'; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="kpi">
+                            <div class="ic teal"><i class="fa fa-balance-scale"></i></div>
+                            <div>
+                                <div class="val" id="kpi_balance_amount"><?php echo $currency_symbol . ' ' . amountFormat(abs($kpi_balance_amount)); ?></div>
+                                <div class="lbl"><?php echo $this->lang->line('overall_balance_amount') ?: 'Overall Balance Amount'; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <form id="form111" action="<?php echo base_url('admin/report/balanceamountreport'); ?>" method="post" accept-charset="utf-8">
                     <div class="row">
-                        <div class="col-sm-6 col-md-4">
+                        <div class="col-sm-6 col-md-3">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('time_duration') ?: 'Time Duration'; ?></label>
+                                <select name="search_type" id="search_type" class="form-control" onchange="showdate(this.value)">
+                                    <option value="today" <?php echo ($search_type == 'today') ? 'selected' : ''; ?>><?php echo $this->lang->line('today'); ?></option>
+                                    <option value="this_week" <?php echo ($search_type == 'this_week') ? 'selected' : ''; ?>><?php echo $this->lang->line('this_week'); ?></option>
+                                    <option value="last_week" <?php echo ($search_type == 'last_week') ? 'selected' : ''; ?>><?php echo $this->lang->line('last_week'); ?></option>
+                                    <option value="this_month" <?php echo ($search_type == 'this_month') ? 'selected' : ''; ?>><?php echo $this->lang->line('this_month'); ?></option>
+                                    <option value="last_month" <?php echo ($search_type == 'last_month') ? 'selected' : ''; ?>><?php echo $this->lang->line('last_month'); ?></option>
+                                    <option value="last_3_month" <?php echo ($search_type == 'last_3_month') ? 'selected' : ''; ?>><?php echo $this->lang->line('last_3_month'); ?></option>
+                                    <option value="last_6_month" <?php echo ($search_type == 'last_6_month') ? 'selected' : ''; ?>><?php echo $this->lang->line('last_6_month'); ?></option>
+                                    <option value="last_12_month" <?php echo ($search_type == 'last_12_month') ? 'selected' : ''; ?>><?php echo $this->lang->line('last_12_month'); ?></option>
+                                    <option value="last_year" <?php echo ($search_type == 'last_year') ? 'selected' : ''; ?>><?php echo $this->lang->line('last_year'); ?></option>
+                                    <option value="this_year" <?php echo ($search_type == 'this_year' || empty($search_type)) ? 'selected' : ''; ?>><?php echo $this->lang->line('this_year'); ?></option>
+                                    <option value="all_time" <?php echo ($search_type == 'all_time') ? 'selected' : ''; ?>><?php echo $this->lang->line('all_time'); ?></option>
+                                    <option value="period" <?php echo ($search_type == 'period') ? 'selected' : ''; ?>><?php echo $this->lang->line('period'); ?></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3" id="fromdate" style="display:<?php echo ($search_type == 'period') ? 'block' : 'none'; ?>;">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('date_from'); ?> <small class="req">*</small></label>
+                                <input type="text" class="form-control date" name="date_from" id="date_from" autocomplete="off"
+                                    value="<?php echo html_escape($date_from); ?>" />
+                                <span id="err_date_from" class="text-danger" style="font-size:12px;display:none;"><?php echo $this->lang->line('date_from'); ?> is required</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3" id="todate" style="display:<?php echo ($search_type == 'period') ? 'block' : 'none'; ?>;">
+                            <div class="mb-3">
+                                <label><?php echo $this->lang->line('date_to'); ?> <small class="req">*</small></label>
+                                <input type="text" class="form-control date" name="date_to" id="date_to" autocomplete="off"
+                                    value="<?php echo html_escape($date_to); ?>" />
+                                <span id="err_date_to" class="text-danger" style="font-size:12px;display:none;"><?php echo $this->lang->line('date_to'); ?> is required</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
                             <div class="mb-3">
                                 <label><?php echo $this->lang->line("select_head"); ?></label>
                                 <select class="form-control w-100" name="modules_type" id="modules_type">
@@ -29,7 +104,7 @@ $genderList = $this->customlib->getGender();
                                 <span class="text-danger" id="error_modules_staff"><?php echo form_error('modules_staff'); ?></span>
                             </div>
                         </div>
-                        <div class="col-sm-6 col-md-4">
+                        <div class="col-sm-6 col-md-3">
                             <div class="mb-3">
                                 <label><?php echo $this->lang->line("patient_name"); ?></label>
                                 <select class="form-control patient_list_ajax" id="addpatient_id" name="patient_id" onchange="set_patient()">
@@ -58,6 +133,7 @@ $genderList = $this->customlib->getGender();
                         <tr>
                             <th><?php echo $this->lang->line('bill_no'); ?></th>
                             <th><?php echo $this->lang->line('case_id'); ?></th>
+                            <th><?php echo $this->lang->line('date'); ?></th>
                             <th><?php echo $this->lang->line('patient_name'); ?></th>
                             <th><?php echo $this->lang->line('generated_by'); ?></th>
                             <th><?php echo $this->lang->line('reference_doctor'); ?></th>
@@ -86,6 +162,7 @@ $genderList = $this->customlib->getGender();
                         <tr>
                             <td><?php echo $this->customlib->getSessionPrefixByType($value['prefix_type']) . $value['bill_no']; ?></td>
                             <td><?php echo $value['case_id']; ?></td>
+                            <td><?php echo (!empty($value['bill_date']) && $value['bill_date'] != '0000-00-00' && $value['bill_date'] != '0000-00-00 00:00:00') ? $this->customlib->YYYYMMDDHisTodateFormat($value['bill_date'], $this->customlib->getHospitalTimeFormat()) : '-'; ?></td>
                             <td><?php echo $value['patient_name'] . " (" . $value['patient_id'] . ")"; ?></td>
                             <td><?php echo $value['name'] . " " . $value['surname'] . " (" . $value['employee_id'] . ")"; ?></td>
                             <td><?php echo $value['doctor_name']; ?></td>
@@ -103,10 +180,11 @@ $genderList = $this->customlib->getGender();
                             <td class="text-end"><?php echo amountFormat($value['net_amount']); $net_amount += $value['net_amount']; ?></td>
                             <td class="text-end"><?php echo amountFormat($value['paid_amount']); $paid_amount += $value['paid_amount']; ?></td>
                             <td class="text-end"><?php echo amountFormat($value['refund_amount']); $refund_amount += $value['refund_amount']; ?></td>
-                            <td class="text-end"><?php echo amountFormat($value['net_amount'] - $value['paid_amount'] + $value['refund_amount']); $balance += ($value['net_amount'] - $value['paid_amount'] + $value['refund_amount']); ?></td>
+                            <td class="text-end"><?php echo amountFormat(abs($value['net_amount'] - $value['paid_amount'] + $value['refund_amount'])); $balance += ($value['net_amount'] - $value['paid_amount'] + $value['refund_amount']); ?></td>
                         </tr>
                         <?php } ?>
                         <tr>
+                            <th></th>
                             <th></th>
                             <th></th>
                             <th></th>
@@ -118,7 +196,7 @@ $genderList = $this->customlib->getGender();
                             <th class="text-end"><?php echo $currency_symbol . number_format($net_amount, 2, '.', ''); ?></th>
                             <th class="text-end"><?php echo $currency_symbol . number_format($paid_amount, 2, '.', ''); ?></th>
                             <th class="text-end"><?php echo $currency_symbol . number_format($refund_amount, 2, '.', ''); ?></th>
-                            <th class="text-end"><?php echo $currency_symbol . number_format($balance, 2, '.', ''); ?></th>
+                            <th class="text-end"><?php echo $currency_symbol . number_format(abs($balance), 2, '.', ''); ?></th>
                         </tr>
                         <?php } ?>
                     </tbody>
@@ -227,6 +305,37 @@ $genderList = $this->customlib->getGender();
                 cache: true
             }
         });
+    });
+
+    function showdate(value) {
+        if (value == 'period') {
+            $('#fromdate').show();
+            $('#todate').show();
+        } else {
+            $('#fromdate').hide();
+            $('#todate').hide();
+            $('#err_date_from').hide();
+            $('#err_date_to').hide();
+        }
+    }
+
+    $('#form111').on('submit', function(e) {
+        if ($('#search_type').val() == 'period') {
+            var valid = true;
+            if ($('#date_from').val().trim() == '') {
+                $('#err_date_from').show();
+                valid = false;
+            } else {
+                $('#err_date_from').hide();
+            }
+            if ($('#date_to').val().trim() == '') {
+                $('#err_date_to').show();
+                valid = false;
+            } else {
+                $('#err_date_to').hide();
+            }
+            if (!valid) { e.preventDefault(); }
+        }
     });
 
     function set_patient() {
