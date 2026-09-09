@@ -413,7 +413,7 @@ function popup(data, winload) {
 
     var footerHtml = '';
     if (!isPrescription) {
-        footerHtml = '<div class="sh-global-print-footer" style="position: fixed; bottom: 0; left: 0; right: 0; width: 100%; background: #fff; padding: 6px 10px; box-sizing: border-box;">' +
+        footerHtml = '<div class="sh-global-print-footer" style="position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 26px; background: #fff; padding: 4px 10px; box-sizing: border-box; z-index: 9999;">' +
             '<table width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; border: none; font-size: 9.5px; color: #555;">' +
                 '<tr>' +
                     '<td style="text-align: left; vertical-align: middle; border: none;">' + 
@@ -425,6 +425,26 @@ function popup(data, winload) {
                 '</tr>' +
             '</table>' +
         '</div>';
+
+        // Auto-inject tfoot spacer row on tables so multi-page prints leave clean clearance above the fixed footer
+        try {
+            if (typeof data === 'string' && data.indexOf('<table') !== -1) {
+                var $wrapper = $('<div>').html(data);
+                $wrapper.find('table').each(function() {
+                    var $tbl = $(this);
+                    if ($tbl.parents('table').length > 0) return;
+                    var $tfoot = $tbl.find('> tfoot');
+                    if ($tfoot.length === 0) {
+                        $tbl.append('<tfoot class="sh-print-tfoot-spacer"><tr><td colspan="100" style="height: 32px !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; line-height: 0 !important; font-size: 0 !important;">&nbsp;</td></tr></tfoot>');
+                    } else if ($tfoot.find('.sh-print-tfoot-spacer-row').length === 0) {
+                        $tfoot.append('<tr class="sh-print-tfoot-spacer-row"><td colspan="100" style="height: 32px !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; line-height: 0 !important; font-size: 0 !important;">&nbsp;</td></tr>');
+                    }
+                });
+                data = $wrapper.html();
+            }
+        } catch (e) {
+            console.error('Error adding table print spacer:', e);
+        }
     }
 
     var newWin = window.open('', 'Print-Window');
@@ -437,6 +457,16 @@ function popup(data, winload) {
     newWin.document.write('<link rel="stylesheet" href="' + baseurl + 'backend/dist/css/ionicons.min.css">');
     newWin.document.write('<link rel="stylesheet" href="' + baseurl + 'backend/dist/css/sh-print.css">');
     newWin.document.write('<link rel="stylesheet" href="' + baseurl + 'backend/plugins/iCheck/flat/blue.css">');
+    newWin.document.write('<style>' +
+        '@media print {' +
+            '@page { margin: 8mm 6mm 14mm 6mm !important; }' +
+            'body { margin: 0 !important; padding-bottom: 28px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
+            'table tr, tr { page-break-inside: avoid !important; break-inside: avoid !important; }' +
+            'thead { display: table-header-group !important; }' +
+            'tfoot { display: table-footer-group !important; }' +
+            '.sh-global-print-footer { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; height: 26px !important; background: #fff !important; padding: 4px 10px !important; box-sizing: border-box !important; z-index: 9999 !important; }' +
+        '}' +
+    '</style>');
     newWin.document.write('</head>');
     newWin.document.write('<body onload="window.print()">');
     newWin.document.write(data);

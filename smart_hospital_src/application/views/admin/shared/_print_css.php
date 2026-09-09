@@ -275,7 +275,17 @@ body {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   @page {
     size: auto;
-    margin: 8mm 10mm;
+    margin: 8mm 6mm 14mm 6mm;
+  }
+  table tr, tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  thead {
+    display: table-header-group !important;
+  }
+  tfoot {
+    display: table-footer-group !important;
   }
   .fixed-print-header { position: fixed; top: 0; width: 100%; z-index: 10; max-height: 80px; }
   .fixed-print-header img { max-height: 80px; width: 100%; object-fit: contain; }
@@ -284,7 +294,38 @@ body {
   .footer-space  { height: 50px; }
   .sh-print-info-block { background: #f9fafb !important; page-break-inside: avoid; break-inside: avoid; }
   .sh-print-table thead th { background: #f1f5f9 !important; }
-  .sh-print-table, .sh-print-table tr, .print-area { page-break-inside: avoid; break-inside: avoid; }
+  .sh-print-table tr, .print-table tr, .bal-table tr, .iebr-table tr, .print-area { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .sh-global-print-footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 26px !important;
+    background: #fff !important;
+    padding: 4px 10px !important;
+    font-size: 9.5px !important;
+    color: #555 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+    line-height: 1 !important;
+    z-index: 9999 !important;
+  }
+  .sh-print-tfoot-spacer, .sh-print-tfoot-spacer-row {
+    height: 32px !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+  }
+  .sh-print-tfoot-spacer td, .sh-print-tfoot-spacer-row td {
+    height: 32px !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
   .no-print { display: none !important; }
 }
 

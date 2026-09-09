@@ -870,7 +870,7 @@ function popup(data) {
 
     var footerHtml = '';
     if (!isPrescription) {
-        footerHtml = '<div class="sh-global-print-footer" style="position: fixed; bottom: 0; left: 0; right: 0; width: 100%; background: #fff; padding: 6px 10px; box-sizing: border-box;">' +
+        footerHtml = '<div class="sh-global-print-footer" style="position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 26px; background: #fff; padding: 4px 10px; box-sizing: border-box; z-index: 9999;">' +
             '<table width="100%" border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; border: none; font-size: 9.5px; color: #555;">' +
                 '<tr>' +
                     '<td style="text-align: left; vertical-align: middle; border: none;">' + 
@@ -882,6 +882,27 @@ function popup(data) {
                 '</tr>' +
             '</table>' +
         '</div>';
+
+        // Auto-inject tfoot spacer row on tables so multi-page prints leave clean clearance above the fixed footer
+        try {
+            if (typeof data === 'string' && data.indexOf('<table') !== -1) {
+                var $wrapper = $('<div>').html(data);
+                $wrapper.find('table').each(function() {
+                    var $tbl = $(this);
+                    // Skip nested / tiny layout tables
+                    if ($tbl.parents('table').length > 0) return;
+                    var $tfoot = $tbl.find('> tfoot');
+                    if ($tfoot.length === 0) {
+                        $tbl.append('<tfoot class="sh-print-tfoot-spacer"><tr><td colspan="100" style="height: 32px !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; line-height: 0 !important; font-size: 0 !important;">&nbsp;</td></tr></tfoot>');
+                    } else if ($tfoot.find('.sh-print-tfoot-spacer-row').length === 0) {
+                        $tfoot.append('<tr class="sh-print-tfoot-spacer-row"><td colspan="100" style="height: 32px !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; line-height: 0 !important; font-size: 0 !important;">&nbsp;</td></tr>');
+                    }
+                });
+                data = $wrapper.html();
+            }
+        } catch (e) {
+            console.error('Error adding table print spacer:', e);
+        }
     }
 
     var frame1 = $('<iframe />');
@@ -899,6 +920,16 @@ function popup(data) {
     frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/font-awesome.min.css">');
     frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/all.css">');
     frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/sh-print.css">');
+    frameDoc.document.write('<style>' +
+        '@media print {' +
+            '@page { margin: 8mm 6mm 14mm 6mm !important; }' +
+            'body { margin: 0 !important; padding-bottom: 28px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
+            'table tr, tr { page-break-inside: avoid !important; break-inside: avoid !important; }' +
+            'thead { display: table-header-group !important; }' +
+            'tfoot { display: table-footer-group !important; }' +
+            '.sh-global-print-footer { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; height: 26px !important; background: #fff !important; padding: 4px 10px !important; box-sizing: border-box !important; z-index: 9999 !important; }' +
+        '}' +
+    '</style>');
     frameDoc.document.write('</head><body onload="window.print()">');
     frameDoc.document.write(data);
     if (footerHtml) {
@@ -922,6 +953,29 @@ window.popup = popup;
             <div class="pup-scroll-area">
                 <div class="modal-body" id="bed-status-body"></div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $this->lang->line('close'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- License-registration modals (opened by .purchasemodal click or hospital-custom.js auto-show when SHLK is empty) -->
+<?php $this->load->view('layout/routine_update'); ?>
+<?php $this->load->view('layout/addon_update'); ?>
+
+<!-- Multi-branch switch modal (trigger button is in header.php; same visibility guard) -->
+<?php
+$tb_userdata_role = $this->customlib->getUserData();
+if (isset($tb_userdata_role['role_id']) && $tb_userdata_role['role_id'] == 7) {
+    if (($this->module_lib->hasModule('multi_branch') && $this->module_lib->hasActive('multi_branch')) || $this->db->multi_branch) {
+        $this->load->view('layout/multi_branch');
+    }
+}
+?>
+
+</body>
+</html>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $this->lang->line('close'); ?></button>
             </div>

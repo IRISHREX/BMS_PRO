@@ -4,7 +4,7 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
 <style>
     @media print {
         @page {
-            margin: 8mm 6mm 8mm 6mm;
+            margin: 8mm 6mm 14mm 6mm;
         }
         * {
             -webkit-print-color-adjust: exact !important;
@@ -14,9 +14,20 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
         body {
             margin: 0 !important;
             padding: 0 !important;
+            padding-bottom: 28px !important;
             background: #fff !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
             overflow-x: hidden !important;
+        }
+        thead {
+            display: table-header-group !important;
+        }
+        tfoot {
+            display: table-footer-group !important;
+        }
+        .iebr-table tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
     }
     *, *:before, *:after {
@@ -159,6 +170,11 @@ $currency_symbol = isset($currency_symbol) ? $currency_symbol : '';
                     </td>
                 </tr>
             </tbody>
+            <tfoot class="sh-print-tfoot-spacer">
+                <tr class="sh-print-tfoot-spacer-row">
+                    <td colspan="5" style="height: 32px !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; line-height: 0 !important; font-size: 0 !important;">&nbsp;</td>
+                </tr>
+            </tfoot>
         </table>
     <?php } else { ?>
         <div class="no-data-msg">

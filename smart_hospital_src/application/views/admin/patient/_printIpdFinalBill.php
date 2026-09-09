@@ -73,13 +73,24 @@ $due_amount = $net_amount - $net_paid;
     <style>
         @media print {
             @page {
-                margin: 8mm 6mm 8mm 6mm;
+                margin: 8mm 6mm 14mm 6mm;
             }
             body {
                 margin: 0;
                 padding: 0;
+                padding-bottom: 28px;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+            }
+            tr, .item-row, .calc-table tr, .sig-row, .calc-table {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            thead {
+                display: table-header-group !important;
+            }
+            tfoot {
+                display: table-footer-group !important;
             }
         }
         body {
@@ -408,6 +419,11 @@ $due_amount = $net_amount - $net_paid;
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
+        <tfoot class="sh-print-tfoot-spacer">
+            <tr class="sh-print-tfoot-spacer-row">
+                <td colspan="3" style="height: 24px !important; border: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; line-height: 0 !important; font-size: 0 !important;">&nbsp;</td>
+            </tr>
+        </tfoot>
     </table>
 
     <!-- Final Calculations -->
