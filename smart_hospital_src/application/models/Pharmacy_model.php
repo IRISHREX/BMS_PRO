@@ -497,7 +497,7 @@ class Pharmacy_model extends MY_Model
     public function getMedicineName()
     {
         $query = $this->db
-            ->select("pharmacy.id, pharmacy.medicine_name, medicine_category.medicine_category as category_name")
+            ->select("pharmacy.id, pharmacy.medicine_name, pharmacy.medicine_category_id, medicine_category.medicine_category as category_name")
             ->join("medicine_category", "medicine_category.id = pharmacy.medicine_category_id", "left")
             ->order_by("pharmacy.medicine_name", "asc")
             ->get("pharmacy");
@@ -1566,7 +1566,11 @@ class Pharmacy_model extends MY_Model
 
     public function getmedicinedetailsbyid($id)
     {
-        $query = $this->db->where("pharmacy.id", $id)->get("pharmacy");
+        $query = $this->db
+            ->select("pharmacy.*, medicine_category.medicine_category as category_name")
+            ->join("medicine_category", "medicine_category.id = pharmacy.medicine_category_id", "left")
+            ->where("pharmacy.id", $id)
+            ->get("pharmacy");
         return $query->row_array();
     }
 
@@ -1669,6 +1673,68 @@ class Pharmacy_model extends MY_Model
 
         $this->db->trans_complete(); # Completing transaction
         /* Optional */
+
+        if ($this->db->trans_status() === false) {
+            # Something went wrong.
+            $this->db->trans_rollback();
+            return false;
+        } else {
+            return $record_id;
+        }
+    }
+
+    public function addExtraStock($data)
+    {
+        $this->db->trans_start(); # Starting Transaction
+        $this->db->trans_strict(false);
+        //=======================Code Start===========================
+        $this->db->insert("medicine_extra_stock", $data);
+        $insert_id = $this->db->insert_id();
+        $message =
+            INSERT_RECORD_CONSTANT . " On Medicine Extra Stock id " . $insert_id;
+        $action = "Insert";
+        $record_id = $insert_id;
+        $this->log($message, $record_id, $action);
+        //======================Code End==============================
+
+        $this->db->trans_complete(); # Completing transaction
+
+        if ($this->db->trans_status() === false) {
+            # Something went wrong.
+            $this->db->trans_rollback();
+            return false;
+        } else {
+            return $record_id;
+        }
+    }
+
+    public function getMedicineExtraStock($id)
+    {
+        $query = $this->db
+            ->where("pharmacy_id", $id)
+            ->get("medicine_extra_stock");
+        return $query->result();
+    }
+
+    public function getsingleMedicineExtraStock($id)
+    {
+        $query = $this->db->where("id", $id)->get("medicine_extra_stock");
+        return $query->row_array();
+    }
+
+    public function deleteExtraStock($id)
+    {
+        $this->db->trans_start(); # Starting Transaction
+        $this->db->trans_strict(false);
+        //=======================Code Start===========================
+        $this->db->where("id", $id)->delete("medicine_extra_stock");
+        $message = DELETE_RECORD_CONSTANT . " On Medicine Extra Stock id " . $id;
+        $action = "Delete";
+        $record_id = $id;
+        $this->log($message, $record_id, $action);
+        //======================Code End==============================
+
+        $this->db->trans_complete(); # Completing transaction
 
         if ($this->db->trans_status() === false) {
             # Something went wrong.

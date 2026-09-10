@@ -136,42 +136,42 @@ $genderList = $this->customlib->getGender();
                             <table class="table table-sm table-striped table-bordered table-hover tblProducts mb-0" id="edittableID">
                                 <thead>
                                 <tr class="white-space-nowrap">
-                                    <th width="10%"><?php echo $this->lang->line('medicine_category'); ?><small class="req"> *</small></th>
-                                    <th width="10%"><?php echo $this->lang->line('medicine_name'); ?><small class="req"> *</small></th>
+                                    <th width="12%"><?php echo $this->lang->line('medicine_name'); ?><small class="req"> *</small></th>
+                                    <th width="12%"><?php echo $this->lang->line('medicine_category'); ?><small class="req"> *</small></th>
                                     <th><?php echo $this->lang->line('batch_no'); ?><small class="req"> *</small></th>
                                     <th><?php echo $this->lang->line('expiry_date'); ?><small class="req"> *</small></th>
                                     <th><?php echo $this->lang->line('mrp') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
-                                    <th><?php echo $this->lang->line('batch_amount'); ?></th>
                                     <th><?php echo $this->lang->line('sale_price') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
                                     <th><?php echo $this->lang->line('packing_qty'); ?></th>
                                     <th class="text-end"><?php echo $this->lang->line('quantity'); ?><small class="req"> *</small></th>
                                     <th class="text-end"><?php echo $this->lang->line('purchase_price') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
                                     <th class="text-end"><?php echo $this->lang->line('tax'); ?><small class="req"> *</small></th>
+                                    <th class="text-end"><?php echo $this->lang->line('discount'); ?></th>
                                     <th class="text-end"><?php echo $this->lang->line('amount') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
                                     <th></th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <?php $i = 0; foreach ($detail as $key => $value) { ?>
-                                <script type="text/javascript">
-                                    getmedicine_edit_name('<?php echo $value['medicine_category_id'] ?>', '<?php echo $i ?>', '<?php echo $value['medicine_id'] ?>')
-                                </script>
                                 <tr id="row<?php echo $i ?>" class="white-space-nowrap">
                                     <td>
                                         <input name="id" type="hidden" value="<?php echo $value['id']; ?>">
-                                        <select class="form-control" name='medicine_category_id[]' onchange="getmedicine_edit_name(this.value, '<?php echo $i ?>', '<?php echo $value['medicine_id'] ?>')">
+                                        <select class="form-control select2 medicine_name" id="medicine_edit_name<?php echo $i ?>" name='medicine_name[]' onchange="getmedicinedetails(this.value, '<?php echo $i ?>')">
+                                            <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                            <?php if (!empty($medicines)) { foreach ($medicines as $mkey => $mvalue) { ?>
+                                            <option value="<?php echo $mvalue['id']; ?>" <?php if ($value['pharmacy_id'] == $mvalue['id']) echo "selected"; ?>><?php echo html_escape($mvalue['medicine_name']); ?></option>
+                                            <?php } } ?>
+                                        </select>
+                                        <span class="text-danger"><?php echo form_error('medicine_name[]'); ?></span>
+                                    </td>
+                                    <td>
+                                        <select class="form-control medicine_category" id="medicine_category_id<?php echo $i ?>" name='medicine_category_id[]'>
                                             <option value=""><?php echo $this->lang->line('select'); ?></option>
                                             <?php foreach ($medicineCategory as $dkey => $dvalue) { ?>
-                                            <option value="<?php echo $dvalue["id"]; ?>" <?php if ($value["medicine_category_id"] == $dvalue["id"]) echo "selected"; ?>><?php echo $dvalue["medicine_category"] ?></option>
+                                            <option value="<?php echo $dvalue["id"]; ?>" <?php if ($value["medicine_category_id"] == $dvalue["id"]) echo "selected"; ?>><?php echo html_escape($dvalue["medicine_category"]); ?></option>
                                             <?php } ?>
                                         </select>
                                         <span class="text-danger"><?php echo form_error('medicine_category_id[]'); ?></span>
-                                    </td>
-                                    <td>
-                                        <select class="form-control select2" id="medicine_edit_name<?php echo $i ?>" name='medicine_name[]' onchange="geteditbatchnolist(this.value, '<?php echo $i ?>')">
-                                            <option value="<?php echo set_value('medicine_name'); ?>"><?php echo $this->lang->line('select'); ?></option>
-                                        </select>
-                                        <span class="text-danger"><?php echo form_error('medicine_name[]'); ?></span>
                                     </td>
                                     <td>
                                         <input type="text" name="batch_no[]" id="batch_edit_no<?php echo $i ?>" class="form-control batch_no" value="<?php echo $value['batch_no']; ?>">
@@ -186,9 +186,6 @@ $genderList = $this->customlib->getGender();
                                         <span class="text-danger"><?php echo form_error('mrp[]'); ?></span>
                                     </td>
                                     <td>
-                                        <input type="text" name="batch_amount[]" id="batchamount_edit<?php echo $i ?>" class="form-control" value="<?php echo $value['batch_amount']; ?>">
-                                    </td>
-                                    <td>
                                         <input type="text" name="sale_rate[]" id="sale_rate_edit<?php echo $i ?>" class="form-control" value="<?php echo $value['sale_rate']; ?>">
                                         <span class="text-danger"><?php echo form_error('sale_rate[]'); ?></span>
                                     </td>
@@ -196,22 +193,28 @@ $genderList = $this->customlib->getGender();
                                         <input type="text" name="packing_qty[]" id="packing_qty_edit<?php echo $i ?>" class="form-control" value="<?php echo $value['packing_qty']; ?>">
                                     </td>
                                     <td>
-                                        <input type="text" name="quantity[]" onchange="multiply(<?php echo $i ?>)" onfocus="geteditQuantity(<?php echo $i ?>)" value="<?php echo $value['quantity']; ?>" id="quantity_edit<?php echo $i ?>" class="form-control text-end">
+                                        <input type="text" name="quantity[]" onchange="multiply(<?php echo $i ?>)" onfocus="geteditQuantity(<?php echo $i ?>)" value="<?php echo $value['quantity']; ?>" id="quantity_edit<?php echo $i ?>" class="form-control text-end quantity">
                                         <input type="hidden" name="medicine_batch_id[]" id="medicine_batch_id<?php echo $i ?>">
                                         <input type="hidden" name="bill_detail_id[]" value="<?php echo $value["id"] ?>">
                                     </td>
                                     <td class="text-end">
-                                        <input type="text" name="purchase_price[]" onchange="multiply(<?php echo $i ?>)" id="purchase_price_edit<?php echo $i ?>" class="form-control text-end" value="<?php echo $value['purchase_price']; ?>">
+                                        <input type="text" name="purchase_price[]" onchange="multiply(<?php echo $i ?>)" id="purchase_price_edit<?php echo $i ?>" class="form-control text-end purchase_price" value="<?php echo $value['purchase_price']; ?>">
                                         <span class="text-danger"><?php echo form_error('purchase_price[]'); ?></span>
                                     </td>
                                     <td class="text-end">
                                         <div class="input-group">
-                                            <input type="text" class="form-control right-border-none" name="purchase_tax[]" id="purchase_tax_edit<?php echo $i ?>" value="<?php echo $value["tax"] ?>" autocomplete="off">
+                                            <input type="text" class="form-control right-border-none purchase_tax" name="purchase_tax[]" id="purchase_tax_edit<?php echo $i ?>" value="<?php echo $value["tax"] ?>" autocomplete="off">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control right-border-none purchase_discount" name="purchase_discount[]" id="purchase_discount_edit<?php echo $i ?>" autocomplete="off">
                                             <span class="input-group-text">%</span>
                                         </div>
                                     </td>
                                     <td class="text-end" width="10%">
-                                        <input type="text" name="amount[]" id="amount_edit<?php echo $i ?>" class="form-control text-end" value="<?php echo $value['amount']; ?>">
+                                        <input type="text" name="amount[]" id="amount_edit<?php echo $i ?>" class="form-control text-end amount" value="<?php echo $value['amount']; ?>">
                                         <span class="text-danger"><?php echo form_error('amount[]'); ?></span>
                                     </td>
                                     <td>
@@ -283,10 +286,14 @@ $genderList = $this->customlib->getGender();
 
 <script type="text/javascript">
     function multiply(id) {
-        var quantity = $('#quantity_edit' + id).val();       
-        var purchase_price = $('#purchase_price_edit' + id).val();
-        var amount = quantity * purchase_price;
-        $('#amount_edit' + id).val(amount);
+        var quantity = parseFloat($('#quantity_edit' + id).val()) || 0;       
+        var purchase_price = parseFloat($('#purchase_price_edit' + id).val()) || 0;
+        var purchase_discount = parseFloat($('#purchase_discount_edit' + id).val()) || 0;
+        var item_subtotal = quantity * purchase_price;
+        var row_discount_amt = (item_subtotal * purchase_discount) / 100;
+        var amount = item_subtotal - row_discount_amt;
+        if (isNaN(amount) || amount < 0) amount = 0;
+        $('#amount_edit' + id).val(amount.toFixed(2));
     }
 
     $(function () {
@@ -302,7 +309,28 @@ $genderList = $this->customlib->getGender();
         var table_len = (table.rows.length);
         var id = parseInt(table_len);
 
-        var div = "<td><select class='form-control' name='medicine_category_id[]' onchange='getmedicine_edit_name(this.value," + id + ")'><option value='<?php echo set_value('medicine_category_id'); ?>'><?php echo $this->lang->line('select') ?></option><?php foreach ($medicineCategory as $dkey => $dvalue) { ?><option value='<?php echo $dvalue["id"]; ?>'><?php echo $dvalue["medicine_category"] ?></option><?php } ?></select></td><td><select class='form-control select2' name='medicine_name[]' onchange='getmedicinedetails(this.value," + id + ")' id='medicine_edit_name" + id + "' ><option value='<?php echo set_value('medicine_name'); ?>'><?php echo $this->lang->line('select') ?></option></select></td><td><input type='text' id='batch_edit_no" + id + "' name='batch_no[]' class='form-control'></td><td><input type='text' id='edit_expiry_date" + id + "' name='expiry_date[]' class='form-control expires_date'></td><td><input type='text' id='mrp_edit_more" + id + "' name='mrp[]' class='form-control'></td><td><input type='text' id='batchamount_edit" + id + "' name='batch_amount[]' class='form-control'></td><td><input type='text' id='sale_rate_edit" + id + "' name='sale_rate[]' class='form-control'></td><td><input type='text' id='packing_qty_edit" + id + "' name='packing_qty[]' class='form-control'></td><td><div class='input-group'><input type='text' name='quantity[]' onchange='multiply(" + id + ")' onfocus='geteditQuantity(" + id + ")' id='quantity_edit" + id + "' class='form-control text-end'></div><input type='hidden' name='available_quantity[]' id='available_edit_quantity" + id + "'><input type=hidden class=form-control value='0' name='bill_detail_id[]'  /><input type='hidden' name='medicine_batch_id[]' id='medicine_batch_id" + id + "'></td><td> <input type='text' name='purchase_price[]' onchange='multiply(" + id + ")' id='purchase_price_edit" + id + "'  class='form-control text-end'></td><td><div class='mb-3'><div class='input-group'><input type='text'  class='form-control right-border-none'  name='purchase_tax[]' id='purchase_tax" + id + "'  autocomplete='off'><span class='input-group-text '> %</span></div></div></td><td width='10%'><input type='text' name='amount[]' id='amount_edit" + id + "'  class='form-control text-end'></td>";
+        var medicine_options = "<option value=''><?php echo $this->lang->line('select') ?></option>";
+        <?php if (!empty($medicines)) { foreach ($medicines as $mkey => $mvalue) { ?>
+        medicine_options += "<option value='<?php echo $mvalue["id"]; ?>'><?php echo html_escape(addslashes($mvalue["medicine_name"])); ?></option>";
+        <?php } } ?>
+
+        var category_options = "<option value=''><?php echo $this->lang->line('select') ?></option>";
+        <?php if (!empty($medicineCategory)) { foreach ($medicineCategory as $dkey => $dvalue) { ?>
+        category_options += "<option value='<?php echo $dvalue["id"]; ?>'><?php echo html_escape(addslashes($dvalue["medicine_category"])); ?></option>";
+        <?php } } ?>
+
+        var div = "<td><select class='form-control select2 medicine_name' name='medicine_name[]' onchange='getmedicinedetails(this.value," + id + ")' id='medicine_edit_name" + id + "' >" + medicine_options + "</select></td>" +
+            "<td><select class='form-control medicine_category' name='medicine_category_id[]' id='medicine_category_id" + id + "'>" + category_options + "</select></td>" +
+            "<td><input type='text' id='batch_edit_no" + id + "' name='batch_no[]' class='form-control batch_no'></td>" +
+            "<td><input type='text' id='edit_expiry_date" + id + "' name='expiry_date[]' class='form-control expires_date'></td>" +
+            "<td><input type='text' id='mrp_edit_more" + id + "' name='mrp[]' class='form-control mrp'></td>" +
+            "<td><input type='text' id='sale_rate_edit" + id + "' name='sale_rate[]' class='form-control sale_rate'></td>" +
+            "<td><input type='text' id='packing_qty_edit" + id + "' name='packing_qty[]' class='form-control packing_qty'></td>" +
+            "<td><div class='input-group'><input type='text' name='quantity[]' onchange='multiply(" + id + ")' onfocus='geteditQuantity(" + id + ")' id='quantity_edit" + id + "' class='form-control text-end quantity'></div><input type='hidden' name='available_quantity[]' id='available_edit_quantity" + id + "'><input type=hidden class=form-control value='0' name='bill_detail_id[]'  /><input type='hidden' name='medicine_batch_id[]' id='medicine_batch_id" + id + "'></td>" +
+            "<td><input type='text' name='purchase_price[]' onchange='multiply(" + id + ")' id='purchase_price_edit" + id + "' class='form-control text-end purchase_price'></td>" +
+            "<td><div class='input-group'><input type='text' class='form-control right-border-none purchase_tax' name='purchase_tax[]' id='purchase_tax_edit" + id + "' autocomplete='off'><span class='input-group-text'>%</span></div></td>" +
+            "<td><div class='input-group'><input type='text' class='form-control right-border-none purchase_discount' name='purchase_discount[]' id='purchase_discount_edit" + id + "' autocomplete='off'><span class='input-group-text'>%</span></div></td>" +
+            "<td width='10%'><input type='text' name='amount[]' id='amount_edit" + id + "' class='form-control text-end amount' readonly></td>";
 
         var row = table.insertRow(table_len).outerHTML = "<tr id='row" + id + "' class='white-space-nowrap'>" + div + "<td><button type='button' onclick='delete_row(" + id + ")' class='btn btn-sm btn-outline-danger'><i class='fa fa-remove'></i></button></td></tr>";
 
@@ -310,7 +338,7 @@ $genderList = $this->customlib->getGender();
         if (typeof initMonthYearPicker === 'function') {
             document.querySelectorAll('#edittableID .expires_date').forEach(initMonthYearPicker);
         }
-        $('.select2').select2();
+        $('#edit_bill .select2').select2({ dropdownParent: $('#edit_bill') });
     }
 
     function addEditTotal() {

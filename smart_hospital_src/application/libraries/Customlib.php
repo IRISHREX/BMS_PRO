@@ -1856,7 +1856,10 @@ class Customlib
 
     function getMedicine_expire_month($date)
     {
-        return date('M/Y', strtotime($date));
+        if (empty($date) || $date == '0000-00-00') {
+            return '';
+        }
+        return date('m/Y', strtotime($date));
     }
 
     public function chargeTypeModule()

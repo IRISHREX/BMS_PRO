@@ -25,7 +25,8 @@ $genderList = $this->customlib->getGender();
                                     <th class="text-end"><?php echo $this->lang->line('total')." (".$currency_symbol.")"; ?></th>
                                     <th class="text-end"><?php echo $this->lang->line('discount')." (".$currency_symbol.")"; ?></th>
                                     <th class="text-end"><?php echo $this->lang->line('tax')." (".$currency_symbol.")"; ?></th>
-                                    <th class="noExport text-end"><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>                                  
+                                    <th class="text-end"><?php echo $this->lang->line('net_amount')." (".$currency_symbol.")"; ?></th>
+                                    <th class="noExport text-end" width="10%"><?php echo $this->lang->line('action'); ?></th>                                  
                                 </tr>
                             </thead>
                             <tbody>
@@ -69,17 +70,17 @@ $genderList = $this->customlib->getGender();
                                 <table class="table table-sm table-striped table-bordered table-hover tblProducts mb-0" id="tableID">
                                     <thead>
                                     <tr class="white-space-nowrap">
-                                        <th width="10%"><?php echo $this->lang->line('medicine_category'); ?><small class="req"> *</small></th>
-                                        <th width="10%"><?php echo $this->lang->line('medicine_name'); ?><small class="req"> *</small></th>
+                                        <th width="12%"><?php echo $this->lang->line('medicine_name'); ?><small class="req"> *</small></th>
+                                        <th width="12%"><?php echo $this->lang->line('medicine_category'); ?><small class="req"> *</small></th>
                                         <th><?php echo $this->lang->line('batch_no'); ?><small class="req"> *</small></th>
                                         <th><?php echo $this->lang->line('expiry_month'); ?><small class="req"> *</small></th>
                                         <th><?php echo $this->lang->line('mrp') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
-                                        <th><?php echo $this->lang->line('batch_amount') . " (" . $currency_symbol . ")"; ?></th>
                                         <th><?php echo $this->lang->line('sale_price') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
                                         <th><?php echo $this->lang->line('packing_qty'); ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('quantity'); ?><small class="req"> *</small></th>
                                         <th class="text-end"><?php echo $this->lang->line('purchase_price') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
                                         <th class="text-end"><?php echo $this->lang->line('tax'); ?><small class="req"> *</small></th>
+                                        <th class="text-end"><?php echo $this->lang->line('discount'); ?></th>
                                         <th class="text-end"><?php echo $this->lang->line('amount') . " (" . $currency_symbol . ")"; ?><small class="req"> *</small></th>
                                         <th></th>
                                     </tr>
@@ -87,41 +88,41 @@ $genderList = $this->customlib->getGender();
                                     <tbody>
                                     <tr id="row0" class="white-space-nowrap">
                                         <td>
-                                            <select class="form-control" name='medicine_category_id[]' onchange="getmedicine_name(this.value, '0')">
+                                            <select class="form-control select2 medicine_name" onchange="getmedicinedetails(this.value, 0)" id="medicine_name0" name='medicine_name[]'>
+                                                <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                                <?php if (!empty($medicines)) { foreach ($medicines as $mkey => $mvalue) { ?>
+                                                <option value="<?php echo $mvalue["id"]; ?>"><?php echo html_escape($mvalue["medicine_name"]); ?></option>
+                                                <?php } } ?>
+                                            </select>
+                                            <span class="text-danger"><?php echo form_error('medicine_name[]'); ?></span>
+                                        </td>
+                                        <td>
+                                            <select class="form-control medicine_category" id="medicine_category_id0" name='medicine_category_id[]'>
                                                 <option value="<?php echo set_value('medicine_category_id'); ?>"><?php echo $this->lang->line('select'); ?></option>
                                                 <?php foreach ($medicineCategory as $dkey => $dvalue) { ?>
-                                                <option value="<?php echo $dvalue["id"]; ?>"><?php echo $dvalue["medicine_category"] ?></option>
+                                                <option value="<?php echo $dvalue["id"]; ?>"><?php echo html_escape($dvalue["medicine_category"]); ?></option>
                                                 <?php } ?>
                                             </select>
                                             <span class="text-danger"><?php echo form_error('medicine_category_id[]'); ?></span>
                                         </td>
                                         <td>
-                                            <select class="form-control select2" onchange="getmedicinedetails(this.value, 0)" id="medicine_name0" name='medicine_name[]'>
-                                                <option value=""><?php echo $this->lang->line('select'); ?></option>
-                                            </select>
-                                            <span class="text-danger"><?php echo form_error('medicine_name[]'); ?></span>
-                                        </td>
-                                        <td>
-                                            <input type="text" name="batch_no[]" id="batchno" class="form-control">
+                                            <input type="text" name="batch_no[]" id="batchno0" class="form-control batch_no">
                                             <span class="text-danger"><?php echo form_error('batch_no[]'); ?></span>
                                         </td>
                                         <td>
-                                            <input type="text" name="expiry_date[]" id="expiry" class="form-control expiry_date">
+                                            <input type="text" name="expiry_date[]" id="expiry0" class="form-control expiry_date">
                                             <span class="text-danger"><?php echo form_error('expiry_date[]'); ?></span>
                                         </td>
                                         <td>
-                                            <input type="text" name="mrp[]" id="mrp" class="form-control">
+                                            <input type="text" name="mrp[]" id="mrp0" class="form-control mrp">
                                             <span class="text-danger"><?php echo form_error('mrp[]'); ?></span>
                                         </td>
                                         <td>
-                                            <input type="number" min="0" step="0.01" name="batch_amount[]" id="batch_amount" class="form-control">
-                                        </td>
-                                        <td>
-                                            <input type="text" name="sale_rate[]" id="sale_price" class="form-control">
+                                            <input type="text" name="sale_rate[]" id="sale_price0" class="form-control sale_rate">
                                             <span class="text-danger"><?php echo form_error('sale_rate[]'); ?></span>
                                         </td>
                                         <td>
-                                            <input type="number" min="0" step="1" name="packing_qty[]" id="packing_qty" class="form-control">
+                                            <input type="number" min="0" step="1" name="packing_qty[]" id="packing_qty0" class="form-control packing_qty">
                                             <span class="text-danger"><?php echo form_error('packing_qty[]'); ?></span>
                                         </td>
                                         <td>
@@ -136,7 +137,13 @@ $genderList = $this->customlib->getGender();
                                                 <input type="text" class="form-control right-border-none purchase_tax" name="purchase_tax[]" id="purchase_tax0" autocomplete="off">
                                                 <span class="input-group-text">%</span>
                                             </div>
-                                            <span class="text-danger"><?php echo form_error('purchase_price[]'); ?></span>
+                                            <span class="text-danger"><?php echo form_error('purchase_tax[]'); ?></span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control right-border-none purchase_discount" name="purchase_discount[]" id="purchase_discount0" autocomplete="off">
+                                                <span class="input-group-text">%</span>
+                                            </div>
                                         </td>
                                         <td class="text-end" width="10%">
                                             <input type="text" name="amount[]" id="amount0" class="form-control text-end amount" readonly>
@@ -468,17 +475,13 @@ $genderList = $this->customlib->getGender();
                 });
             }
 
-            // Helper: month/year-only picker config (TD 6) — for medicine expiry dates.
-            // Format MUST stay 'MMM/yyyy' (named month abbr like "Dec/2026"):
-            //   • Backend Pharmacy::convertMonthToNumber() parses via strtotime — needs a name, not a number.
-            //   • Read-back uses PHP date('M/Y') which also emits "Dec/2026", so save/edit round-trips identically.
-            // TD-6 token 'M' = numeric month (1–12); 'MMM' = abbreviated name. Do NOT change to 'M/yyyy'.
+            // Helper: month/year-only picker config (TD 6) — for medicine expiry dates (format: MM/yyyy, e.g. 09/2026).
             function initMonthYearPicker(el) {
                 if (el._pickerInit) return;
                 el._pickerInit = new tempusDominus.TempusDominus(el, {
                     allowInputToggle: true,
                     container: document.body,
-                    localization: { format: 'MMM/yyyy', locale: 'en-US' },
+                    localization: { format: 'MM/yyyy', locale: 'en-US' },
                     display: {
                         viewMode: 'months',
                         components: {
@@ -498,7 +501,7 @@ $genderList = $this->customlib->getGender();
             }
 
             $(document).ready(function (e) {
-                var el = document.getElementById('expiry');
+                var el = document.getElementById('expiry0') || document.getElementById('expiry');
                 if (el) initMonthYearPicker(el);
             });
             function addMore() {
@@ -506,9 +509,32 @@ $genderList = $this->customlib->getGender();
                 var table = document.getElementById("tableID");
                 var table_len = (table.rows.length);
                 var id = parseInt(table_len - 1);
-                var div = "<td><select class='form-control date' name='medicine_category_id[]' onchange='getmedicine_name(this.value," + id + ")'><option value='<?php echo set_value('medicine_category_id'); ?>'><?php echo $this->lang->line('select') ?></option><?php foreach ($medicineCategory as $dkey => $dvalue) { ?><option value='<?php echo $dvalue["id"]; ?>'><?php echo $dvalue["medicine_category"] ?></option><?php } ?></select></td><td><select class='form-control select2' name='medicine_name[]' onchange='getmedicinedetails(this.value," + id + ")' id='medicine_name" + id + "' ><option value='<?php echo set_value('medicine_name'); ?>'><?php echo $this->lang->line('select') ?></option></select></td><td><input type='text' name='batch_no[]' id='batchno" + id + "' class='form-control batch_no'></td><td><input type='text' name='expiry_date[]' id='expiry" + id + "' class='form-control expiry_date'></td><td><input type='text' name='mrp[]' id='mrp" + id + "' class='form-control mrp'></td><td><input type='number' min='0' step='0.01' name='batch_amount[]' id='batch_amount" + id + "' class='form-control mrp'></td><td><input type='text' name='sale_rate[]' id='salerate" + id + "' class='form-control sale_rate'></td><td><input type='number' min='0' step='1' name='packing_qty[]' id='packingqty" + id + "' class='form-control packing_qty'></td><td><div class='input-group'><input type='text' name='quantity[]' onchange='multiply(" + id + ")' onfocus='getQuantity(" + id + ")' id='quantity" + id + "' class='form-control text-end quantity'></div></td><td><input type='text' onchange='multiply(" + id + ")' name='purchase_price[]' id='purchase_price" + id + "'  class='form-control text-end purchase_price'></td><td><div class=''><div class='input-group'><input type='text' change='multiply(" + id + ")' class='form-control right-border-none purchase_tax'  name='purchase_tax[]' id='purchase_tax" + id + "'  autocomplete='off'><span class='input-group-text '> %</span></div></div></td><td><input type='text' name='amount[]' id='amount" + id + "'  class='form-control text-end amount' readonly></td>";
-                var row = table.insertRow(table_len).outerHTML = "<tr id='row" + id + "'>" + div + "<td><button type='button' onclick='delete_row(" + id + ")' class='btn btn-sm btn-outline-danger'><i class='fa fa-remove'></i></button></td></tr>";
-                $('.select2').select2();
+                
+                var medicine_options = "<option value=''><?php echo $this->lang->line('select') ?></option>";
+                <?php if (!empty($medicines)) { foreach ($medicines as $mkey => $mvalue) { ?>
+                medicine_options += "<option value='<?php echo $mvalue["id"]; ?>'><?php echo html_escape(addslashes($mvalue["medicine_name"])); ?></option>";
+                <?php } } ?>
+
+                var category_options = "<option value=''><?php echo $this->lang->line('select') ?></option>";
+                <?php if (!empty($medicineCategory)) { foreach ($medicineCategory as $dkey => $dvalue) { ?>
+                category_options += "<option value='<?php echo $dvalue["id"]; ?>'><?php echo html_escape(addslashes($dvalue["medicine_category"])); ?></option>";
+                <?php } } ?>
+
+                var div = "<td><select class='form-control select2 medicine_name' name='medicine_name[]' onchange='getmedicinedetails(this.value," + id + ")' id='medicine_name" + id + "'>" + medicine_options + "</select></td>" +
+                    "<td><select class='form-control medicine_category' name='medicine_category_id[]' id='medicine_category_id" + id + "'>" + category_options + "</select></td>" +
+                    "<td><input type='text' name='batch_no[]' id='batchno" + id + "' class='form-control batch_no'></td>" +
+                    "<td><input type='text' name='expiry_date[]' id='expiry" + id + "' class='form-control expiry_date'></td>" +
+                    "<td><input type='text' name='mrp[]' id='mrp" + id + "' class='form-control mrp'></td>" +
+                    "<td><input type='text' name='sale_rate[]' id='salerate" + id + "' class='form-control sale_rate'></td>" +
+                    "<td><input type='number' min='0' step='1' name='packing_qty[]' id='packing_qty" + id + "' class='form-control packing_qty'></td>" +
+                    "<td><input type='text' name='quantity[]' onchange='multiply(" + id + ")' onfocus='getQuantity(" + id + ")' id='quantity" + id + "' class='form-control text-end quantity'></td>" +
+                    "<td class='text-end'><input type='text' onchange='multiply(" + id + ")' name='purchase_price[]' id='purchase_price" + id + "' class='form-control text-end purchase_price'></td>" +
+                    "<td class='text-end'><div class='input-group'><input type='text' class='form-control right-border-none purchase_tax' name='purchase_tax[]' id='purchase_tax" + id + "' autocomplete='off'><span class='input-group-text'>%</span></div></td>" +
+                    "<td class='text-end'><div class='input-group'><input type='text' class='form-control right-border-none purchase_discount' name='purchase_discount[]' id='purchase_discount" + id + "' autocomplete='off'><span class='input-group-text'>%</span></div></td>" +
+                    "<td class='text-end'><input type='text' name='amount[]' id='amount" + id + "' class='form-control text-end amount' readonly></td>";
+
+                var row = table.insertRow(table_len).outerHTML = "<tr id='row" + id + "' class='white-space-nowrap'>" + div + "<td><button type='button' onclick='delete_row(" + id + ")' class='btn btn-sm btn-outline-danger'><i class='fa fa-remove'></i></button></td></tr>";
+                $('#myModal .select2').select2({ dropdownParent: $('#myModal') });
 
                 document.querySelectorAll('.expiry_date').forEach(initMonthYearPicker);
             }
@@ -591,113 +617,75 @@ $genderList = $this->customlib->getGender();
                 });
             }
 
-            $(document).on('input paste keyup','.purchase_price,.quantity,.purchase_tax,.discount_percent', function(e){ 
+            function multiply(id) {
+                update_amount($('#myModal'));
+            }
+
+            $(document).on('input paste keyup','.purchase_price, .quantity, .purchase_tax, .purchase_discount, .discount_percent', function(e){ 
                 update_amount($(e.target).closest('div.modal'));
             });
 
             let update_amount=(__this)=>{
-            var grandTotal = 0; 
-            var total_tax_amount = 0;
-            var $tblrows = __this.find(".tblProducts tbody tr");  
-            var discount_percent=__this.find('#discount_percent').val();
-     
-            $tblrows.each(function (index) {
+                var grandTotal = 0; 
+                var total_tax_amount = 0;
+                var $tblrows = __this.find(".tblProducts tbody tr");  
+                var discount_percent = parseFloat(__this.find('#discount_percent').val()) || 0;
+         
+                $tblrows.each(function (index) {
                     var $tblrow = $(this);  
-                    let quantity = parseFloat($tblrow.find("td input.quantity").val());
-                    let purchase_price = parseFloat($tblrow.find("td input.purchase_price").val());
-                    let purchase_tax = parseFloat($tblrow.find("td input.purchase_tax").val());
-                    let row_amount=(isNaN(quantity*purchase_price)) ? 0 : quantity*purchase_price;
-                    $tblrow.find("td input.amount").val(row_amount)
-                    grandTotal+=row_amount;
-					var discount_amt = (purchase_price*discount_percent)/100;
-                    total_tax_amount += (((purchase_price-discount_amt)*quantity)*purchase_tax)/100; 
-            });
-           
+                    let quantity = parseFloat($tblrow.find("td input.quantity").val()) || 0;
+                    let purchase_price = parseFloat($tblrow.find("td input.purchase_price").val()) || 0;
+                    let purchase_tax = parseFloat($tblrow.find("td input.purchase_tax").val()) || 0;
+                    let purchase_discount = parseFloat($tblrow.find("td input.purchase_discount").val()) || 0;
+
+                    let item_subtotal = quantity * purchase_price;
+                    let row_discount_amt = (item_subtotal * purchase_discount) / 100;
+                    let row_amount = item_subtotal - row_discount_amt;
+                    if (isNaN(row_amount) || row_amount < 0) row_amount = 0;
+
+                    $tblrow.find("td input.amount").val(row_amount.toFixed(2));
+                    grandTotal += row_amount;
+
+                    let bill_discount_amt = (row_amount * discount_percent) / 100;
+                    let taxable_amount = row_amount - bill_discount_amt;
+                    let row_tax = (taxable_amount * purchase_tax) / 100;
+                    total_tax_amount += isNaN(row_tax) ? 0 : row_tax;
+                });
+               
                 __this.find('#total').val(grandTotal.toFixed(2));
-                discount=(grandTotal * discount_percent / 100 );
+                var discount = (grandTotal * discount_percent / 100 );
                 discount = (isNaN(discount)) ? 0 : discount;
                 __this.find('#discount').val(discount.toFixed(2));		
-                var net_amount=((grandTotal-discount)+total_tax_amount);  
-               __this.find('#tax').val(total_tax_amount.toFixed(2));
-               __this.find('#net_amount').val(net_amount.toFixed(2));
-               __this.find('#payment_amount').val(net_amount.toFixed(2));       
-
-   }
-
-   function addTotal() {
-                var total = 0;
-                var tax_amount=0;
-                var sale_price = document.getElementsByName('amount[]');
-                var tax = document.getElementsByName('purchase_tax[]');
-                for (var i = 0; i < sale_price.length; i++) {
-                    var inp = sale_price[i];
-                    var tax_inp = tax[i];
-                    if (inp.value == '') {
-                        var inpvalue = 0;
-                    } else {
-                        var inpvalue = inp.value;
-                    }
-
-                    if (tax_inp.value == '') {
-                        var tax_inpvalue = 0;
-                    } else {
-                        var tax_inpvalue = tax_inp.value;
-                    }
-
-                    tax_amount +=parseFloat((inpvalue) * tax_inpvalue / 100);
-                    total += parseFloat(inpvalue);
-                }
-
-                var discount_percent = $("#discount_percent").val();
-                var tax_percent = $("#tax_percent").val();
-                if (discount_percent != '') {
-                    var discount = (total * discount_percent) / 100;
-                    $("#discount").val(discount.toFixed(2));
-                } else {
-                    var discount = $("#discount").val();
-                }
-                
-                $("#tax").val(tax_amount.toFixed(2));
-                $("#total").val(total.toFixed(2));
-                var tax = $("#tax").val();
-                var net_amount = parseFloat(total) + parseFloat(tax) - parseFloat(discount); 
-                var cnet_amount = net_amount.toFixed(2)
-                $("#net_amount").val(cnet_amount);
-                $("#payment_amount").val(cnet_amount);               
-                var editdate = $("#txtDate10").val();
-                $("#date_result").val(editdate);
-                var invoiceno = $("#invoice_no").val();
-                $("#invoiceno").val(invoiceno);
-                $("#billsave").removeClass('d-none');
-                $(".printsavebtn").removeClass('d-none');
-            }           
-
-            function getExpire(id) {
-                var batch_no = $("#batch_no" + id).val();
-                $.ajax({
-                    type: "POST",
-                    url: base_url + "admin/pharmacy/getExpiryDate",
-                    data: {'batch_no': batch_no},
-                    dataType: 'json',
-                    success: function (res) {
-                        if (res != null) {
-                            $('#expiry_date' + id).val(res.expiry_date);
-                            getQuantity(id);
-                        }
-                    }
-                });
-            }            
+                var net_amount = ((grandTotal - discount) + total_tax_amount);  
+                __this.find('#tax').val(total_tax_amount.toFixed(2));
+                __this.find('#net_amount').val(net_amount.toFixed(2));
+                __this.find('#payment_amount').val(net_amount.toFixed(2));       
+            }
 
             function getmedicinedetails(id, rowid) {
+                if (!id) {
+                    $('#medicine_category_id' + rowid).val('');
+                    $('#purchase_tax' + rowid).val('');
+                    return;
+                }
                 $.ajax({
                     type: "POST",
                     url: base_url + "admin/pharmacy/getmedicinedetails",
                     data: {'pharmacy_id': id},
                     dataType: 'json',
                     success: function (res) {
-                         if (res) {
-                            $('#purchase_tax'+ rowid).val(res.vat);                           
-                        } 
+                        if (res) {
+                            if (res.medicine_category_id) {
+                                $('#medicine_category_id' + rowid).val(res.medicine_category_id);
+                            }
+                            if (res.vat !== undefined && res.vat !== null) {
+                                $('#purchase_tax' + rowid).val(res.vat);
+                            }
+                            if (res.unit_packing) {
+                                $('#packing_qty' + rowid).val(res.unit_packing);
+                            }
+                            update_amount($('#medicine_name' + rowid).closest('div.modal'));
+                        }
                     }
                 });
             }
@@ -741,6 +729,12 @@ $genderList = $this->customlib->getGender();
         $sel.select2('destroy');
     }
     $sel.select2({ dropdownParent: $('#myModal') });
+    $('#myModal .select2').each(function() {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+            $(this).select2('destroy');
+        }
+        $(this).select2({ dropdownParent: $('#myModal') });
+    });
 });
 
  $("#myModal").on('hidden.bs.modal', function(){
@@ -749,8 +743,8 @@ $genderList = $this->customlib->getGender();
     $("#bill").find('input:text, input:password, input:file, select, textarea').val('');
     $("#bill").find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
     $('#tableID tbody tr:not(:first)','#bill').remove();
-    $("select[id^='medicine_name']").select2("val", "");
-    $(".supplier_select2").select2("val", "");
+    $("select[id^='medicine_name']").val('').trigger('change');
+    $(".supplier_select2").val('').trigger('change');
   });
 
   $(document).on('change','.payment_mode',function(){ 
@@ -771,9 +765,8 @@ $genderList = $this->customlib->getGender();
         initDatatable('ajaxlist','admin/pharmacy/getpharmacypurchaseDatatable',[],[],100,
             [
                {  "sWidth": "70px", "aTargets": [ 2 ] ,'sClass': 'dt-body-center'},
-               {  "sWidth": "150px", "bSortable": false, "aTargets": [ -1 ] ,'sClass': 'dt-body-right'},
-               {  "sWidth": "150px", "aTargets": [ -2,-3,-4 ] ,'sClass': 'dt-body-right'},
-               
+               {  "sWidth": "100px", "bSortable": false, "aTargets": [ -1 ] ,'sClass': 'text-end'},
+               {  "sWidth": "150px", "aTargets": [ -2,-3,-4,-5 ] ,'sClass': 'dt-body-right'},
             ]);
     });
 } ( jQuery ) )

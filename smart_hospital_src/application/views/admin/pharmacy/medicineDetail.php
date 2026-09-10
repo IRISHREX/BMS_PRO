@@ -4,8 +4,11 @@ $canViewStock    = $this->rbac->hasPrivilege('medicine', 'can_view');
 $canDelStock     = $this->rbac->hasPrivilege('medicine', 'can_delete');
 $canViewBad      = $this->rbac->hasPrivilege('medicine_bad_stock', 'can_view');
 $canDelBad       = $this->rbac->hasPrivilege('medicine_bad_stock', 'can_delete');
-$stockCount      = !empty($result)         ? count($result)         : 0;
-$badCount        = !empty($badstockresult) ? count($badstockresult) : 0;
+$canViewExtra    = $this->rbac->hasPrivilege('medicine', 'can_view') || $this->rbac->hasPrivilege('medicine_bad_stock', 'can_view');
+$canDelExtra     = $this->rbac->hasPrivilege('medicine', 'can_delete') || $this->rbac->hasPrivilege('medicine_bad_stock', 'can_delete');
+$stockCount      = !empty($result)           ? count($result)           : 0;
+$badCount        = !empty($badstockresult)   ? count($badstockresult)   : 0;
+$extraCount      = !empty($extrastockresult) ? count($extrastockresult) : 0;
 ?>
 <div class="sh-form-card sh-stock-panel mb-0 overflow-hidden">
     <div class="sh-card-header sh-stock-tabs-header">
@@ -22,6 +25,13 @@ $badCount        = !empty($badstockresult) ? count($badstockresult) : 0;
                     <a class="nav-link <?php echo $canViewStock ? '' : 'active'; ?>" href="#bad_stock" data-bs-toggle="tab" data-bs-target="#bad_stock" role="tab" aria-controls="bad_stock" aria-selected="<?php echo $canViewStock ? 'false' : 'true'; ?>">
                         <i class="fa fa-exclamation-triangle me-1"></i><?php echo $this->lang->line('bad_stock'); ?>
                         <span class="sh-tab-count"><?php echo $badCount; ?></span>
+                    </a>
+                </li>
+            <?php } if ($canViewExtra) { ?>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link <?php echo ($canViewStock || $canViewBad) ? '' : 'active'; ?>" href="#extra_stock" data-bs-toggle="tab" data-bs-target="#extra_stock" role="tab" aria-controls="extra_stock" aria-selected="<?php echo ($canViewStock || $canViewBad) ? 'false' : 'true'; ?>">
+                        <i class="fa fa-plus-circle me-1"></i><?php echo $this->lang->line('extra_stock'); ?>
+                        <span class="sh-tab-count"><?php echo $extraCount; ?></span>
                     </a>
                 </li>
             <?php } ?>
@@ -120,6 +130,46 @@ $badCount        = !empty($badstockresult) ? count($badstockresult) : 0;
                     </div>
                 <?php } ?>
             </div>
+        <?php } if ($canViewExtra) { ?>
+            <div class="tab-pane fade <?php echo ($canViewStock || $canViewBad) ? '' : 'show active'; ?>" id="extra_stock" role="tabpanel">
+                <?php if ($extraCount > 0) { ?>
+                    <div class="table-responsive rounded overflow-hidden border border-light-subtle">
+                        <table class="table table-sm table-hover sh-tests-table mb-0" id="extra_stock_detail" cellspacing="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <th><?php echo $this->lang->line('inward_date'); ?></th>
+                                    <th><?php echo $this->lang->line('batch_no'); ?></th>
+                                    <th><?php echo $this->lang->line('expiry_date'); ?></th>
+                                    <th class="text-end"><?php echo $this->lang->line('quantity'); ?></th>
+                                    <?php if ($canDelExtra) { ?>
+                                        <th class="text-end noExport"><?php echo $this->lang->line('action'); ?></th>
+                                    <?php } ?>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($extrastockresult as $extradetail) { ?>
+                                    <tr>
+                                        <td><?php echo date($this->customlib->getHospitalDateFormat(), strtotime($extradetail->inward_date)); ?></td>
+                                        <td><?php echo html_escape($extradetail->batch_no); ?></td>
+                                        <td><?php echo $this->customlib->getMedicine_expire_month($extradetail->expiry_date); ?></td>
+                                        <td class="text-end"><?php echo html_escape($extradetail->quantity); ?></td>
+                                        <?php if ($canDelExtra) { ?>
+                                            <td class="text-end">
+                                                <a href="#" class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="<?php echo $this->lang->line('delete'); ?>" onclick="delete_extrastock('<?php echo (int)$extradetail->id; ?>', '<?php echo (int)$extradetail->pharmacy_id; ?>', '<?php echo (int)$extradetail->medicine_batch_details_id; ?>'); return false;"><i class="fa fa-trash"></i></a>
+                                            </td>
+                                        <?php } ?>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php } else { ?>
+                    <div class="sh-empty-state text-center text-muted py-4">
+                        <i class="fa fa-inbox fa-2x mb-2 d-block"></i>
+                        <?php echo $this->lang->line('no_record_found'); ?>
+                    </div>
+                <?php } ?>
+            </div>
         <?php } ?>
     </div>
 </div>
@@ -156,6 +206,9 @@ $badCount        = !empty($badstockresult) ? count($badstockresult) : 0;
         if ($('#bad_stock_detail').length) {
             $('#bad_stock_detail').DataTable(dtOptions);
         }
+        if ($('#extra_stock_detail').length) {
+            $('#extra_stock_detail').DataTable(dtOptions);
+        }
 
         if (window.bootstrap && bootstrap.Tooltip) {
             $('#tabledata [data-bs-toggle="tooltip"]').each(function () {
@@ -185,6 +238,23 @@ $badCount        = !empty($badstockresult) ? count($badstockresult) : 0;
         if (confirm('<?php echo $this->lang->line('are_you_sure'); ?>')) {
             $.ajax({
                 url: '<?php echo base_url(); ?>admin/pharmacy/deleteBadStock/' + id + '/' + medicine_batch_details_id,
+                type: "POST",
+                data: {opdid: ''},
+                dataType: 'json',
+                success: function (data) {
+                    if (data.status == 'success') {
+                        viewDetail(pharmacy_id, id);
+                        $('.ajaxlist').DataTable().ajax.reload();
+                    }
+                }
+            });
+        }
+    }
+
+    function delete_extrastock(id, pharmacy_id, medicine_batch_details_id) {
+        if (confirm('<?php echo $this->lang->line('are_you_sure'); ?>')) {
+            $.ajax({
+                url: '<?php echo base_url(); ?>admin/pharmacy/deleteExtraStock/' + id + '/' + medicine_batch_details_id,
                 type: "POST",
                 data: {opdid: ''},
                 dataType: 'json',

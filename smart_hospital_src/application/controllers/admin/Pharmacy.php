@@ -390,8 +390,11 @@ class Pharmacy extends Admin_Controller
                 if ($this->rbac->hasPrivilege('medicine_bad_stock', 'can_add')) {
                     $action .= "<a href='#' class='btn btn-default btn-xs' onclick='addbadstock(" . $value->id . ")' data-bs-toggle='tooltip' title='" . $this->lang->line('add_bad_stock') . "'><i class='fas fa-minus-square'></i></a>";
                 }
+                if ($this->rbac->hasPrivilege('medicine_bad_stock', 'can_add') || $this->rbac->hasPrivilege('medicine', 'can_add')) {
+                    $action .= "<a href='#' class='btn btn-default btn-xs' onclick='addextrastock(" . $value->id . ")' data-bs-toggle='tooltip' title='" . $this->lang->line('add_extra_stock') . "'><i class='fas fa-plus-square'></i></a>";
+                }
                 
-                $action .= "<div'>";
+                $action .= "</div>";
                 $checkbox = "<input id='pharmacy' href='#' class='enable_delete'  type='checkbox' name='pharmacy[]' value='" . $value->id . "'>";
                 //==============================
                 $row[]     = $checkbox;
@@ -636,6 +639,8 @@ class Pharmacy extends Admin_Controller
         }
         $medicineCategory         = $this->medicine_category_model->getMedicineCategory();
         $data["medicineCategory"] = $medicineCategory;
+        $medicines                = $this->pharmacy_model->getMedicineName();
+        $data["medicines"]        = $medicines;
         $supplierCategory         = $this->medicine_category_model->getSupplierCategory();
         $data["supplierCategory"] = $supplierCategory;
         $result                   = $this->pharmacy_model->getPharmacy();
@@ -681,7 +686,7 @@ class Pharmacy extends Admin_Controller
                 if (!empty($value->file)) {
                     $action .= "<a href=" . base_url() . 'admin/pharmacy/download/' . $value->file . " class='btn btn-default btn-xs' data-bs-toggle='tooltip' title='" . $this->lang->line('download') . "'><i class='fa fa-download'></i></a>";
                 }
-                $action .= "<div>";
+                $action .= "</div>";
                 //==============================
                 $return_badge = $has_return_history ? ' <span class="label label-warning">R</span>' : '';
                 $row[] = $this->customlib->getSessionPrefixByType('purchase_no') . $value->id . $return_badge ;
@@ -704,7 +709,8 @@ class Pharmacy extends Admin_Controller
 
                 $row[] = $value->discount." (".amountFormat($discount_percentage)."%)";
                 $row[] = $value->tax." (".amountFormat($tax_percentage)."%)";
-                $row[] = $value->net_amount . $action;
+                $row[] = $value->net_amount;
+                $row[] = $action;
                 //====================
 
                 $dt_data[] = $row;
@@ -967,6 +973,9 @@ class Pharmacy extends Admin_Controller
 
     public function convertMonthToNumber($monthName)
     {
+        if (is_numeric($monthName)) {
+            return str_pad((int)$monthName, 2, '0', STR_PAD_LEFT);
+        }
         return date('m', strtotime($monthName));
     }
 
@@ -1032,11 +1041,13 @@ class Pharmacy extends Admin_Controller
         if (!$this->rbac->hasPrivilege('medicine', 'can_view')) {
             access_denied();
         }
-        $id                     = $this->input->post("pharmacy_id");
-        $result                 = $this->pharmacy_model->getMedicineBatch($id);
-        $data["result"]         = $result;
-        $badstockresult         = $this->pharmacy_model->getMedicineBadStock($id);
-        $data["badstockresult"] = $badstockresult;
+        $id                       = $this->input->post("pharmacy_id");
+        $result                   = $this->pharmacy_model->getMedicineBatch($id);
+        $data["result"]           = $result;
+        $badstockresult           = $this->pharmacy_model->getMedicineBadStock($id);
+        $data["badstockresult"]   = $badstockresult;
+        $extrastockresult         = $this->pharmacy_model->getMedicineExtraStock($id);
+        $data["extrastockresult"] = $extrastockresult;
         $this->load->view('admin/pharmacy/medicineDetail', $data);
     }
 
@@ -2062,6 +2073,8 @@ class Pharmacy extends Admin_Controller
         }
         $medicineCategory             = $this->medicine_category_model->getMedicineCategory();
         $data["medicineCategory"]     = $medicineCategory;
+        $medicines                    = $this->pharmacy_model->getMedicineName();
+        $data["medicines"]            = $medicines;
         $medicine_category_id         = $this->input->post("medicine_category_id");
         $data['medicine_category_id'] = $this->pharmacy_model->get_medicine_name($medicine_category_id);
         $data['medicine_category_id'] = $medicine_category_id;
@@ -2439,7 +2452,7 @@ class Pharmacy extends Admin_Controller
                         'supplier_bill_basic_id' => $insert_id,
                         'expiry'                 => $insert_date,
                         'batch_no'               => $batch_no[$j],
-                        'batch_amount'           => $batch_amount[$j],
+                        'batch_amount'           => !empty($batch_amount[$j]) ? $batch_amount[$j] : 0,
                         'mrp'                    => $mrp[$j],
                         'sale_rate'              => $sale_rate[$j],
                         'packing_qty'            => $packing_qty[$j],
@@ -2611,7 +2624,7 @@ class Pharmacy extends Admin_Controller
                             'inward_date'            => $this->customlib->dateFormatToYYYYMMDDHis($bill_date1, $this->time_format),
                             'expiry'                 => $insert_date,
                             'batch_no'               => $batch_no[$j],
-                            'batch_amount'           => $batch_amount[$j],
+                            'batch_amount'           => !empty($batch_amount[$j]) ? $batch_amount[$j] : 0,
                             'mrp'                    => $mrp[$j],
                             'sale_rate'              => $sale_rate[$j],
                             'packing_qty'            => $packing_qty[$j],
@@ -2631,7 +2644,7 @@ class Pharmacy extends Admin_Controller
                             'inward_date'            => $this->customlib->dateFormatToYYYYMMDDHis($bill_date1, $this->time_format),
                             'expiry'                 => $insert_date,
                             'batch_no'               => $batch_no[$j],
-                            'batch_amount'           => $batch_amount[$j],
+                            'batch_amount'           => !empty($batch_amount[$j]) ? $batch_amount[$j] : 0,
                             'mrp'                    => $mrp[$j],
                             'sale_rate'              => $sale_rate[$j],
                             'packing_qty'            => $packing_qty[$j],
@@ -3292,6 +3305,90 @@ class Pharmacy extends Admin_Controller
             $this->pharmacy_model->availableQty($medicine_batch_data);
 
             $this->pharmacy_model->deleteBadStock($id);
+            $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('delete_message'));
+        } else {
+            $array = array('status' => 'fail', 'error' => '', 'message' => '');
+        }
+        echo json_encode($array);
+    }
+
+    public function addExtraStock()
+    {
+        if (!$this->rbac->hasPrivilege('medicine', 'can_add') && !$this->rbac->hasPrivilege('medicine_bad_stock', 'can_add')) {
+            access_denied();
+        }
+        $this->form_validation->set_rules('pharmacy_id', $this->lang->line('pharmacy_id'), 'required');
+        $this->form_validation->set_rules('expiry_date', $this->lang->line('expiry_date'), 'required');
+        $this->form_validation->set_rules('batch_no', $this->lang->line('batch_no'), 'required');
+        $this->form_validation->set_rules('packing_qty', $this->lang->line('qty'), 'required|numeric');
+        $this->form_validation->set_rules('inward_date', $this->lang->line('inward_date'), 'required');
+
+        if ($this->form_validation->run() == false) {
+            $msg = array(
+                'pharmacy_id' => form_error('pharmacy_id'),
+                'expiry_date' => form_error('expiry_date'),
+                'batch_no'    => form_error('batch_no'),
+                'packing_qty' => form_error('packing_qty'),
+                'inward_date' => form_error('inward_date'),
+            );
+            $array = array('status' => 'fail', 'error' => $msg, 'message' => '');
+        } else {
+            $id          = $this->input->post('pharmacy_id', TRUE);
+            $inward_date = $this->input->post('inward_date', TRUE);
+            $expiry_date = $this->input->post('expiry_date', TRUE);
+
+            $explore = explode("/", $expiry_date);
+
+            $monthary = $explore[0];
+            $yearary  = $explore[1];
+            $month    = $monthary;
+
+            $month_number       = $this->convertMonthToNumber($month);
+            $last_date_of_month = date("Y-m-t", strtotime($yearary . "-" . $month_number . "-01"));
+            $insert_date        = $last_date_of_month;
+            $medicine_batch     = array(
+                'pharmacy_id'               => $id,
+                'medicine_batch_details_id' => $this->input->post('medicine_batch_id', TRUE),
+                'expiry_date'               => $insert_date,
+                'inward_date'               => $this->customlib->dateFormatToYYYYMMDD($inward_date),
+                'batch_no'                  => $this->input->post('batch_no', TRUE),
+                'quantity'                  => $this->input->post('packing_qty', TRUE),
+                'note'                      => $this->input->post('note', TRUE),
+            );
+
+            $batch_qty   = $this->input->post('available_quantity', TRUE);
+            $packing_qty = $this->input->post('packing_qty', TRUE);
+
+            if (!empty($batch_qty)) {
+                $available_quantity = $batch_qty + $packing_qty;
+            } else {
+                $available_quantity = $packing_qty;
+            }
+
+            $update_data = array('id' => $this->input->post('medicine_batch_id', TRUE), 'available_quantity' => $available_quantity);
+
+            $this->pharmacy_model->addExtraStock($medicine_batch);
+            $this->pharmacy_model->updateMedicineBatch($update_data);
+
+            $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
+        }
+        echo json_encode($array);
+    }
+
+    public function deleteExtraStock($id, $medicine_batch_details_id)
+    {
+        if (!$this->rbac->hasPrivilege('medicine', 'can_view')) {
+            access_denied();
+        }
+        if (!empty($id)) {
+            $medicine_available_quantity               = $this->pharmacy_model->getsingleMedicineBatchdetails($medicine_batch_details_id);
+            $extra_stock_quantity                      = $this->pharmacy_model->getsingleMedicineExtraStock($id);
+            $medicine_batch_data['id']                 = $medicine_batch_details_id;
+            $new_qty                                   = $medicine_available_quantity['available_quantity'] - $extra_stock_quantity['quantity'];
+            $medicine_batch_data['available_quantity'] = ($new_qty >= 0) ? $new_qty : 0;
+            $this->pharmacy_model->availableQty($medicine_batch_data);
+
+            $this->pharmacy_model->deleteExtraStock($id);
             $array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('delete_message'));
         } else {
             $array = array('status' => 'fail', 'error' => '', 'message' => '');

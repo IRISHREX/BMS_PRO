@@ -85,7 +85,7 @@
                                 </div>
                                 <div class="col-sm-3">
                                     <label><?php echo $this->lang->line('medicine_company'); ?></label>
-                                    <select name="medicine_company" class="form-control">
+                                    <select name="medicine_company" class="form-control select2">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php foreach ($company as $key => $value) { ?>
                                         <option value="<?php echo $value['id']; ?>"><?php echo $value['company_name']; ?></option>
@@ -100,7 +100,7 @@
                                 </div>
                                 <div class="col-sm-3">
                                     <label><?php echo $this->lang->line('medicine_group'); ?></label>
-                                    <select name="medicine_group" class="form-control">
+                                    <select name="medicine_group" class="form-control select2">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php foreach ($get_medicine_group as $key => $value) { ?>
                                         <option value="<?php echo $value['id']; ?>"><?php echo $value['group_name']; ?></option>
@@ -109,7 +109,7 @@
                                 </div>
                                 <div class="col-sm-3">
                                     <label><?php echo $this->lang->line('unit'); ?> <small class="req">*</small></label>
-                                    <select name="unit" class="form-control">
+                                    <select name="unit" class="form-control select2">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php foreach ($unitname as $key => $value) { ?>
                                         <option value="<?php echo $value['id']; ?>"><?php echo $value['unit_name']; ?></option>
@@ -246,7 +246,7 @@
                                 </div>
                                 <div class="col-sm-3">
                                     <label><?php echo $this->lang->line('medicine_company'); ?></label>
-                                    <select id="medicine_company" name="medicine_company" class="form-control">
+                                    <select id="medicine_company" name="medicine_company" class="form-control select2">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php foreach ($company as $key => $value) { ?>
                                         <option value="<?php echo $value['id']; ?>"><?php echo $value['company_name']; ?></option>
@@ -261,7 +261,7 @@
                                 </div>
                                 <div class="col-sm-3">
                                     <label><?php echo $this->lang->line('medicine_group'); ?></label>
-                                    <select name="medicine_group" id="medicine_group" class="form-control">
+                                    <select name="medicine_group" id="medicine_group" class="form-control select2">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php foreach ($get_medicine_group as $key => $value) { ?>
                                         <option value="<?php echo $value['id']; ?>"><?php echo $value['group_name']; ?></option>
@@ -271,7 +271,7 @@
                                 </div>
                                 <div class="col-sm-3">
                                     <label><?php echo $this->lang->line('unit'); ?> <small class="req">*</small></label>
-                                    <select name="unit" id="unit" class="form-control">
+                                    <select name="unit" id="unit" class="form-control select2">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php foreach ($unitname as $key => $value) { ?>
                                         <option value="<?php echo $value['id']; ?>"><?php echo $value['unit_name']; ?></option>
@@ -596,6 +596,66 @@
     </div>
 </div>
 
+<div class="modal fade sh-modal sh-modal-accent" id="addExtraStockModal" tabindex="-1" aria-labelledby="addExtraStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addExtraStockModalLabel"><?php echo $this->lang->line('add_extra_stock'); ?></h5>
+                <button type="button" class="btn-close close_btn" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formextrastock" accept-charset="utf-8" method="post">
+                <div class="pup-scroll-area"><div class="modal-body modal-background">
+                    <input type="hidden" name="pharmacy_id" id="extra_pharm_id">
+
+                    <div class="sh-form-card mb-0">
+                        <div class="sh-card-header">
+                            <span class="sh-card-header-title"><?php echo $this->lang->line('add_extra_stock'); ?></span>
+                        </div>
+                        <div class="p-3">
+                            <div class="row g-3">
+                                <div class="col-sm-3">
+                                    <label><?php echo $this->lang->line('batch_no'); ?> <small class="req">*</small></label>
+                                    <select name="batch_no" onchange="getExtraExpire(this.value)" id="batch_extra_stock_no" class="form-control">
+                                        <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                    </select>
+                                    <span class="text-danger"><?php echo form_error('batch_no'); ?></span>
+                                </div>
+                                <div class="col-sm-3">
+                                    <label><?php echo $this->lang->line('expiry_date'); ?> <small class="req">*</small></label>
+                                    <input type="text" id="extra_batch_expire" name="expiry_date" class="form-control expiry_date">
+                                    <span class="text-danger"><?php echo form_error('expiry_date'); ?></span>
+                                </div>
+                                <div class="col-sm-3">
+                                    <label><?php echo $this->lang->line('inward_date'); ?> <small class="req">*</small></label>
+                                    <input type="text" name="inward_date" value="<?php echo date($this->customlib->getHospitalDateFormat()); ?>" class="form-control date">
+                                    <span class="text-danger"><?php echo form_error('inward_date'); ?></span>
+                                </div>
+                                <div class="col-sm-3">
+                                    <label><?php echo $this->lang->line('qty'); ?> <small class="req">*</small></label>
+                                    <input type="text" name="packing_qty" class="form-control">
+                                    <input type="hidden" name="pharmacy_id" id="pharmacy_extra_stock_id">
+                                    <input type="hidden" name="available_quantity" id="batch_extra_available_qty">
+                                    <input type="hidden" name="medicine_batch_id" id="medicine_extra_batch_id">
+                                    <span class="text-danger"><?php echo form_error('packing_qty'); ?></span>
+                                </div>
+                                <div class="col-sm-12">
+                                    <label><?php echo $this->lang->line('note'); ?></label>
+                                    <textarea name="note" class="form-control"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
+                    <button type="submit" id="formextrastockbtn" data-loading-text='<i class="fa fa-circle-o-notch fa-spin"></i>' class="btn btn-info"><i class="fa fa-check-circle"></i> <?php echo $this->lang->line('save'); ?></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript">
     $(function () {
         //Initialize Select2 Elements
@@ -741,6 +801,36 @@
                         }
                     });
                 }));
+
+                $("#formextrastock").on('submit', (function (e) {
+                    e.preventDefault();
+                    $("#formextrastockbtn").btnLoading();
+                    $.ajax({
+                        url: '<?php echo base_url(); ?>admin/pharmacy/addExtraStock',
+                        type: "POST",
+                        data: new FormData(this),
+                        dataType: 'json',
+                        contentType: false,
+                        cache: false,
+                        processData: false,
+                        success: function (data) {
+                            if (data.status == "fail") {
+                                var message = "";
+                                $.each(data.error, function (index, value) {
+                                    message += value;
+                                });
+                                errorMsg(message);
+                            } else {
+                                successMsg(data.message);
+                                window.location.reload(true);
+                            }
+                            $("#formextrastockbtn").btnReset();
+                        },
+                        error: function () {
+
+                        }
+                    });
+                }));
             });
 			
             $(document).ready(function (e) {
@@ -788,11 +878,11 @@
                     success: function (data) {
                         $("#id").val(data.id);
                         $("#medicines_name").val(data.medicine_name);
-                        $("#medicines_category_id").val(data.medicine_category_id);
-                        $("#medicine_company").val(data.medicine_company);
+                        $("#medicines_category_id").val(data.medicine_category_id).trigger('change');
+                        $("#medicine_company").val(data.medicine_company).trigger('change');
                         $("#medicine_composition").val(data.medicine_composition);
-                        $("#medicine_group").val(data.medicine_group);
-                        $("#unit").val(data.unit);
+                        $("#medicine_group").val(data.medicine_group).trigger('change');
+                        $("#unit").val(data.unit).trigger('change');
                         $("#min_level").val(data.min_level);
                         $("#reorder_level").val(data.reorder_level);
                         $("#vat").val(data.vat); 
@@ -803,7 +893,6 @@
                         $("#edit_note").val(data.note);
                         $("#updateid").val(id);
                         shModal('viewModal').hide();
-                        $(".select2").select2().select2('val', data.medicine_category_id);
                         holdModal('myModaledit');
                     },
                 });
@@ -967,6 +1056,55 @@
                }                
             }
 
+            function addextrastock(id) {
+                $("#pharmacy_extra_stock_id").val(id);
+                $("#extra_pharm_id").val(id);
+                getextrabatchnolist(id);
+                holdModal('addExtraStockModal');
+            }
+
+            function getextrabatchnolist(id, selectid = '') {
+                var div_data = "";
+                $("#batch_extra_stock_no").html("<option value=''><?php echo $this->lang->line('select') ?></option>");
+                $.ajax({
+                    type: "POST",
+                    url: base_url + "admin/pharmacy/getBatchNoList",
+                    data: {'pharmacy_id': id},
+                    dataType: 'json',
+                    success: function (res) {
+                        $.each(res, function (i, obj)
+                        {
+                            var sel = "";
+                            if (obj.batch_no == selectid) {
+                                sel = "selected";
+                            }
+                            div_data += "<option " + sel + " value='" + obj.batch_no + "'>" + obj.batch_no + "</option>";
+                        });
+                        $('#batch_extra_stock_no').append(div_data);
+                    }
+                });
+            }
+
+            function getExtraExpire(batch_no) {               
+               if(batch_no==""){
+                 $("#extra_batch_expire").val('');
+               }else{
+                    $.ajax({
+                        type: "POST",
+                        url: base_url + "admin/pharmacy/getExpireDate",
+                        data: {'batch_no': batch_no},
+                        dataType: 'json',
+                        success: function (data) {
+                            if (data != null) {
+                                $('#extra_batch_expire').val(data.expiry);
+                                $('#batch_extra_available_qty').val(data.available_quantity);
+                                $('#medicine_extra_batch_id').val(data.id);
+                            }
+                        }
+                    });
+               }                
+            }
+
     $(document).on('click','.delete_selected',function(){       
 		var $this = $(this);     
 		let obj =  [];       
@@ -1016,14 +1154,43 @@ if (confirm('<?php echo $this->lang->line('are_you_sure_you_want_to_delete_this'
 
     $('.close_btn').click(function(){
         $('#formstock')[0].reset();
+        if ($('#formextrastock').length) {
+            $('#formextrastock')[0].reset();
+        }
     });
 </script>
 
 <script type="text/javascript">
+    $('#myModal').on('shown.bs.modal', function () {
+        $('#myModal .select2').each(function() {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2('destroy');
+            }
+            $(this).select2({ dropdownParent: $('#myModal') });
+        });
+    });
+
+    $('#myModaledit').on('shown.bs.modal', function () {
+        $('#myModaledit .select2').each(function() {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2('destroy');
+            }
+            $(this).select2({ dropdownParent: $('#myModaledit') });
+        });
+    });
+
+    $('#myModalImport').on('shown.bs.modal', function () {
+        $('#myModalImport .select2').each(function() {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2('destroy');
+            }
+            $(this).select2({ dropdownParent: $('#myModalImport') });
+        });
+    });
 
 	$('#myModal').on('hidden.bs.modal', function () {
 		$(".filestyle").next(".dropify-clear").trigger("click");
-		$(".medicine_category_id").select2("val", "");
+		$('#myModal .select2').val('').trigger('change');
 		$('#formadd').find('input:text, input:password, input:file, textarea').val('');
 		$('#formadd').find('select option:selected').removeAttr('selected');
 		$('#formadd').find('input:checkbox, input:radio').removeAttr('checked');
@@ -1057,15 +1224,14 @@ $("input[name='checkAll']").click(function () {
 </script>
 <!-- //========datatable end===== -->
 
-<!-- Month/Year picker for batch_expire (addBadStockModal) — mirrors purchase.php initMonthYearPicker.
-     Format must stay 'MMM/yyyy' to round-trip with Customlib::getMedicine_expire_month() which emits date('M/Y'). -->
+<!-- Month/Year picker for batch_expire (addBadStockModal) -->
 <script type="text/javascript">
     function initMonthYearPicker(el) {
         if (el._pickerInit) return;
         el._pickerInit = new tempusDominus.TempusDominus(el, {
             allowInputToggle: true,
             container: document.body,
-            localization: { format: 'MMM/yyyy', locale: 'en-US' },
+            localization: { format: 'MM/yyyy', locale: 'en-US' },
             display: {
                 viewMode: 'months',
                 components: {
@@ -1086,5 +1252,7 @@ $("input[name='checkAll']").click(function () {
     $(document).ready(function () {
         var el = document.getElementById('batch_expire');
         if (el) initMonthYearPicker(el);
+        var el_extra = document.getElementById('extra_batch_expire');
+        if (el_extra) initMonthYearPicker(el_extra);
     });
 </script>
